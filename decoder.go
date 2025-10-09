@@ -19,9 +19,35 @@ func newDecoder(data []byte) *decoder {
 
 // decode decodes BEVE data into a reflect.Value
 func (d *decoder) decode(v reflect.Value) error {
+	if !v.IsValid() {
+		return &UnsupportedError{"invalid destination"}
+	}
+
 	header, err := d.readByte()
 	if err != nil {
 		return err
+	}
+	start := d.pos - 1
+
+	if isRawMessageType(v.Type()) {
+		d.pos = start
+		raw, err := d.captureRawValue()
+		if err != nil {
+			return err
+		}
+		setRawMessageValue(v, raw)
+		return nil
+	}
+
+	if um, err := d.lookupBinaryUnmarshaler(v); err != nil {
+		return err
+	} else if um != nil {
+		d.pos = start
+		raw, err := d.captureRawValue()
+		if err != nil {
+			return err
+		}
+		return um.UnmarshalBEVE(raw)
 	}
 
 	switch header & 0x07 { // type bits
@@ -68,35 +94,34 @@ func (d *decoder) decodeNumber(v reflect.Value, header byte) error {
 
 // decodeFloat decodes a float
 func (d *decoder) decodeFloat(v reflect.Value, byteCount int) error {
-	var val interface{}
 	switch byteCount {
-	case 1: // bfloat16 - not fully supported, treat as float32
+	case 1: // bfloat16 - approximate as float32 and widen
 		data, err := d.readBytes(2)
 		if err != nil {
 			return err
 		}
 		uintVal := binary.LittleEndian.Uint16(data)
-		// Convert bfloat16 to float32 approximation
-		val = math.Float32frombits(uint32(uintVal) << 16)
+		f32 := math.Float32frombits(uint32(uintVal) << 16)
+		return d.setValue(v, float64(f32))
 	case 4: // float32
 		data, err := d.readBytes(4)
 		if err != nil {
 			return err
 		}
 		uintVal := binary.LittleEndian.Uint32(data)
-		val = math.Float32frombits(uintVal)
+		f32 := math.Float32frombits(uintVal)
+		return d.setValue(v, float64(f32))
 	case 8: // float64
 		data, err := d.readBytes(8)
 		if err != nil {
 			return err
 		}
 		uintVal := binary.LittleEndian.Uint64(data)
-		val = math.Float64frombits(uintVal)
+		f64 := math.Float64frombits(uintVal)
+		return d.setValue(v, f64)
 	default:
 		return &UnsupportedError{"unsupported float size"}
 	}
-
-	return d.setValue(v, val)
 }
 
 // decodeInt decodes a signed integer
@@ -176,19 +201,27 @@ func (d *decoder) decodeMap(v reflect.Value, keyType byte, size int) error {
 		v.Set(reflect.MakeMap(mapType))
 	}
 
+	mapType := v.Type()
+	keyTarget := mapType.Key()
+	elemType := mapType.Elem()
+
 	for i := 0; i < size; i++ {
 		key, err := d.readKey(keyType)
 		if err != nil {
 			return err
 		}
 
-		elemType := v.Type().Elem()
+		convertedKey, err := convertMapKeyValue(key, keyTarget, keyType)
+		if err != nil {
+			return err
+		}
+
 		elemValue := reflect.New(elemType).Elem()
 		if err := d.decode(elemValue); err != nil {
 			return err
 		}
 
-		v.SetMapIndex(key, elemValue)
+		v.SetMapIndex(convertedKey, elemValue)
 	}
 
 	return nil
@@ -203,11 +236,14 @@ func (d *decoder) decodeStruct(v reflect.Value, keyType byte, size int) error {
 		if field.PkgPath != "" {
 			continue
 		}
-		fieldName := field.Name
-		if tag := field.Tag.Get("beve"); tag != "" {
-			fieldName = tag
+		name, _, skip := parseBeveTag(field.Tag.Get("beve"))
+		if skip {
+			continue
 		}
-		fieldMap[fieldName] = i
+		if name == "" {
+			name = field.Name
+		}
+		fieldMap[name] = i
 	}
 
 	for i := 0; i < size; i++ {
@@ -250,7 +286,7 @@ func (d *decoder) decodeTypedArray(v reflect.Value, header byte) error {
 		// boolean or string
 		isString := ((header >> 5) & 0x01) == 1
 		if isString {
-			return &UnsupportedError{"typed string arrays not implemented"}
+			return d.decodeStringTypedArray(v, length)
 		}
 		return d.decodeBoolTypedArray(v, length)
 	case 0:
@@ -347,25 +383,18 @@ func (d *decoder) readKey(keyType byte) (reflect.Value, error) {
 		}
 		return reflect.ValueOf(string(data)), nil
 	case 1: // signed int
-		// Assume int64 for simplicity
 		data, err := d.readBytes(8)
 		if err != nil {
 			return reflect.Value{}, err
 		}
-		var val int64
-		for i, b := range data {
-			val |= int64(b) << (i * 8)
-		}
+		val := int64(binary.LittleEndian.Uint64(data))
 		return reflect.ValueOf(val), nil
 	case 2: // unsigned int
 		data, err := d.readBytes(8)
 		if err != nil {
 			return reflect.Value{}, err
 		}
-		var val uint64
-		for i, b := range data {
-			val |= uint64(b) << (i * 8)
-		}
+		val := binary.LittleEndian.Uint64(data)
 		return reflect.ValueOf(val), nil
 	}
 	return reflect.Value{}, &UnsupportedError{"unsupported key type"}
@@ -419,7 +448,20 @@ func (d *decoder) skipValue() error {
 		case 3:
 			isString := ((header >> 5) & 0x01) == 1
 			if isString {
-				return &UnsupportedError{"typed string arrays not implemented"}
+				for i := 0; i < length; i++ {
+					sz, err := d.readCompressedUint()
+					if err != nil {
+						return err
+					}
+					consume, err := checkedLength(sz)
+					if err != nil {
+						return err
+					}
+					if _, err := d.readBytes(consume); err != nil {
+						return err
+					}
+				}
+				return nil
 			}
 			payload := (length + 7) / 8
 			if _, err := d.readBytes(payload); err != nil {
@@ -608,6 +650,60 @@ func (d *decoder) decodeBoolTypedArray(v reflect.Value, length int) error {
 		return nil
 	default:
 		return &UnsupportedError{"unsupported bool typed array target"}
+	}
+}
+
+func (d *decoder) decodeStringTypedArray(v reflect.Value, length int) error {
+	readString := func() (string, error) {
+		size, err := d.readCompressedUint()
+		if err != nil {
+			return "", err
+		}
+		data, err := d.readBytes(int(size))
+		if err != nil {
+			return "", err
+		}
+		return string(data), nil
+	}
+
+	switch v.Kind() {
+	case reflect.Slice:
+		if err := ensureSliceLength(v, length); err != nil {
+			return err
+		}
+		for i := 0; i < length; i++ {
+			s, err := readString()
+			if err != nil {
+				return err
+			}
+			v.Index(i).SetString(s)
+		}
+		return nil
+	case reflect.Array:
+		if v.Len() != length {
+			return &UnsupportedError{"typed array length mismatch"}
+		}
+		for i := 0; i < length; i++ {
+			s, err := readString()
+			if err != nil {
+				return err
+			}
+			v.Index(i).SetString(s)
+		}
+		return nil
+	case reflect.Interface:
+		values := make([]string, length)
+		for i := 0; i < length; i++ {
+			s, err := readString()
+			if err != nil {
+				return err
+			}
+			values[i] = s
+		}
+		v.Set(reflect.ValueOf(values))
+		return nil
+	default:
+		return &UnsupportedError{"unsupported string typed array target"}
 	}
 }
 
@@ -998,6 +1094,139 @@ func readUnsignedValue(data []byte, byteCount int) (uint64, error) {
 	default:
 		return 0, &UnsupportedError{"unsupported unsigned typed array size"}
 	}
+}
+
+func (d *decoder) captureRawValue() ([]byte, error) {
+	start := d.pos
+	if err := d.skipValue(); err != nil {
+		if ue, ok := err.(*UnsupportedError); ok && ue.msg == "unexpected end of data" {
+			raw := make([]byte, len(d.data)-start)
+			copy(raw, d.data[start:])
+			d.pos = len(d.data)
+			return raw, nil
+		}
+		return nil, err
+	}
+	raw := make([]byte, d.pos-start)
+	copy(raw, d.data[start:d.pos])
+	return raw, nil
+}
+
+func setRawMessageValue(v reflect.Value, raw []byte) {
+	if raw == nil {
+		v.Set(reflect.Zero(v.Type()))
+		return
+	}
+	v.SetBytes(raw)
+}
+
+func convertMapKeyValue(key reflect.Value, targetType reflect.Type, keyType byte) (reflect.Value, error) {
+	result := reflect.New(targetType).Elem()
+	switch targetType.Kind() {
+	case reflect.String:
+		if key.Kind() != reflect.String {
+			if !key.Type().ConvertibleTo(reflect.TypeOf("")) {
+				return reflect.Value{}, &UnsupportedError{"map key not convertible to string"}
+			}
+			key = key.Convert(reflect.TypeOf(""))
+		}
+		result.SetString(key.String())
+		return result, nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		value, err := mapKeyToInt64(key, keyType)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		if result.OverflowInt(value) {
+			return reflect.Value{}, &UnsupportedError{"map key overflow"}
+		}
+		result.SetInt(value)
+		return result, nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		value, err := mapKeyToUint64(key, keyType)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		if result.OverflowUint(value) {
+			return reflect.Value{}, &UnsupportedError{"map key overflow"}
+		}
+		result.SetUint(value)
+		return result, nil
+	default:
+		return reflect.Value{}, &UnsupportedError{"unsupported map key type: " + targetType.String()}
+	}
+}
+
+func mapKeyToInt64(key reflect.Value, keyType byte) (int64, error) {
+	switch keyType {
+	case 1:
+		return key.Int(), nil
+	case 2:
+		unsigned := key.Uint()
+		if unsigned > math.MaxInt64 {
+			return 0, &UnsupportedError{"map key overflow"}
+		}
+		return int64(unsigned), nil
+	default:
+		return 0, &UnsupportedError{"map key type mismatch"}
+	}
+}
+
+func mapKeyToUint64(key reflect.Value, keyType byte) (uint64, error) {
+	switch keyType {
+	case 2:
+		return key.Uint(), nil
+	case 1:
+		signed := key.Int()
+		if signed < 0 {
+			return 0, &UnsupportedError{"map key overflow"}
+		}
+		return uint64(signed), nil
+	default:
+		return 0, &UnsupportedError{"map key type mismatch"}
+	}
+}
+
+func (d *decoder) lookupBinaryUnmarshaler(v reflect.Value) (BinaryUnmarshaler, error) {
+	if !v.IsValid() {
+		return nil, nil
+	}
+
+	if v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return nil, nil
+		}
+		return d.lookupBinaryUnmarshaler(v.Elem())
+	}
+
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		if v.CanInterface() {
+			if um, ok := v.Interface().(BinaryUnmarshaler); ok {
+				return um, nil
+			}
+		}
+		return d.lookupBinaryUnmarshaler(v.Elem())
+	}
+
+	if v.CanInterface() {
+		if um, ok := v.Interface().(BinaryUnmarshaler); ok {
+			return um, nil
+		}
+	}
+
+	if v.CanAddr() {
+		addr := v.Addr()
+		if addr.CanInterface() {
+			if um, ok := addr.Interface().(BinaryUnmarshaler); ok {
+				return um, nil
+			}
+		}
+	}
+
+	return nil, nil
 }
 
 func checkedLength(size uint64) (int, error) {

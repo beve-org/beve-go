@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"strings"
 )
 
 // encoder handles the encoding of values to BEVE format
@@ -19,6 +20,29 @@ func newEncoder(w io.Writer) *encoder {
 
 // encode encodes a reflect.Value to BEVE
 func (e *encoder) encode(v reflect.Value) error {
+	if !v.IsValid() {
+		return e.encodeNull()
+	}
+
+	if isRawMessageType(v.Type()) {
+		return e.encodeRawMessage(v.Bytes())
+	}
+
+	if v.CanInterface() {
+		if bm, ok := v.Interface().(BinaryMarshaler); ok {
+			return e.encodeBinaryMarshaler(bm)
+		}
+	}
+
+	if v.Kind() != reflect.Ptr && v.CanAddr() {
+		addr := v.Addr()
+		if addr.CanInterface() {
+			if bm, ok := addr.Interface().(BinaryMarshaler); ok {
+				return e.encodeBinaryMarshaler(bm)
+			}
+		}
+	}
+
 	switch v.Kind() {
 	case reflect.Invalid:
 		return e.encodeNull()
@@ -100,6 +124,24 @@ func (e *encoder) encodeInt(i int64) error {
 	}
 
 	return nil
+}
+
+func (e *encoder) encodeRawMessage(data []byte) error {
+	if len(data) == 0 {
+		return &UnsupportedError{"RawMessage payload must contain a value"}
+	}
+	return e.writeBytes(data)
+}
+
+func (e *encoder) encodeBinaryMarshaler(m BinaryMarshaler) error {
+	data, err := m.MarshalBEVE()
+	if err != nil {
+		return err
+	}
+	if len(data) == 0 {
+		return &UnsupportedError{"BinaryMarshaler returned empty payload"}
+	}
+	return e.writeBytes(data)
 }
 
 // encodeUint encodes an unsigned integer
@@ -219,8 +261,12 @@ func (e *encoder) encodeSlice(v reflect.Value) error {
 
 // encodeMap encodes a map
 func (e *encoder) encodeMap(v reflect.Value) error {
-	// Object header with string keys (key type 0)
-	header := byte(0x03)
+	keyType, err := determineMapKeyType(v.Type().Key())
+	if err != nil {
+		return err
+	}
+
+	header := byte(0x03) | (keyType << 3)
 	if err := e.writeByte(header); err != nil {
 		return err
 	}
@@ -231,18 +277,10 @@ func (e *encoder) encodeMap(v reflect.Value) error {
 	}
 
 	for _, key := range v.MapKeys() {
-		// Encode key without header
-		keyStr := key.String() // assume string keys
-		if err := e.writeCompressedUint(uint64(len(keyStr))); err != nil {
+		if err := e.writeMapKey(key, keyType); err != nil {
 			return err
 		}
-		for _, b := range []byte(keyStr) {
-			if err := e.writeByte(b); err != nil {
-				return err
-			}
-		}
 
-		// Encode value
 		if err := e.encode(v.MapIndex(key)); err != nil {
 			return err
 		}
@@ -253,25 +291,16 @@ func (e *encoder) encodeMap(v reflect.Value) error {
 
 // encodeStruct encodes a struct
 func (e *encoder) encodeStruct(v reflect.Value) error {
-	// Object header with string keys (key type 0)
-	header := byte(0x03)
-	if err := e.writeByte(header); err != nil {
+	if err := e.writeByte(0x03); err != nil {
 		return err
 	}
 
 	t := v.Type()
-	fieldCount := 0
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		if field.PkgPath != "" { // unexported
-			continue
-		}
-		fieldCount++
+	type fieldInfo struct {
+		name  string
+		value reflect.Value
 	}
-
-	if err := e.writeCompressedUint(uint64(fieldCount)); err != nil {
-		return err
-	}
+	var fields []fieldInfo
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -279,23 +308,34 @@ func (e *encoder) encodeStruct(v reflect.Value) error {
 			continue
 		}
 
-		fieldName := field.Name
-		if tag := field.Tag.Get("beve"); tag != "" {
-			fieldName = tag
+		name, opts, skip := parseBeveTag(field.Tag.Get("beve"))
+		if skip {
+			continue
+		}
+		if name == "" {
+			name = field.Name
 		}
 
-		// Encode key
-		if err := e.writeCompressedUint(uint64(len(fieldName))); err != nil {
+		value := v.Field(i)
+		if opts != nil && opts.Contains("omitempty") && isEmptyValue(value) {
+			continue
+		}
+
+		fields = append(fields, fieldInfo{name: name, value: value})
+	}
+
+	if err := e.writeCompressedUint(uint64(len(fields))); err != nil {
+		return err
+	}
+
+	for _, field := range fields {
+		if err := e.writeCompressedUint(uint64(len(field.name))); err != nil {
 			return err
 		}
-		for _, b := range []byte(fieldName) {
-			if err := e.writeByte(b); err != nil {
-				return err
-			}
+		if err := e.writeBytes([]byte(field.name)); err != nil {
+			return err
 		}
-
-		// Encode value
-		if err := e.encode(v.Field(i)); err != nil {
+		if err := e.encode(field.value); err != nil {
 			return err
 		}
 	}
@@ -352,6 +392,16 @@ func (e *encoder) encodeTypedArray(v reflect.Value, info typedArrayInfo) error {
 				}
 			} else {
 				return &UnsupportedError{"unsupported float byte count"}
+			}
+		}
+	case typedArrayString:
+		for i := 0; i < length; i++ {
+			s := v.Index(i).String()
+			if err := e.writeCompressedUint(uint64(len(s))); err != nil {
+				return err
+			}
+			if err := e.writeBytes([]byte(s)); err != nil {
+				return err
 			}
 		}
 	default:
@@ -435,6 +485,7 @@ const (
 	typedArraySigned
 	typedArrayUnsigned
 	typedArrayFloat
+	typedArrayString
 )
 
 type typedArrayInfo struct {
@@ -443,6 +494,8 @@ type typedArrayInfo struct {
 	byteCount int
 	elemKind  reflect.Kind
 }
+
+const typedArrayStringHeader = byte(0x04 | (3 << 3) | (1 << 5))
 
 func getTypedArrayInfo(t reflect.Type) (typedArrayInfo, bool) {
 	switch t.Kind() {
@@ -522,6 +575,12 @@ func getTypedArrayInfo(t reflect.Type) (typedArrayInfo, bool) {
 			byteCount: 8,
 			elemKind:  reflect.Float64,
 		}, true
+	case reflect.String:
+		return typedArrayInfo{
+			category: typedArrayString,
+			header:   typedArrayStringHeader,
+			elemKind: reflect.String,
+		}, true
 	default:
 		return typedArrayInfo{}, false
 	}
@@ -549,5 +608,128 @@ func byteCountIndicator(n int) (byte, bool) {
 		return 4, true
 	default:
 		return 0, false
+	}
+}
+
+func determineMapKeyType(t reflect.Type) (byte, error) {
+	switch t.Kind() {
+	case reflect.String:
+		return 0, nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return 1, nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return 2, nil
+	default:
+		return 0, &UnsupportedError{"unsupported map key type: " + t.String()}
+	}
+}
+
+func (e *encoder) writeMapKey(key reflect.Value, keyType byte) error {
+	switch keyType {
+	case 0:
+		if key.Kind() != reflect.String {
+			if !key.Type().ConvertibleTo(reflect.TypeOf("")) {
+				return &UnsupportedError{"map key not convertible to string"}
+			}
+			key = key.Convert(reflect.TypeOf(""))
+		}
+		s := key.String()
+		if err := e.writeCompressedUint(uint64(len(s))); err != nil {
+			return err
+		}
+		return e.writeBytes([]byte(s))
+	case 1:
+		if !isSignedIntegerKind(key.Kind()) {
+			if !key.Type().ConvertibleTo(reflect.TypeOf(int64(0))) {
+				return &UnsupportedError{"map key not convertible to int64"}
+			}
+			key = key.Convert(reflect.TypeOf(int64(0)))
+		}
+		return e.writeIntBytes(key.Int(), 8)
+	case 2:
+		if !isUnsignedIntegerKind(key.Kind()) {
+			if !key.Type().ConvertibleTo(reflect.TypeOf(uint64(0))) {
+				return &UnsupportedError{"map key not convertible to uint64"}
+			}
+			key = key.Convert(reflect.TypeOf(uint64(0)))
+		}
+		return e.writeUintBytes(key.Uint(), 8)
+	default:
+		return &UnsupportedError{"unsupported map key type"}
+	}
+}
+
+type tagOptions map[string]struct{}
+
+func (o tagOptions) Contains(opt string) bool {
+	if o == nil {
+		return false
+	}
+	_, ok := o[opt]
+	return ok
+}
+
+func parseBeveTag(tag string) (string, tagOptions, bool) {
+	tag = strings.TrimSpace(tag)
+	if tag == "" {
+		return "", nil, false
+	}
+	if tag == "-" {
+		return "", nil, true
+	}
+	parts := strings.Split(tag, ",")
+	name := strings.TrimSpace(parts[0])
+	if name == "-" {
+		return "", nil, true
+	}
+	opts := make(tagOptions)
+	for _, opt := range parts[1:] {
+		opt = strings.TrimSpace(opt)
+		if opt != "" {
+			opts[opt] = struct{}{}
+		}
+	}
+	return name, opts, false
+}
+
+func isEmptyValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return v.Len() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Interface, reflect.Ptr:
+		return v.IsNil()
+	case reflect.Struct:
+		zero := reflect.Zero(v.Type())
+		return reflect.DeepEqual(v.Interface(), zero.Interface())
+	case reflect.Invalid:
+		return true
+	default:
+		return false
+	}
+}
+
+func isSignedIntegerKind(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return true
+	default:
+		return false
+	}
+}
+
+func isUnsignedIntegerKind(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return true
+	default:
+		return false
 	}
 }

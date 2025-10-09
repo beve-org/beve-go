@@ -81,9 +81,15 @@ func (d *Decoder) Decode(v interface{}) error {
 	}
 
 	if reader, ok := d.r.(io.Reader); ok {
-		// Streaming decoding not implemented yet
-		_ = reader
-		return &UnsupportedError{"streaming decode"}
+		buf := getBuffer()
+		defer putBuffer(buf)
+		if _, err := buf.ReadFrom(reader); err != nil {
+			return err
+		}
+		data := make([]byte, buf.Len())
+		copy(data, buf.Bytes())
+		dec := newDecoder(data)
+		return dec.decode(rv.Elem())
 	}
 
 	return &UnsupportedError{"unsupported reader type"}

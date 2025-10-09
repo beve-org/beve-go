@@ -22,6 +22,7 @@ This library implements BEVE encoding/decoding in Go, providing an interface sim
 The library provides:
 - `Marshal(v interface{}) ([]byte, error)` - Encode Go values to BEVE binary
 - `Unmarshal(data []byte, v interface{}) error` - Decode BEVE binary to Go values
+- `NewEncoder(io.Writer)` / `NewDecoder(io.Reader)` - Streaming-friendly APIs for incremental workflows
 - Support for custom types implementing `encoding.BinaryMarshaler` and `encoding.BinaryUnmarshaler`
 
 ## Installation
@@ -68,14 +69,20 @@ func main() {
 ## Supported Types
 
 - Basic types: bool, int, uint, float, string
-- Slices and arrays
-- Maps
-- Structs with field tags
+- Slices and arrays (including typed arrays for bool, numeric, and string data)
+- Maps with string, signed, or unsigned integer keys
+- Structs with field tags (supports renaming and `omitempty`)
 - Custom types implementing the binary interfaces
 
 ## Performance
 
 BEVE is designed to be faster than MessagePack, CBOR, and BSON, especially for typed arrays. Benchmarks show significant improvements in both speed and size for numerical data.
+
+Run the included benchmarks to compare BEVE with Go's standard `encoding/json`:
+
+```bash
+go test ./... -bench=.
+```
 
 ## Specification
 

@@ -1,6 +1,8 @@
 package beve
 
 import (
+	"bytes"
+	"math"
 	"reflect"
 	"testing"
 )
@@ -207,4 +209,199 @@ func TestTypedArrays(t *testing.T) {
 			t.Fatalf("decoded mismatch: got %v want %v", decoded, input)
 		}
 	})
+}
+
+func TestFloat32RoundTrip(t *testing.T) {
+	var input float32 = 3.5
+	data, err := Marshal(input)
+	if err != nil {
+		t.Fatalf("Marshal float32 failed: %v", err)
+	}
+
+	var decoded float32
+	if err := Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal float32 failed: %v", err)
+	}
+	if decoded != input {
+		t.Fatalf("float32 round trip mismatch: got %v want %v", decoded, input)
+	}
+
+	var any interface{}
+	if err := Unmarshal(data, &any); err != nil {
+		t.Fatalf("Unmarshal float32 into interface failed: %v", err)
+	}
+	f64, ok := any.(float64)
+	if !ok {
+		t.Fatalf("expected interface to hold float64, got %T", any)
+	}
+	if math.Abs(float64(float32(f64)-input)) > 1e-6 {
+		t.Fatalf("interface float mismatch: got %v want %v", f64, input)
+	}
+}
+
+func TestMapStringInt(t *testing.T) {
+	input := map[string]int{"alpha": 1, "beta": 2, "gamma": -3}
+	data, err := Marshal(input)
+	if err != nil {
+		t.Fatalf("Marshal map failed: %v", err)
+	}
+
+	var decoded map[string]int
+	if err := Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal map failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(decoded, input) {
+		t.Fatalf("map round trip mismatch: got %v want %v", decoded, input)
+	}
+}
+
+func TestTypedStringArray(t *testing.T) {
+	input := []string{"alpha", "", "gamma"}
+	data, err := Marshal(input)
+	if err != nil {
+		t.Fatalf("Marshal string slice failed: %v", err)
+	}
+
+	var decoded []string
+	if err := Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal string slice failed: %v", err)
+	}
+	if !reflect.DeepEqual(decoded, input) {
+		t.Fatalf("decoded mismatch: got %v want %v", decoded, input)
+	}
+
+	var any interface{}
+	if err := Unmarshal(data, &any); err != nil {
+		t.Fatalf("Unmarshal string slice into interface failed: %v", err)
+	}
+	values, ok := any.([]string)
+	if !ok {
+		t.Fatalf("expected []string, got %T", any)
+	}
+	if !reflect.DeepEqual(values, input) {
+		t.Fatalf("interface decoded mismatch: got %v want %v", values, input)
+	}
+}
+
+func TestMapIntKeys(t *testing.T) {
+	input := map[int]string{-2: "neg", 0: "zero", 42: "answer"}
+	data, err := Marshal(input)
+	if err != nil {
+		t.Fatalf("Marshal map[int]string failed: %v", err)
+	}
+
+	var decoded map[int]string
+	if err := Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal map[int]string failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(decoded, input) {
+		t.Fatalf("map round trip mismatch: got %v want %v", decoded, input)
+	}
+}
+
+func TestStructOmitEmpty(t *testing.T) {
+	type sample struct {
+		Name string `beve:"name,omitempty"`
+		Age  int    `beve:"age"`
+		Note string `beve:"-"`
+	}
+
+	value := sample{Age: 27, Note: "secret"}
+	data, err := Marshal(value)
+	if err != nil {
+		t.Fatalf("Marshal struct with omitempty failed: %v", err)
+	}
+
+	var decoded map[string]interface{}
+	if err := Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal into map failed: %v", err)
+	}
+
+	if _, ok := decoded["name"]; ok {
+		t.Fatalf("expected omitted field 'name' to be absent")
+	}
+	age, ok := decoded["age"].(int64)
+	if !ok || age != 27 {
+		t.Fatalf("expected age 27, got %v (%T)", decoded["age"], decoded["age"])
+	}
+}
+
+func TestStreamingEncodeDecode(t *testing.T) {
+	input := map[string]int{"one": 1, "two": 2}
+	var buf bytes.Buffer
+	enc := NewEncoder(&buf)
+	if _, err := enc.Encode(input); err != nil {
+		t.Fatalf("streaming encode failed: %v", err)
+	}
+
+	dec := NewDecoder(bytes.NewReader(buf.Bytes()))
+	var output map[string]int
+	if err := dec.Decode(&output); err != nil {
+		t.Fatalf("streaming decode failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(output, input) {
+		t.Fatalf("streaming round trip mismatch: got %v want %v", output, input)
+	}
+}
+
+type testMarshaler struct{}
+
+func (testMarshaler) MarshalBEVE() ([]byte, error) {
+	return []byte{0x18}, nil // true
+}
+
+type testUnmarshaler struct {
+	raw []byte
+}
+
+func (t *testUnmarshaler) UnmarshalBEVE(data []byte) error {
+	t.raw = append(t.raw[:0], data...)
+	return nil
+}
+
+func TestRawMessageAndBinaryMarshaler(t *testing.T) {
+	data := []byte{0x08} // false
+
+	var raw RawMessage
+	if err := Unmarshal(data, &raw); err != nil {
+		t.Fatalf("Unmarshal RawMessage failed: %v", err)
+	}
+	if !reflect.DeepEqual([]byte(raw), data) {
+		t.Fatalf("RawMessage mismatch: got %x want %x", []byte(raw), data)
+	}
+
+	encoded, err := Marshal(raw)
+	if err != nil {
+		t.Fatalf("Marshal RawMessage failed: %v", err)
+	}
+	if !reflect.DeepEqual(encoded, data) {
+		t.Fatalf("Marshal RawMessage mismatch: got %x want %x", encoded, data)
+	}
+
+	var rawPtr *RawMessage
+	if err := Unmarshal([]byte{0x18}, &rawPtr); err != nil {
+		t.Fatalf("Unmarshal *RawMessage failed: %v", err)
+	}
+	if rawPtr == nil || !reflect.DeepEqual([]byte(*rawPtr), []byte{0x18}) {
+		t.Fatalf("pointer RawMessage mismatch")
+	}
+
+	marshaled, err := Marshal(testMarshaler{})
+	if err != nil {
+		t.Fatalf("Marshal BinaryMarshaler failed: %v", err)
+	}
+	if !reflect.DeepEqual(marshaled, []byte{0x18}) {
+		t.Fatalf("Marshal BinaryMarshaler mismatch: got %x", marshaled)
+	}
+
+	var u testUnmarshaler
+	if err := Unmarshal([]byte{0x0c}, &u); err != nil {
+		t.Fatalf("Unmarshal BinaryUnmarshaler failed: %v", err)
+	}
+	if !reflect.DeepEqual(u.raw, []byte{0x0c}) {
+		t.Fatalf("BinaryUnmarshaler raw mismatch: got %x", u.raw)
+	}
 }
