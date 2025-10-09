@@ -107,7 +107,7 @@ func ExampleMarshal_anonymousStruct() {
 	}
 
 	type Extended struct {
-		Base // Anonymous field, automatically inlined
+		Base        // Anonymous field, automatically inlined
 		Role string `beve:"role"`
 	}
 
