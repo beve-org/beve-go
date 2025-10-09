@@ -229,22 +229,7 @@ func (d *decoder) decodeMap(v reflect.Value, keyType byte, size int) error {
 
 // decodeStruct decodes into a struct
 func (d *decoder) decodeStruct(v reflect.Value, keyType byte, size int) error {
-	t := v.Type()
-	fieldMap := make(map[string]int)
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		if field.PkgPath != "" {
-			continue
-		}
-		name, _, skip := parseBeveTag(field.Tag.Get("beve"))
-		if skip {
-			continue
-		}
-		if name == "" {
-			name = field.Name
-		}
-		fieldMap[name] = i
-	}
+	info := getStructInfo(v.Type())
 
 	for i := 0; i < size; i++ {
 		key, err := d.readKey(keyType)
@@ -253,8 +238,8 @@ func (d *decoder) decodeStruct(v reflect.Value, keyType byte, size int) error {
 		}
 
 		keyStr := key.String()
-		if fieldIndex, ok := fieldMap[keyStr]; ok {
-			field := v.Field(fieldIndex)
+		if fieldInfo, ok := info.fieldMap[keyStr]; ok {
+			field := v.FieldByIndex(fieldInfo.index)
 			if err := d.decode(field); err != nil {
 				return err
 			}

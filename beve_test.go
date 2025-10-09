@@ -2,6 +2,8 @@ package beve
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"math"
 	"reflect"
 	"testing"
@@ -344,6 +346,35 @@ func TestStreamingEncodeDecode(t *testing.T) {
 
 	if !reflect.DeepEqual(output, input) {
 		t.Fatalf("streaming round trip mismatch: got %v want %v", output, input)
+	}
+}
+
+func TestUnsupportedMapKeyType(t *testing.T) {
+	data := map[float64]string{3.14: "pi"}
+	_, err := Marshal(data)
+	if err == nil {
+		t.Fatalf("expected error when marshaling map with float keys")
+	}
+	var unsupported *UnsupportedError
+	if !errors.As(err, &unsupported) {
+		t.Fatalf("expected UnsupportedError, got %T", err)
+	}
+}
+
+type badReader struct{}
+
+func (badReader) Read(p []byte) (int, error) { return 0, io.EOF }
+
+func TestDecoderUnsupportedReader(t *testing.T) {
+	dec := NewDecoder(struct{ badReader }{})
+	var out interface{}
+	err := dec.Decode(&out)
+	if err == nil {
+		t.Fatalf("expected error for unsupported reader type")
+	}
+	var unsupported *UnsupportedError
+	if !errors.As(err, &unsupported) {
+		t.Fatalf("expected UnsupportedError, got %T", err)
 	}
 }
 

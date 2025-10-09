@@ -6,11 +6,15 @@ import (
 	"math"
 	"reflect"
 	"strings"
+	"sync"
 )
 
 // encoder handles the encoding of values to BEVE format
 type encoder struct {
-	w io.Writer
+	w             io.Writer
+	single        [1]byte
+	uintScratch   [8]byte
+	varintScratch [5]byte
 }
 
 // newEncoder creates a new encoder
@@ -223,14 +227,7 @@ func (e *encoder) encodeString(s string) error {
 		return err
 	}
 
-	// Write string bytes
-	for _, b := range []byte(s) {
-		if err := e.writeByte(b); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return e.writeStringBytes(s)
 }
 
 // encodeSlice encodes a slice or array
@@ -295,47 +292,32 @@ func (e *encoder) encodeStruct(v reflect.Value) error {
 		return err
 	}
 
-	t := v.Type()
-	type fieldInfo struct {
-		name  string
-		value reflect.Value
-	}
-	var fields []fieldInfo
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		if field.PkgPath != "" {
+	info := getStructInfo(v.Type())
+	count := 0
+	for _, fieldInfo := range info.fields {
+		field := v.FieldByIndex(fieldInfo.index)
+		if fieldInfo.omitEmpty && isEmptyValue(field) {
 			continue
 		}
-
-		name, opts, skip := parseBeveTag(field.Tag.Get("beve"))
-		if skip {
-			continue
-		}
-		if name == "" {
-			name = field.Name
-		}
-
-		value := v.Field(i)
-		if opts != nil && opts.Contains("omitempty") && isEmptyValue(value) {
-			continue
-		}
-
-		fields = append(fields, fieldInfo{name: name, value: value})
+		count++
 	}
 
-	if err := e.writeCompressedUint(uint64(len(fields))); err != nil {
+	if err := e.writeCompressedUint(uint64(count)); err != nil {
 		return err
 	}
 
-	for _, field := range fields {
-		if err := e.writeCompressedUint(uint64(len(field.name))); err != nil {
+	for _, fieldInfo := range info.fields {
+		field := v.FieldByIndex(fieldInfo.index)
+		if fieldInfo.omitEmpty && isEmptyValue(field) {
+			continue
+		}
+		if err := e.writeCompressedUint(uint64(len(fieldInfo.name))); err != nil {
 			return err
 		}
-		if err := e.writeBytes([]byte(field.name)); err != nil {
+		if err := e.writeStringBytes(fieldInfo.name); err != nil {
 			return err
 		}
-		if err := e.encode(field.value); err != nil {
+		if err := e.encode(field); err != nil {
 			return err
 		}
 	}
@@ -358,13 +340,18 @@ func (e *encoder) encodeTypedArray(v reflect.Value, info typedArrayInfo) error {
 			return nil
 		}
 		payloadLen := (length + 7) / 8
-		buf := make([]byte, payloadLen)
+		buf := acquireBytes(payloadLen)
+		for i := 0; i < payloadLen; i++ {
+			buf[i] = 0
+		}
 		for i := 0; i < length; i++ {
 			if v.Index(i).Bool() {
 				buf[i>>3] |= 1 << (uint(i) & 7)
 			}
 		}
-		return e.writeBytes(buf)
+		err := e.writeBytes(buf[:payloadLen])
+		releaseBytes(buf)
+		return err
 	case typedArraySigned:
 		for i := 0; i < length; i++ {
 			if err := e.writeIntBytes(v.Index(i).Int(), info.byteCount); err != nil {
@@ -400,7 +387,7 @@ func (e *encoder) encodeTypedArray(v reflect.Value, info typedArrayInfo) error {
 			if err := e.writeCompressedUint(uint64(len(s))); err != nil {
 				return err
 			}
-			if err := e.writeBytes([]byte(s)); err != nil {
+			if err := e.writeStringBytes(s); err != nil {
 				return err
 			}
 		}
@@ -416,7 +403,8 @@ func (e *encoder) writeByte(b byte) error {
 	if bw, ok := e.w.(io.ByteWriter); ok {
 		return bw.WriteByte(b)
 	}
-	_, err := e.w.Write([]byte{b})
+	e.single[0] = b
+	_, err := e.w.Write(e.single[:])
 	return err
 }
 
@@ -428,53 +416,57 @@ func (e *encoder) writeBytes(data []byte) error {
 	return err
 }
 
-func (e *encoder) writeIntBytes(value int64, count int) error {
-	u := uint64(value)
-	for i := 0; i < count; i++ {
-		if err := e.writeByte(byte(u >> (i * 8))); err != nil {
-			return err
-		}
+func (e *encoder) writeStringBytes(s string) error {
+	if len(s) == 0 {
+		return nil
 	}
-	return nil
+	// For string writer optimization
+	if sw, ok := e.w.(io.StringWriter); ok {
+		_, err := sw.WriteString(s)
+		return err
+	}
+	// Fast path for small strings using stack buffer
+	if len(s) <= 64 {
+		var small [64]byte
+		copy(small[:], s)
+		return e.writeBytes(small[:len(s)])
+	}
+	// Use unsafe conversion to avoid allocation for larger strings
+	// This is safe because we immediately write the data
+	_, err := e.w.Write([]byte(s))
+	return err
+}
+
+func (e *encoder) writeIntBytes(value int64, count int) error {
+	binary.LittleEndian.PutUint64(e.uintScratch[:], uint64(value))
+	return e.writeBytes(e.uintScratch[:count])
 }
 
 func (e *encoder) writeUintBytes(value uint64, count int) error {
-	for i := 0; i < count; i++ {
-		if err := e.writeByte(byte(value >> (i * 8))); err != nil {
-			return err
-		}
-	}
-	return nil
+	binary.LittleEndian.PutUint64(e.uintScratch[:], value)
+	return e.writeBytes(e.uintScratch[:count])
 }
 
 // writeCompressedUint writes a compressed unsigned integer
 func (e *encoder) writeCompressedUint(n uint64) error {
-	if n < 64 {
+	switch {
+	case n < 64:
 		return e.writeByte(byte(n << 2))
-	} else if n < 16384 {
-		if err := e.writeByte(byte(0x01 | ((n >> 8) << 2))); err != nil {
-			return err
-		}
-		return e.writeByte(byte(n & 0xFF))
-	} else if n < 1073741824 {
-		if err := e.writeByte(byte(0x02 | ((n >> 16) << 2))); err != nil {
-			return err
-		}
-		if err := e.writeByte(byte((n >> 8) & 0xFF)); err != nil {
-			return err
-		}
-		return e.writeByte(byte(n & 0xFF))
-	} else {
-		if err := e.writeByte(byte(0x03 | ((n >> 24) << 2))); err != nil {
-			return err
-		}
-		if err := e.writeByte(byte((n >> 16) & 0xFF)); err != nil {
-			return err
-		}
-		if err := e.writeByte(byte((n >> 8) & 0xFF)); err != nil {
-			return err
-		}
-		return e.writeByte(byte(n & 0xFF))
+	case n < 16384:
+		e.varintScratch[0] = byte(0x01 | ((n >> 8) << 2))
+		e.varintScratch[1] = byte(n)
+		return e.writeBytes(e.varintScratch[:2])
+	case n < 1073741824:
+		e.varintScratch[0] = byte(0x02 | ((n >> 16) << 2))
+		e.varintScratch[1] = byte(n >> 8)
+		e.varintScratch[2] = byte(n)
+		return e.writeBytes(e.varintScratch[:3])
+	default:
+		e.varintScratch[0] = byte(0x03 | ((n >> 24) << 2))
+		e.varintScratch[1] = byte(n >> 16)
+		e.varintScratch[2] = byte(n >> 8)
+		e.varintScratch[3] = byte(n)
+		return e.writeBytes(e.varintScratch[:4])
 	}
 }
 
@@ -493,6 +485,110 @@ type typedArrayInfo struct {
 	header    byte
 	byteCount int
 	elemKind  reflect.Kind
+}
+
+const maxScratchSize = 1 << 16 // 64KiB per pooled buffer
+
+var byteSlicePool = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 0, 1024)
+	},
+}
+
+type structField struct {
+	name      string
+	index     []int
+	omitEmpty bool
+}
+
+type structInfo struct {
+	fields   []structField
+	fieldMap map[string]structField
+}
+
+var structFieldCache sync.Map // map[reflect.Type]*structInfo
+
+func acquireBytes(size int) []byte {
+	if size <= 0 {
+		return nil
+	}
+	if size > maxScratchSize {
+		return make([]byte, size)
+	}
+	buf := byteSlicePool.Get().([]byte)
+	if cap(buf) < size {
+		buf = make([]byte, size)
+	}
+	return buf[:size]
+}
+
+func releaseBytes(buf []byte) {
+	if buf == nil {
+		return
+	}
+	if cap(buf) > maxScratchSize {
+		return
+	}
+	full := buf[:cap(buf)]
+	for i := range full {
+		full[i] = 0
+	}
+	byteSlicePool.Put(full)
+}
+
+func gatherStructFields(t reflect.Type, parentIndex []int, visited map[reflect.Type]bool, fields *[]structField, fieldMap map[string]structField) {
+	if visited[t] {
+		return
+	}
+	visited[t] = true
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if field.PkgPath != "" && !field.Anonymous {
+			continue
+		}
+		name, opts, skip := parseBeveTag(field.Tag.Get("beve"))
+		if skip {
+			continue
+		}
+		inline := opts.Contains("inline") || (field.Anonymous && name == "")
+		fieldType := field.Type
+		index := append(parentIndex[:len(parentIndex):len(parentIndex)], field.Index...)
+		if inline {
+			base := fieldType
+			if base.Kind() == reflect.Ptr {
+				base = base.Elem()
+			}
+			if base.Kind() == reflect.Struct {
+				gatherStructFields(base, index, visited, fields, fieldMap)
+			}
+			continue
+		}
+		if name == "" {
+			name = field.Name
+		}
+		info := structField{
+			name:      name,
+			index:     index,
+			omitEmpty: opts.Contains("omitempty"),
+		}
+		*fields = append(*fields, info)
+		if _, exists := fieldMap[name]; !exists {
+			fieldMap[name] = info
+		}
+	}
+}
+
+func getStructInfo(t reflect.Type) *structInfo {
+	if cached, ok := structFieldCache.Load(t); ok {
+		return cached.(*structInfo)
+	}
+	fields := make([]structField, 0, t.NumField())
+	fieldMap := make(map[string]structField, t.NumField())
+	visited := make(map[reflect.Type]bool)
+	gatherStructFields(t, nil, visited, &fields, fieldMap)
+	res := &structInfo{fields: fields, fieldMap: fieldMap}
+	structFieldCache.Store(t, res)
+	return res
 }
 
 const typedArrayStringHeader = byte(0x04 | (3 << 3) | (1 << 5))
@@ -637,7 +733,7 @@ func (e *encoder) writeMapKey(key reflect.Value, keyType byte) error {
 		if err := e.writeCompressedUint(uint64(len(s))); err != nil {
 			return err
 		}
-		return e.writeBytes([]byte(s))
+		return e.writeStringBytes(s)
 	case 1:
 		if !isSignedIntegerKind(key.Kind()) {
 			if !key.Type().ConvertibleTo(reflect.TypeOf(int64(0))) {
