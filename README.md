@@ -229,11 +229,17 @@ String ("Hi"):
 
 ### Latest Benchmarks
 
-```
+Run locally:
+```bash
 ./scripts/bench.sh
 ```
 
-The script emits a full markdown report at `benchmarks/latest.md` containing the raw `go test` output for each scenario. Feel free to tweak the commands or append new benchmarks directly inside `scripts/bench.sh`.
+The script emits a full markdown report at `benchmarks/latest.md` containing the raw `go test` output for each scenario.
+
+**Multi-Platform Results:**
+- 📋 [View all platform results](benchmarks/MULTI_PLATFORM.md) - Complete benchmark comparison across CPUs
+- 📁 Platform-specific reports: `benchmarks/<cpu-slug>/benchmark.md`
+- 📊 Visual charts: `benchmarks/<cpu-slug>/benchmark.png`
 
 | Scenario | Metric | **BEVE** | CBOR | JSON | Notes |
 |----------|--------|----------|------|------|-------|

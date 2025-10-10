@@ -2,5 +2,6 @@
 *.tmp
 *.out
 *.test
-benchmarks/*.json
-benchmarks/*.png
+benchmarks/latest.json
+benchmarks/latest.png
+benchmarks/latest.md

@@ -148,7 +148,12 @@ jobs:
     name: Aggregate Results
     runs-on: ubuntu-latest
     needs: benchmark
+    permissions:
+      contents: write
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
       - name: Download benchmark artifacts
         uses: actions/download-artifact@v4
         with:
@@ -249,3 +254,25 @@ jobs:
         with:
           name: benchmark-summary
           path: dist
+
+      - name: Copy results to benchmarks directory
+        shell: bash
+        run: |
+          mkdir -p benchmarks
+          cp -r dist/benchmarks/* benchmarks/ || true
+          if [ -f dist/results.md ]; then
+            cp dist/results.md benchmarks/MULTI_PLATFORM.md
+          fi
+
+      - name: Commit and push results
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add benchmarks/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "📊 Update multi-platform benchmark results [skip ci]"
+          git push origin main
