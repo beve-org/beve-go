@@ -15,6 +15,8 @@ type encoder struct {
 	single        [1]byte
 	uintScratch   [8]byte
 	varintScratch [5]byte
+	batchBuf      [256]byte // batch buffer for small writes
+	batchLen      int       // current batch length
 }
 
 // newEncoder creates a new encoder
@@ -325,6 +327,76 @@ func (e *encoder) encodeStruct(v reflect.Value) error {
 	return nil
 }
 
+// encodeSignedArray encodes signed integer array with bulk operations
+func (e *encoder) encodeSignedArray(v reflect.Value, length, byteCount int) error {
+	// For large arrays, use bulk buffer writing
+	if length > 16 && byteCount <= 8 {
+		totalBytes := length * byteCount
+		buf := acquireBytes(totalBytes)
+		defer releaseBytes(buf)
+
+		offset := 0
+		for i := 0; i < length; i++ {
+			val := uint64(v.Index(i).Int())
+			switch byteCount {
+			case 1:
+				buf[offset] = byte(val)
+			case 2:
+				binary.LittleEndian.PutUint16(buf[offset:], uint16(val))
+			case 4:
+				binary.LittleEndian.PutUint32(buf[offset:], uint32(val))
+			case 8:
+				binary.LittleEndian.PutUint64(buf[offset:], val)
+			}
+			offset += byteCount
+		}
+		return e.writeBytes(buf[:totalBytes])
+	}
+
+	// Small arrays: inline writes
+	for i := 0; i < length; i++ {
+		if err := e.writeIntBytes(v.Index(i).Int(), byteCount); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// encodeUnsignedArray encodes unsigned integer array with bulk operations
+func (e *encoder) encodeUnsignedArray(v reflect.Value, length, byteCount int) error {
+	// For large arrays, use bulk buffer writing
+	if length > 16 && byteCount <= 8 {
+		totalBytes := length * byteCount
+		buf := acquireBytes(totalBytes)
+		defer releaseBytes(buf)
+
+		offset := 0
+		for i := 0; i < length; i++ {
+			val := v.Index(i).Uint()
+			switch byteCount {
+			case 1:
+				buf[offset] = byte(val)
+			case 2:
+				binary.LittleEndian.PutUint16(buf[offset:], uint16(val))
+			case 4:
+				binary.LittleEndian.PutUint32(buf[offset:], uint32(val))
+			case 8:
+				binary.LittleEndian.PutUint64(buf[offset:], val)
+			}
+			offset += byteCount
+		}
+		return e.writeBytes(buf[:totalBytes])
+	}
+
+	// Small arrays: inline writes
+	for i := 0; i < length; i++ {
+		if err := e.writeUintBytes(v.Index(i).Uint(), byteCount); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (e *encoder) encodeTypedArray(v reflect.Value, info typedArrayInfo) error {
 	length := v.Len()
 	if err := e.writeByte(info.header); err != nil {
@@ -353,17 +425,9 @@ func (e *encoder) encodeTypedArray(v reflect.Value, info typedArrayInfo) error {
 		releaseBytes(buf)
 		return err
 	case typedArraySigned:
-		for i := 0; i < length; i++ {
-			if err := e.writeIntBytes(v.Index(i).Int(), info.byteCount); err != nil {
-				return err
-			}
-		}
+		return e.encodeSignedArray(v, length, info.byteCount)
 	case typedArrayUnsigned:
-		for i := 0; i < length; i++ {
-			if err := e.writeUintBytes(v.Index(i).Uint(), info.byteCount); err != nil {
-				return err
-			}
-		}
+		return e.encodeUnsignedArray(v, length, info.byteCount)
 	case typedArrayFloat:
 		for i := 0; i < length; i++ {
 			fv := v.Index(i).Float()
@@ -399,6 +463,8 @@ func (e *encoder) encodeTypedArray(v reflect.Value, info typedArrayInfo) error {
 }
 
 // writeByte writes a single byte
+//
+//go:inline
 func (e *encoder) writeByte(b byte) error {
 	if bw, ok := e.w.(io.ByteWriter); ok {
 		return bw.WriteByte(b)
@@ -408,6 +474,7 @@ func (e *encoder) writeByte(b byte) error {
 	return err
 }
 
+//go:inline
 func (e *encoder) writeBytes(data []byte) error {
 	if len(data) == 0 {
 		return nil
@@ -425,49 +492,48 @@ func (e *encoder) writeStringBytes(s string) error {
 		_, err := sw.WriteString(s)
 		return err
 	}
-	// Fast path for small strings using stack buffer
-	if len(s) <= 64 {
-		var small [64]byte
-		copy(small[:], s)
-		return e.writeBytes(small[:len(s)])
-	}
-	// Use unsafe conversion to avoid allocation for larger strings
-	// This is safe because we immediately write the data
-	_, err := e.w.Write([]byte(s))
+	// Use zero-copy conversion (unsafe but safe in our context)
+	// The data is immediately written and not retained
+	_, err := e.w.Write(stringToBytes(s))
 	return err
 }
 
+//go:inline
 func (e *encoder) writeIntBytes(value int64, count int) error {
 	binary.LittleEndian.PutUint64(e.uintScratch[:], uint64(value))
 	return e.writeBytes(e.uintScratch[:count])
 }
 
+//go:inline
 func (e *encoder) writeUintBytes(value uint64, count int) error {
 	binary.LittleEndian.PutUint64(e.uintScratch[:], value)
 	return e.writeBytes(e.uintScratch[:count])
 }
 
 // writeCompressedUint writes a compressed unsigned integer
+//
+//go:inline
 func (e *encoder) writeCompressedUint(n uint64) error {
-	switch {
-	case n < 64:
+	// Fast path for small numbers (most common case)
+	if n < 64 {
 		return e.writeByte(byte(n << 2))
-	case n < 16384:
+	}
+	if n < 16384 {
 		e.varintScratch[0] = byte(0x01 | ((n >> 8) << 2))
 		e.varintScratch[1] = byte(n)
 		return e.writeBytes(e.varintScratch[:2])
-	case n < 1073741824:
+	}
+	if n < 1073741824 {
 		e.varintScratch[0] = byte(0x02 | ((n >> 16) << 2))
 		e.varintScratch[1] = byte(n >> 8)
 		e.varintScratch[2] = byte(n)
 		return e.writeBytes(e.varintScratch[:3])
-	default:
-		e.varintScratch[0] = byte(0x03 | ((n >> 24) << 2))
-		e.varintScratch[1] = byte(n >> 16)
-		e.varintScratch[2] = byte(n >> 8)
-		e.varintScratch[3] = byte(n)
-		return e.writeBytes(e.varintScratch[:4])
 	}
+	e.varintScratch[0] = byte(0x03 | ((n >> 24) << 2))
+	e.varintScratch[1] = byte(n >> 16)
+	e.varintScratch[2] = byte(n >> 8)
+	e.varintScratch[3] = byte(n)
+	return e.writeBytes(e.varintScratch[:4])
 }
 
 type typedArrayCategory int

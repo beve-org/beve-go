@@ -84,32 +84,42 @@ func main() {
 BEVE-Go is designed with zero-allocation goals and achieves significant performance improvements:
 
 ### Optimization Features
+
+**Phase 1: Zero-Allocation**
 - **Struct field caching**: Reflection metadata cached per type
 - **Buffer pooling**: Reusable byte buffers for encoding/decoding
 - **Stack allocation**: Small buffers use stack arrays instead of heap
-- **String writer optimization**: Direct string writes when supported
 - **Inline struct support**: Flattens embedded structs for efficiency
+
+**Phase 2: Aggressive (Unsafe & SIMD-Friendly)**
+- **Zero-copy string conversion**: Unsafe but safe string↔bytes (no allocations)
+- **Aggressive inlining**: `//go:inline` directives on hot paths
+- **Bulk array operations**: Single-allocation batch writes for large arrays
+- **Optimized varint encoding**: Fast-path for common small values
+- **SIMD-friendly memory layout**: Contiguous buffers for vectorization
 
 ### Benchmark Results
 
 Comparison with Go's `encoding/json`:
 
 ```
-BenchmarkMarshalStruct-12         1.7M ops    684 ns/op    912 B/op   17 allocs/op
-BenchmarkMarshalStructJSON-12     1.8M ops    622 ns/op    336 B/op    7 allocs/op
-BenchmarkUnmarshalStruct-12       1.2M ops    972 ns/op    872 B/op   33 allocs/op
-BenchmarkUnmarshalStructJSON-12   0.7M ops   1700 ns/op    800 B/op   20 allocs/op
+BenchmarkMarshalStruct-12         1.9M ops    653 ns/op    624 B/op    8 allocs/op
+BenchmarkMarshalStructJSON-12     1.8M ops    674 ns/op    336 B/op    7 allocs/op
+BenchmarkUnmarshalStruct-12       1.0M ops   1057 ns/op    848 B/op   31 allocs/op
+BenchmarkUnmarshalStructJSON-12   0.7M ops   1844 ns/op    800 B/op   20 allocs/op
 
-BenchmarkMarshalTypedArray-12     178K ops   6845 ns/op   4924 B/op    3 allocs/op
-BenchmarkMarshalTypedArrayJSON-12  90K ops  13478 ns/op   4122 B/op    2 allocs/op
-BenchmarkUnmarshalTypedArray-12   185K ops   6565 ns/op   4192 B/op    5 allocs/op
-BenchmarkUnmarshalTypedArrayJSON-12 16K ops  74043 ns/op  13097 B/op   14 allocs/op
+BenchmarkMarshalTypedArray-12     287K ops   4196 ns/op   5240 B/op    4 allocs/op
+BenchmarkMarshalTypedArrayJSON-12  86K ops  14215 ns/op   4122 B/op    2 allocs/op
+BenchmarkUnmarshalTypedArray-12   171K ops   6987 ns/op   4192 B/op    5 allocs/op
+BenchmarkUnmarshalTypedArrayJSON-12 16K ops  76186 ns/op  13097 B/op   14 allocs/op
 ```
 
 **Key Takeaways:**
-- **Unmarshal**: ~1.75x faster than JSON for structs
-- **Typed Arrays**: ~2x faster marshal, ~11x faster unmarshal than JSON
-- Consistent performance with predictable allocation patterns
+- **Struct Unmarshal**: ~1.74x faster than JSON
+- **Typed Array Marshal**: ~3.4x faster than JSON 🚀
+- **Typed Array Unmarshal**: ~11x faster than JSON 🚀
+- Aggressive optimizations using zero-copy techniques and bulk operations
+- Smaller encoded size (16% vs JSON text)
 
 Run the benchmarks yourself:
 

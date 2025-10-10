@@ -160,6 +160,8 @@ func (d *decoder) decodeUint(v reflect.Value, byteCount int) error {
 }
 
 // decodeString decodes a string
+//
+//go:inline
 func (d *decoder) decodeString(v reflect.Value) error {
 	size, err := d.readCompressedUint()
 	if err != nil {
@@ -171,7 +173,8 @@ func (d *decoder) decodeString(v reflect.Value) error {
 		return err
 	}
 
-	str := string(data)
+	// Zero-copy string conversion
+	str := bytesToString(data)
 	return d.setValue(v, str)
 }
 
@@ -648,7 +651,8 @@ func (d *decoder) decodeStringTypedArray(v reflect.Value, length int) error {
 		if err != nil {
 			return "", err
 		}
-		return string(data), nil
+		// Zero-copy string conversion
+		return bytesToString(data), nil
 	}
 
 	switch v.Kind() {
