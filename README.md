@@ -3,6 +3,8 @@
 [![Go Version](https://img.shields.io/badge/Go-1.18+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](PHASE2_RESULTS.md)
+[![CI](https://github.com/meftunca/beve-go/actions/workflows/ci.yml/badge.svg)](https://github.com/meftunca/beve-go/actions/workflows/ci.yml)
+[![Benchmarks](https://github.com/meftunca/beve-go/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/meftunca/beve-go/actions/workflows/benchmarks.yml)
 
 **BEVE** (Binary Encoded Values) is a high-performance binary serialization format for Go, optimized for speed, efficiency, and type safety.
 
@@ -252,7 +254,20 @@ Round-trip JSON/Sonic benchmarks remain available in `comparison_advanced_test.g
 
 ---
 
-## 📖 Documentation
+## � Examples
+
+Check out the [examples](./examples) directory for usage examples:
+
+- **[Basic Usage](./examples/basic)** - Simple encode/decode example
+- **[Streaming](./examples/streaming)** - Encoding/decoding multiple values
+- **[Custom Types](./examples/custom-types)** - Using `encoding.BinaryMarshaler`
+
+Run all examples:
+```bash
+for dir in examples/*/; do go run $dir/main.go; done
+```
+
+## �📖 Documentation
 
 - **[BINARY_FORMAT.md](BINARY_FORMAT.md)** - Binary format specification & advantages
 - **[PHASE1_RESULTS.md](PHASE1_RESULTS.md)** - Phase 1 optimization details (95% alloc reduction)
@@ -305,16 +320,31 @@ Round-trip JSON/Sonic benchmarks remain available in `comparison_advanced_test.g
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see:
-- [OPTIMIZATION_TODO.md](OPTIMIZATION_TODO.md) for prioritized tasks
-- Open an issue for bugs or feature requests
-- Submit PRs with benchmarks showing improvements
+We welcome contributions! 🎉
+
+**Before contributing:**
+- 📖 Read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
+- 🐛 Check [existing issues](https://github.com/beve-org/beve-go/issues)
+- 💡 Discuss major changes in [GitHub Discussions](https://github.com/beve-org/beve-go/discussions)
+
+**Quick Links:**
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security Policy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
+
+---
+
+## 🔒 Security
+
+Found a security vulnerability? Please review our [Security Policy](SECURITY.md) and report responsibly.
 
 ---
 
 ## 📄 License
 
-MIT License - See [LICENSE](LICENSE) file for details
+MIT License - See [LICENSE](LICENSE) file for details.
+
+Copyright © 2025 BEVE Contributors
 
 ---
 
