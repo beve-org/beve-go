@@ -52,6 +52,19 @@ func BenchmarkMarshalStruct(b *testing.B) {
 	}
 }
 
+func BenchmarkMarshalStructZeroCopy(b *testing.B) {
+	b.ReportAllocs()
+	value := newBenchStruct()
+	for i := 0; i < b.N; i++ {
+		lease, err := MarshalZeroCopy(value)
+		if err != nil {
+			b.Fatalf("MarshalZeroCopy failed: %v", err)
+		}
+		benchBytesSink = lease.Bytes()
+		lease.Release()
+	}
+}
+
 func BenchmarkMarshalStructJSON(b *testing.B) {
 	b.ReportAllocs()
 	value := newBenchStruct()
@@ -103,6 +116,19 @@ func BenchmarkMarshalTypedArray(b *testing.B) {
 			b.Fatalf("Marshal typed array failed: %v", err)
 		}
 		benchBytesSink = data
+	}
+}
+
+func BenchmarkMarshalTypedArrayZeroCopy(b *testing.B) {
+	b.ReportAllocs()
+	arr := newTypedArray()
+	for i := 0; i < b.N; i++ {
+		lease, err := MarshalZeroCopy(arr)
+		if err != nil {
+			b.Fatalf("MarshalZeroCopy typed array failed: %v", err)
+		}
+		benchBytesSink = lease.Bytes()
+		lease.Release()
 	}
 }
 

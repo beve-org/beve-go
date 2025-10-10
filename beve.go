@@ -8,16 +8,53 @@ import (
 	"io"
 	"reflect"
 	"sync"
+
+	"github.com/beve-org/beve-go/core"
 )
 
 // Version represents the BEVE specification version
-const Version = "1.0"
+const Version = "1.2.0"
+
+// ZeroCopyBytes represents a leased encoder buffer. Call Release to recycle it.
+type ZeroCopyBytes = core.BufferLease
 
 // Marshal encodes v into BEVE binary format.
 // It follows the same interface as encoding/json.Marshal.
 func Marshal(v interface{}) ([]byte, error) {
-	e := NewEncoder(nil)
-	return e.Encode(v)
+	lease, err := MarshalZeroCopy(v)
+	if err != nil {
+		return nil, err
+	}
+
+	data := lease.Bytes()
+	result := make([]byte, len(data))
+	copy(result, data)
+	lease.Release()
+	return result, nil
+}
+
+// MarshalZeroCopy encodes v into BEVE binary format without copying the result.
+//
+// The returned lease shares the encoder's internal buffer. Callers must invoke
+// Release when done so the buffer can be recycled. The byte slice remains valid
+// until Release is called.
+func MarshalZeroCopy(v interface{}) (ZeroCopyBytes, error) {
+	enc := getEncoderFromPool()
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+	}
+
+	// Encode the value
+	rv := reflect.ValueOf(v)
+	if err := enc.Encode(rv); err != nil {
+		putEncoderToPool(enc)
+		return ZeroCopyBytes{}, err
+	}
+
+	lease := enc.DetachBytes()
+	putEncoderToPool(enc)
+
+	return lease, nil
 }
 
 // Unmarshal decodes BEVE binary data into v.
@@ -44,7 +81,7 @@ func (e *Encoder) Encode(v interface{}) ([]byte, error) {
 		buf := getBuffer()
 		defer putBuffer(buf)
 		enc := newEncoder(buf)
-		if err := enc.encode(reflect.ValueOf(v)); err != nil {
+		if err := enc.Encode(reflect.ValueOf(v)); err != nil {
 			return nil, err
 		}
 		result := make([]byte, buf.Len())
@@ -53,7 +90,7 @@ func (e *Encoder) Encode(v interface{}) ([]byte, error) {
 	}
 	// Streaming encoding
 	enc := newEncoder(e.w)
-	return nil, enc.encode(reflect.ValueOf(v))
+	return nil, enc.Encode(reflect.ValueOf(v))
 }
 
 // Decoder provides streaming BEVE decoding.
@@ -92,7 +129,7 @@ func (d *Decoder) Decode(v interface{}) error {
 		return dec.decode(rv.Elem())
 	}
 
-	return &UnsupportedError{"unsupported reader type"}
+	return &UnsupportedError{Msg: "unsupported reader type"}
 }
 
 // BinaryMarshaler is the interface implemented by an object that can
@@ -122,13 +159,8 @@ func (e *InvalidUnmarshalError) Error() string {
 	return "beve: Unmarshal(nil " + e.Type.String() + ")"
 }
 
-type UnsupportedError struct {
-	msg string
-}
-
-func (e *UnsupportedError) Error() string {
-	return "beve: " + e.msg
-}
+// UnsupportedError is an alias for core.UnsupportedError
+type UnsupportedError = core.UnsupportedError
 
 // Indent sets the indentation for pretty-printed output.
 // Currently not implemented as BEVE is binary.
