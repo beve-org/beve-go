@@ -101,6 +101,17 @@ func BenchmarkSmallStruct_BEVE_Marshal(b *testing.B) {
 	}
 }
 
+func BenchmarkSmallStruct_BEVE_MarshalZeroCopy(b *testing.B) {
+	user := generateUser()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		lease, _ := MarshalZeroCopy(user)
+		benchBytesSink = lease.Bytes()
+		lease.Release()
+	}
+}
+
 func BenchmarkSmallStruct_JSON_Marshal(b *testing.B) {
 	user := generateUser()
 	b.ResetTimer()
@@ -210,6 +221,17 @@ func BenchmarkMedium_BEVE_Marshal(b *testing.B) {
 	}
 }
 
+func BenchmarkMedium_BEVE_MarshalZeroCopy(b *testing.B) {
+	data := generateComplexData(10, 20)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		lease, _ := MarshalZeroCopy(data)
+		benchBytesSink = lease.Bytes()
+		lease.Release()
+	}
+}
+
 func BenchmarkMedium_JSON_Marshal(b *testing.B) {
 	data := generateComplexData(10, 20)
 	b.ResetTimer()
@@ -240,6 +262,63 @@ func BenchmarkMedium_MessagePack_Marshal(b *testing.B) {
 	}
 }
 
+// ==================== MEDIUM UNMARSHAL ====================
+
+func BenchmarkMedium_BEVE_Unmarshal(b *testing.B) {
+	data := generateComplexData(10, 20)
+	encoded, _ := Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = Unmarshal(encoded, &out)
+	}
+}
+
+func BenchmarkMedium_JSON_Unmarshal(b *testing.B) {
+	data := generateComplexData(10, 20)
+	encoded, _ := json.Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = json.Unmarshal(encoded, &out)
+	}
+}
+
+func BenchmarkMedium_Sonic_Unmarshal(b *testing.B) {
+	data := generateComplexData(10, 20)
+	encoded, _ := sonic.Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = sonic.Unmarshal(encoded, &out)
+	}
+}
+
+func BenchmarkMedium_CBOR_Unmarshal(b *testing.B) {
+	data := generateComplexData(10, 20)
+	encoded, _ := cbor.Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = cbor.Unmarshal(encoded, &out)
+	}
+}
+
+func BenchmarkMedium_MessagePack_Unmarshal(b *testing.B) {
+	data := generateComplexData(10, 20)
+	encoded, _ := msgpack.Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = msgpack.Unmarshal(encoded, &out)
+	}
+}
+
 func BenchmarkMedium_CBOR_Marshal(b *testing.B) {
 	data := generateComplexData(10, 20)
 	b.ResetTimer()
@@ -259,6 +338,17 @@ func BenchmarkLarge_BEVE_Marshal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		result, _ := Marshal(data)
 		benchBytesSink = result
+	}
+}
+
+func BenchmarkLarge_BEVE_MarshalZeroCopy(b *testing.B) {
+	data := generateComplexData(100, 200)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		lease, _ := MarshalZeroCopy(data)
+		benchBytesSink = lease.Bytes()
+		lease.Release()
 	}
 }
 
@@ -289,6 +379,63 @@ func BenchmarkLarge_MessagePack_Marshal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		result, _ := msgpack.Marshal(data)
 		benchBytesSink = result
+	}
+}
+
+// ==================== LARGE UNMARSHAL ====================
+
+func BenchmarkLarge_BEVE_Unmarshal(b *testing.B) {
+	data := generateComplexData(100, 200)
+	encoded, _ := Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = Unmarshal(encoded, &out)
+	}
+}
+
+func BenchmarkLarge_JSON_Unmarshal(b *testing.B) {
+	data := generateComplexData(100, 200)
+	encoded, _ := json.Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = json.Unmarshal(encoded, &out)
+	}
+}
+
+func BenchmarkLarge_Sonic_Unmarshal(b *testing.B) {
+	data := generateComplexData(100, 200)
+	encoded, _ := sonic.Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = sonic.Unmarshal(encoded, &out)
+	}
+}
+
+func BenchmarkLarge_CBOR_Unmarshal(b *testing.B) {
+	data := generateComplexData(100, 200)
+	encoded, _ := cbor.Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = cbor.Unmarshal(encoded, &out)
+	}
+}
+
+func BenchmarkLarge_MessagePack_Unmarshal(b *testing.B) {
+	data := generateComplexData(100, 200)
+	encoded, _ := msgpack.Marshal(data)
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var out ComplexData
+		_ = msgpack.Unmarshal(encoded, &out)
 	}
 }
 

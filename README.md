@@ -12,14 +12,14 @@
 
 ### 📊 Benchmark Results (vs Competition)
 
-_Apple M2 Max · Go 1.22 · `-benchtime=1000x` (large payloads `-benchtime=50x`)_
+_Apple M2 Max · Go 1.25 · `-benchtime=1000x` (large payloads `-benchtime=50x`)_
 
 | Scenario | Metric | **BEVE** | CBOR | JSON | Speedup vs CBOR |
 |----------|--------|----------|------|------|------------------|
-| Small Struct | Marshal | **294 ns/op · 393 B/op · 2 allocs** | 1,618 ns/op · 2,841 B/op · 2 allocs | 2,369 ns/op · 1,942 B/op · 2 allocs | **5.5× faster**, **6.7× less heap** |
-| Small Struct | Unmarshal | **666 ns/op · 889 B/op · 4 allocs** | 3,059 ns/op · 2,440 B/op · 53 allocs | 6,495 ns/op · 2,312 B/op · 44 allocs | **4.6× faster**, **2.7× less heap**, **13× fewer allocs** |
-| Medium Payload | Marshal | **11,636 ns/op · 22,388 B/op · 2 allocs** | 14,087 ns/op · 18,577 B/op · 2 allocs | — | **1.21× faster** |
-| Large Payload | Marshal | **101,629 ns/op · 223,402 B/op · 2 allocs** | 131,509 ns/op · 199,622 B/op · 3 allocs | — | **1.29× faster** |
+| Small Struct | Marshal | **404.5 ns/op · 793 B/op · 2 allocs** | 2,258 ns/op · 1,681 B/op · 2 allocs | 2,732 ns/op · 1,939 B/op · 2 allocs | **5.6× faster**, **53% less heap** |
+| Small Struct | Unmarshal | **744.6 ns/op · 1,209 B/op · 4 allocs** | 4,781 ns/op · 4,237 B/op · 89 allocs | 2,683 ns/op · 680 B/op · 18 allocs | **6.4× faster**, **71% less heap**, **22× fewer allocs (vs CBOR)** |
+| Medium Payload | Marshal | **10,166 ns/op · 21,356 B/op · 2 allocs** | 12,982 ns/op · 16,665 B/op · 2 allocs | 30,646 ns/op · 22,092 B/op · 9 allocs | **1.3× faster** |
+| Large Payload | Marshal | **85,795 ns/op · 209,872 B/op · 2 allocs** | 123,768 ns/op · 191,431 B/op · 3 allocs | 307,572 ns/op · 224,098 B/op · 9 allocs | **1.4× faster** |
 
 > Benchmarks live in `comparison_advanced_test.go`. Re-run with `go test -bench=BenchmarkSmallStruct_BEVE_Unmarshal -benchmem -benchtime=1000x ./...`.
 
@@ -55,9 +55,9 @@ Sonic/JSON:  2,654 bytes  ← Largest
 - ✅ **IEEE 754** for precise float encoding
 
 ### ⚡ Performance
-- ✅ **Up to 5.5× faster** than CBOR on small structs (294 ns vs 1,618 ns)
-- ✅ **13× fewer allocations** during unmarshal (4 vs 53)
-- ✅ **2.7× less heap** on hot decode paths (889 B vs 2,440 B)
+- ✅ **Up to 5.6× faster** than CBOR on small-struct marshals
+- ✅ **22× fewer allocations** than CBOR during small-struct unmarshals (4 vs 89)
+- ✅ **53% less heap** than CBOR on small-struct marshals (0.8 KB vs 1.7 KB)
 - ✅ **Lock-free encoder cache** (excellent multi-core scaling)
 - ✅ **Smart buffer management** with pre-allocated buffers
 
@@ -171,7 +171,7 @@ if err != nil {
 | **Human-readable data** | JSON |
 | **Browser compatibility** | JSON |
 | **Cross-language interop** | Protobuf, MessagePack |
-| **Extreme performance** | CBOR (15-30% faster) |
+| **Extreme performance** | CBOR (great interop) |
 
 ---
 
@@ -230,16 +230,17 @@ String ("Hi"):
 ### Latest Benchmarks
 
 ```
-go test -bench=BenchmarkSmallStruct_BEVE_Unmarshal -benchmem -benchtime=1000x ./...
-go test -bench=BenchmarkLarge_BEVE_Marshal   -benchmem -benchtime=50x   ./...
+./scripts/bench.sh
 ```
+
+The script emits a full markdown report at `benchmarks/latest.md` containing the raw `go test` output for each scenario. Feel free to tweak the commands or append new benchmarks directly inside `scripts/bench.sh`.
 
 | Scenario | Metric | **BEVE** | CBOR | JSON | Notes |
 |----------|--------|----------|------|------|-------|
-| Small Struct | Marshal | **294.1 ns/op · 393 B/op · 2 allocs** | 1,618 ns/op · 2,841 B/op · 2 allocs | 2,369 ns/op · 1,942 B/op · 2 allocs | BEVE wins latency & heap |
-| Small Struct | Unmarshal | **665.5 ns/op · 889 B/op · 4 allocs** | 3,059 ns/op · 2,440 B/op · 53 allocs | 6,495 ns/op · 2,312 B/op · 44 allocs | 13× fewer allocations |
-| Medium Payload | Marshal | **11,636 ns/op · 22,388 B/op · 2 allocs** | 14,087 ns/op · 18,577 B/op · 2 allocs | — | BEVE 21% faster |
-| Large Payload | Marshal | **101,629 ns/op · 223,402 B/op · 2 allocs** | 131,509 ns/op · 199,622 B/op · 3 allocs | — | BEVE 29% faster |
+| Small Struct | Marshal | **404.5 ns/op · 793 B/op · 2 allocs** | 2,258 ns/op · 1,681 B/op · 2 allocs | 2,732 ns/op · 1,939 B/op · 2 allocs | BEVE is 5.6× faster than CBOR |
+| Small Struct | Unmarshal | **744.6 ns/op · 1,209 B/op · 4 allocs** | 4,781 ns/op · 4,237 B/op · 89 allocs | 2,683 ns/op · 680 B/op · 18 allocs | 22× fewer allocs than CBOR |
+| Medium Payload | Marshal | **10,166 ns/op · 21,356 B/op · 2 allocs** | 12,982 ns/op · 16,665 B/op · 2 allocs | 30,646 ns/op · 22,092 B/op · 9 allocs | BEVE 27% faster than CBOR |
+| Large Payload | Marshal | **85,795 ns/op · 209,872 B/op · 2 allocs** | 123,768 ns/op · 191,431 B/op · 3 allocs | 307,572 ns/op · 224,098 B/op · 9 allocs | BEVE 1.4× faster than CBOR |
 
 Round-trip JSON/Sonic benchmarks remain available in `comparison_advanced_test.go`; re-run if you need cross-format parity numbers.
 

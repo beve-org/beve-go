@@ -12,14 +12,15 @@ import (
 
 // encoderStructField contains cached metadata for struct encoding.
 type encoderStructField struct {
-	omitEmpty  bool
-	key        []byte
-	offset     uintptr
-	kind       reflect.Kind
-	typ        reflect.Type
-	encoder    encoderFunc
-	structInfo *encoderStructInfo
-	mapEncoder mapEncoderFunc
+	omitEmpty    bool
+	key          []byte
+	offset       uintptr
+	kind         reflect.Kind
+	typ          reflect.Type
+	encoder      encoderFunc
+	structInfo   *encoderStructInfo
+	mapEncoder   mapEncoderFunc
+	sliceEncoder sliceEncoderFunc
 }
 
 // encoderStructInfo caches struct field metadata for fast encoding.
@@ -32,8 +33,21 @@ type encoderStructInfo struct {
 }
 
 type mapEncoderFunc func(*Encoder, unsafe.Pointer) error
+type sliceEncoderFunc func(*Encoder, unsafe.Pointer) error
 
 var encoderStructInfoCache sync.Map // map[reflect.Type]*encoderStructInfo
+
+func buildStructEncoder(t reflect.Type) encoderFunc {
+	info := getEncoderStructInfo(t)
+	return func(e *Encoder, v reflect.Value) error {
+		_, basePtr, keep := ensureAddressableStruct(v)
+		err := e.encodeStructPtr(info, basePtr)
+		if keep != nil {
+			runtime.KeepAlive(keep)
+		}
+		return err
+	}
+}
 
 // getEncoderStructInfo retrieves cached struct metadata or builds it on demand.
 func getEncoderStructInfo(t reflect.Type) *encoderStructInfo {
@@ -123,6 +137,12 @@ func buildEncoderStructFieldsRecursive(t reflect.Type, baseOffset uintptr, flatt
 			mapEncoder: func() mapEncoderFunc {
 				if field.Type.Kind() == reflect.Map {
 					return buildMapEncoder(field.Type)
+				}
+				return nil
+			}(),
+			sliceEncoder: func() sliceEncoderFunc {
+				if field.Type.Kind() == reflect.Slice {
+					return buildSliceEncoder(field.Type)
 				}
 				return nil
 			}(),
@@ -320,6 +340,79 @@ func buildMapEncoder(t reflect.Type) mapEncoderFunc {
 	return nil
 }
 
+func buildSliceEncoder(t reflect.Type) sliceEncoderFunc {
+	if t.Kind() != reflect.Slice || isRawMessageType(t) {
+		return nil
+	}
+
+	elem := t.Elem()
+
+	switch elem.Kind() {
+	case reflect.String:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]string)(ptr)
+			return e.encodeStringSliceDirect(slice)
+		}
+	case reflect.Bool:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]bool)(ptr)
+			return e.encodeBoolSliceDirect(slice)
+		}
+	case reflect.Int8:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]int8)(ptr)
+			return e.encodeInt8SliceDirect(slice)
+		}
+	case reflect.Int16:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]int16)(ptr)
+			return e.encodeInt16SliceDirect(slice)
+		}
+	case reflect.Int32:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]int32)(ptr)
+			return e.encodeInt32SliceDirect(slice)
+		}
+	case reflect.Int64:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]int64)(ptr)
+			return e.encodeInt64SliceDirect(slice)
+		}
+	case reflect.Uint8:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]uint8)(ptr)
+			return e.encodeUint8SliceDirect(slice)
+		}
+	case reflect.Uint16:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]uint16)(ptr)
+			return e.encodeUint16SliceDirect(slice)
+		}
+	case reflect.Uint32:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]uint32)(ptr)
+			return e.encodeUint32SliceDirect(slice)
+		}
+	case reflect.Uint64:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]uint64)(ptr)
+			return e.encodeUint64SliceDirect(slice)
+		}
+	case reflect.Float32:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]float32)(ptr)
+			return e.encodeFloat32SliceDirect(slice)
+		}
+	case reflect.Float64:
+		return func(e *Encoder, ptr unsafe.Pointer) error {
+			slice := *(*[]float64)(ptr)
+			return e.encodeFloat64SliceDirect(slice)
+		}
+	default:
+		return nil
+	}
+}
+
 func writeMapHeader(e *Encoder, keyTypeByte byte, size int) error {
 	header := byte(0x03 | (keyTypeByte << 3))
 	if err := e.WriteByte(header); err != nil {
@@ -433,12 +526,26 @@ func (e *Encoder) encodeSlice(v reflect.Value) error {
 			return e.encodeStringTypedArray(v)
 		case reflect.Bool:
 			return e.encodeBoolTypedArray(v)
+		case reflect.Int8:
+			return e.encodeInt8TypedArray(v)
+		case reflect.Int16:
+			return e.encodeInt16TypedArray(v)
 		case reflect.Int32:
 			return e.encodeInt32TypedArray(v)
+		case reflect.Int64:
+			return e.encodeInt64TypedArray(v)
+		case reflect.Uint8:
+			return e.encodeUint8TypedArray(v)
 		case reflect.Uint16:
 			return e.encodeUint16TypedArray(v)
+		case reflect.Uint32:
+			return e.encodeUint32TypedArray(v)
+		case reflect.Uint64:
+			return e.encodeUint64TypedArray(v)
 		case reflect.Float32:
 			return e.encodeFloat32TypedArray(v)
+		case reflect.Float64:
+			return e.encodeFloat64TypedArray(v)
 		}
 	}
 
@@ -647,38 +754,9 @@ func (e *Encoder) encodeMapUintFast(v reflect.Value, valueEncoder encoderFunc) e
 func (e *Encoder) encodeStructFast(v reflect.Value) error {
 	addrValue, basePtr, keep := ensureAddressableStruct(v)
 	info := getEncoderStructInfo(addrValue.Type())
-	var startLen int
-	if e.Buf != nil {
-		estimate := int(atomic.LoadUint32(&info.sizeHint))
-		if estimate < 16 {
-			estimate = 16
-		}
-		e.Buf.Grow(estimate)
-		startLen = e.Buf.Len()
-	}
-	count := countStructFieldsPtr(info, basePtr)
-
-	if err := e.WriteByte(0x03); err != nil {
-		if keep != nil {
-			runtime.KeepAlive(keep)
-		}
-		return err
-	}
-
-	if err := e.WriteCompressedUint(uint64(count)); err != nil {
-		if keep != nil {
-			runtime.KeepAlive(keep)
-		}
-		return err
-	}
-
-	err := writeStructFieldsPtr(e, info, basePtr)
+	err := e.encodeStructPtr(info, basePtr)
 	if keep != nil {
 		runtime.KeepAlive(keep)
-	}
-	if err == nil && e.Buf != nil {
-		actual := e.Buf.Len() - startLen
-		updateStructSizeHint(info, actual)
 	}
 	return err
 }
@@ -705,6 +783,43 @@ func countStructFieldsPtr(info *encoderStructInfo, base unsafe.Pointer) int {
 	return count
 }
 
+func countStructFieldsWithMask(info *encoderStructInfo, base unsafe.Pointer, scratch []byte) (int, []byte, bool) {
+	count := info.staticCount
+	if len(info.omitEmpty) == 0 {
+		return count, nil, false
+	}
+
+	bitLen := (len(info.fields) + 7) >> 3
+	if bitLen <= 0 {
+		return count, nil, false
+	}
+
+	if bitLen <= len(scratch) {
+		mask := scratch[:bitLen]
+		for i := 0; i < bitLen; i++ {
+			mask[i] = 0
+		}
+		for _, idx := range info.omitEmpty {
+			field := &info.fields[idx]
+			fieldPtr := unsafe.Add(base, field.offset)
+			if !isStructFieldEmpty(field, fieldPtr) {
+				count++
+				mask[idx>>3] |= 1 << (uint(idx) & 7)
+			}
+		}
+		return count, mask, true
+	}
+
+	for _, idx := range info.omitEmpty {
+		field := &info.fields[idx]
+		fieldPtr := unsafe.Add(base, field.offset)
+		if !isStructFieldEmpty(field, fieldPtr) {
+			count++
+		}
+	}
+	return count, nil, false
+}
+
 func writeStructFields(e *Encoder, v reflect.Value, info *encoderStructInfo) error {
 	addrValue, basePtr, keep := ensureAddressableStruct(v)
 	_ = addrValue
@@ -722,6 +837,43 @@ func writeStructFieldsPtr(e *Encoder, info *encoderStructInfo, base unsafe.Point
 	return writeStructFieldsPtrGeneric(e, info, base)
 }
 
+func (e *Encoder) encodeStructPtr(info *encoderStructInfo, base unsafe.Pointer) error {
+	if e.Buf == nil {
+		if err := e.WriteByte(0x03); err != nil {
+			return err
+		}
+		count := countStructFieldsPtr(info, base)
+		if err := e.WriteCompressedUint(uint64(count)); err != nil {
+			return err
+		}
+		return writeStructFieldsPtrGeneric(e, info, base)
+	}
+
+	estimate := int(atomic.LoadUint32(&info.sizeHint))
+	if estimate < 16 {
+		estimate = 16
+	}
+	e.Buf.Grow(estimate)
+	startLen := e.Buf.Len()
+
+	if err := e.WriteByte(0x03); err != nil {
+		return err
+	}
+
+	count, mask, useMask := countStructFieldsWithMask(info, base, e.batchBuf[:])
+	if err := e.WriteCompressedUint(uint64(count)); err != nil {
+		return err
+	}
+
+	if err := e.writeStructFieldsBuffered(info, base, mask, useMask); err != nil {
+		return err
+	}
+
+	actual := e.Buf.Len() - startLen
+	updateStructSizeHint(info, actual)
+	return nil
+}
+
 func writeStructFieldsPtrGeneric(e *Encoder, info *encoderStructInfo, base unsafe.Pointer) error {
 	for i := range info.fields {
 		field := &info.fields[i]
@@ -734,6 +886,12 @@ func writeStructFieldsPtrGeneric(e *Encoder, info *encoderStructInfo, base unsaf
 		if err := e.WriteBytes(field.key); err != nil {
 			return err
 		}
+		if field.sliceEncoder != nil && field.kind == reflect.Slice {
+			if err := field.sliceEncoder(e, fieldPtr); err != nil {
+				return err
+			}
+			continue
+		}
 		if err := encodeStructFieldValue(e, field, fieldPtr); err != nil {
 			return err
 		}
@@ -742,13 +900,23 @@ func writeStructFieldsPtrGeneric(e *Encoder, info *encoderStructInfo, base unsaf
 }
 
 func writeStructFieldsPtrBuffered(e *Encoder, info *encoderStructInfo, base unsafe.Pointer) error {
+	return e.writeStructFieldsBuffered(info, base, nil, false)
+}
+
+func (e *Encoder) writeStructFieldsBuffered(info *encoderStructInfo, base unsafe.Pointer, mask []byte, useMask bool) error {
 	buf := e.Buf.data
 	for i := range info.fields {
 		field := &info.fields[i]
 		fieldPtr := unsafe.Add(base, field.offset)
 
-		if field.omitEmpty && isStructFieldEmpty(field, fieldPtr) {
-			continue
+		if field.omitEmpty {
+			if useMask {
+				if (mask[i>>3] & (1 << (uint(i) & 7))) == 0 {
+					continue
+				}
+			} else if isStructFieldEmpty(field, fieldPtr) {
+				continue
+			}
 		}
 
 		buf = append(buf, field.key...)
@@ -784,6 +952,21 @@ func writeStructFieldsPtrBuffered(e *Encoder, info *encoderStructInfo, base unsa
 			buf = appendEncodedFloat64(buf, *(*float64)(fieldPtr))
 		case reflect.String:
 			buf = appendEncodedString(buf, *(*string)(fieldPtr))
+		case reflect.Slice:
+			if field.sliceEncoder != nil {
+				e.Buf.data = buf
+				if err := field.sliceEncoder(e, fieldPtr); err != nil {
+					return err
+				}
+				buf = e.Buf.data
+			} else {
+				e.Buf.data = buf
+				if err := encodeStructFieldValue(e, field, fieldPtr); err != nil {
+					return err
+				}
+				buf = e.Buf.data
+			}
+			continue
 		default:
 			e.Buf.data = buf
 			if err := encodeStructFieldValue(e, field, fieldPtr); err != nil {
@@ -920,23 +1103,20 @@ func encodeStructFieldValue(e *Encoder, field *encoderStructField, ptr unsafe.Po
 // encodeStringTypedArray encodes a string slice as typed array.
 // Header: type=4, group=3 (bool/string), string flag=1
 func (e *Encoder) encodeStringTypedArray(v reflect.Value) error {
-	length := v.Len()
+	return e.encodeStringSliceDirect(v.Interface().([]string))
+}
 
-	// Typed array header: type=4, group=3, string flag
-	// Bits 0-2: 4 (typed array)
-	// Bits 3-4: 3 (bool/string group)
-	// Bit 5: 1 (string flag)
-	header := byte(0x04 | (3 << 3) | (1 << 5)) // 0x7C
+func (e *Encoder) encodeStringSliceDirect(slice []string) error {
+	header := byte(0x04 | (3 << 3) | (1 << 5)) // typed array, string group
 	if err := e.WriteByte(header); err != nil {
 		return err
 	}
 
-	if err := e.WriteCompressedUint(uint64(length)); err != nil {
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
 		return err
 	}
 
-	for i := 0; i < length; i++ {
-		s := v.Index(i).String()
+	for _, s := range slice {
 		if err := e.WriteCompressedUint(uint64(len(s))); err != nil {
 			return err
 		}
@@ -948,33 +1128,26 @@ func (e *Encoder) encodeStringTypedArray(v reflect.Value) error {
 	return nil
 }
 
-// encodeBoolTypedArray encodes a bool slice as typed array (bitpacked).
-// Header: type=4, group=3 (bool/string), string flag=0
-func (e *Encoder) encodeBoolTypedArray(v reflect.Value) error {
-	length := v.Len()
-
-	// Typed array header: type=4, group=3, bool flag=0
-	header := byte(0x04 | (3 << 3)) // 0x1C
+func (e *Encoder) encodeBoolSliceDirect(slice []bool) error {
+	header := byte(0x04 | (3 << 3)) // typed array, bool/string group, bool flag
 	if err := e.WriteByte(header); err != nil {
 		return err
 	}
 
-	if err := e.WriteCompressedUint(uint64(length)); err != nil {
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
 		return err
 	}
 
-	if length == 0 {
+	if len(slice) == 0 {
 		return nil
 	}
 
-	slice := v.Interface().([]bool)
-	payload := (length + 7) / 8
 	if e.Buf != nil {
 		buf := e.Buf.data
 		idx := 0
-		for idx < length {
+		for idx < len(slice) {
 			var b byte
-			for bit := 0; bit < 8 && idx < length; bit++ {
+			for bit := 0; bit < 8 && idx < len(slice); bit++ {
 				if slice[idx] {
 					b |= 1 << uint(bit)
 				}
@@ -987,9 +1160,10 @@ func (e *Encoder) encodeBoolTypedArray(v reflect.Value) error {
 	}
 
 	idx := 0
+	payload := (len(slice) + 7) / 8
 	for i := 0; i < payload; i++ {
 		var b byte
-		for bit := 0; bit < 8 && idx < length; bit++ {
+		for bit := 0; bit < 8 && idx < len(slice); bit++ {
 			if slice[idx] {
 				b |= 1 << uint(bit)
 			}
@@ -1003,26 +1177,20 @@ func (e *Encoder) encodeBoolTypedArray(v reflect.Value) error {
 	return nil
 }
 
-// encodeInt32TypedArray encodes an int32 slice as typed array.
-// Header: type=4, group=1 (signed), byte count=4
-func (e *Encoder) encodeInt32TypedArray(v reflect.Value) error {
-	length := v.Len()
-
-	// Typed array header: type=4, group=1 (signed), byteCount=2 (means 4 bytes)
-	header := byte(0x04 | (1 << 3) | (2 << 5)) // 0x4C
+func (e *Encoder) encodeInt32SliceDirect(slice []int32) error {
+	header := byte(0x04 | (1 << 3) | (2 << 5)) // typed array, signed group, 4 bytes
 	if err := e.WriteByte(header); err != nil {
 		return err
 	}
 
-	if err := e.WriteCompressedUint(uint64(length)); err != nil {
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
 		return err
 	}
 
-	if length == 0 {
+	if len(slice) == 0 {
 		return nil
 	}
 
-	slice := v.Interface().([]int32)
 	if e.Buf != nil {
 		buf := e.Buf.data
 		for _, val := range slice {
@@ -1044,26 +1212,20 @@ func (e *Encoder) encodeInt32TypedArray(v reflect.Value) error {
 	return nil
 }
 
-// encodeUint16TypedArray encodes a uint16 slice as typed array.
-// Header: type=4, group=2 (unsigned), byte count=2
-func (e *Encoder) encodeUint16TypedArray(v reflect.Value) error {
-	length := v.Len()
-
-	// Typed array header: type=4, group=2 (unsigned), byteCount=1 (means 2 bytes)
-	header := byte(0x04 | (2 << 3) | (1 << 5)) // 0x34
+func (e *Encoder) encodeUint16SliceDirect(slice []uint16) error {
+	header := byte(0x04 | (2 << 3) | (1 << 5)) // typed array, unsigned group, 2 bytes
 	if err := e.WriteByte(header); err != nil {
 		return err
 	}
 
-	if err := e.WriteCompressedUint(uint64(length)); err != nil {
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
 		return err
 	}
 
-	if length == 0 {
+	if len(slice) == 0 {
 		return nil
 	}
 
-	slice := v.Interface().([]uint16)
 	if e.Buf != nil {
 		buf := e.Buf.data
 		for _, val := range slice {
@@ -1081,6 +1243,328 @@ func (e *Encoder) encodeUint16TypedArray(v reflect.Value) error {
 	}
 
 	return nil
+}
+
+func (e *Encoder) encodeFloat32SliceDirect(slice []float32) error {
+	header := byte(0x04 | (0 << 3) | (2 << 5)) // typed array, float group, 4 bytes
+	if err := e.WriteByte(header); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+
+	if len(slice) == 0 {
+		return nil
+	}
+
+	if e.Buf != nil {
+		buf := e.Buf.data
+		for _, val := range slice {
+			bits := math.Float32bits(val)
+			buf = append(buf, byte(bits), byte(bits>>8), byte(bits>>16), byte(bits>>24))
+		}
+		e.Buf.data = buf
+		return nil
+	}
+
+	for _, val := range slice {
+		bits := math.Float32bits(val)
+		binary.LittleEndian.PutUint32(e.uintScratch[:4], bits)
+		if err := e.WriteBytes(e.uintScratch[:4]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *Encoder) encodeInt8SliceDirect(slice []int8) error {
+	header := byte(0x04 | (1 << 3)) // typed array, signed group, 1 byte
+	if err := e.WriteByte(header); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+
+	if len(slice) == 0 {
+		return nil
+	}
+
+	if e.Buf != nil {
+		buf := e.Buf.data
+		for _, val := range slice {
+			buf = append(buf, byte(val))
+		}
+		e.Buf.data = buf
+		return nil
+	}
+
+	for _, val := range slice {
+		if err := e.WriteByte(byte(val)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *Encoder) encodeInt16SliceDirect(slice []int16) error {
+	header := byte(0x04 | (1 << 3) | (1 << 5)) // typed array, signed group, 2 bytes
+	if err := e.WriteByte(header); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+
+	if len(slice) == 0 {
+		return nil
+	}
+
+	if e.Buf != nil {
+		buf := e.Buf.data
+		for _, val := range slice {
+			u := uint16(val)
+			buf = append(buf, byte(u), byte(u>>8))
+		}
+		e.Buf.data = buf
+		return nil
+	}
+
+	for _, val := range slice {
+		u := uint16(val)
+		binary.LittleEndian.PutUint16(e.uintScratch[:2], u)
+		if err := e.WriteBytes(e.uintScratch[:2]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *Encoder) encodeInt64SliceDirect(slice []int64) error {
+	header := byte(0x04 | (1 << 3) | (3 << 5)) // typed array, signed group, 8 bytes
+	if err := e.WriteByte(header); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+
+	if len(slice) == 0 {
+		return nil
+	}
+
+	if e.Buf != nil {
+		buf := e.Buf.data
+		for _, val := range slice {
+			u := uint64(val)
+			buf = append(buf,
+				byte(u), byte(u>>8), byte(u>>16), byte(u>>24),
+				byte(u>>32), byte(u>>40), byte(u>>48), byte(u>>56),
+			)
+		}
+		e.Buf.data = buf
+		return nil
+	}
+
+	for _, val := range slice {
+		binary.LittleEndian.PutUint64(e.uintScratch[:8], uint64(val))
+		if err := e.WriteBytes(e.uintScratch[:8]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *Encoder) encodeUint8SliceDirect(slice []uint8) error {
+	header := byte(0x04 | (2 << 3)) // typed array, unsigned group, 1 byte
+	if err := e.WriteByte(header); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+
+	if len(slice) == 0 {
+		return nil
+	}
+
+	if e.Buf != nil {
+		e.Buf.data = append(e.Buf.data, slice...)
+		return nil
+	}
+
+	return e.WriteBytes(slice)
+}
+
+func (e *Encoder) encodeUint32SliceDirect(slice []uint32) error {
+	header := byte(0x04 | (2 << 3) | (2 << 5)) // typed array, unsigned group, 4 bytes
+	if err := e.WriteByte(header); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+
+	if len(slice) == 0 {
+		return nil
+	}
+
+	if e.Buf != nil {
+		buf := e.Buf.data
+		for _, val := range slice {
+			buf = append(buf, byte(val), byte(val>>8), byte(val>>16), byte(val>>24))
+		}
+		e.Buf.data = buf
+		return nil
+	}
+
+	for _, val := range slice {
+		binary.LittleEndian.PutUint32(e.uintScratch[:4], val)
+		if err := e.WriteBytes(e.uintScratch[:4]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *Encoder) encodeUint64SliceDirect(slice []uint64) error {
+	header := byte(0x04 | (2 << 3) | (3 << 5)) // typed array, unsigned group, 8 bytes
+	if err := e.WriteByte(header); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+
+	if len(slice) == 0 {
+		return nil
+	}
+
+	if e.Buf != nil {
+		buf := e.Buf.data
+		for _, val := range slice {
+			buf = append(buf,
+				byte(val), byte(val>>8), byte(val>>16), byte(val>>24),
+				byte(val>>32), byte(val>>40), byte(val>>48), byte(val>>56),
+			)
+		}
+		e.Buf.data = buf
+		return nil
+	}
+
+	for _, val := range slice {
+		binary.LittleEndian.PutUint64(e.uintScratch[:8], val)
+		if err := e.WriteBytes(e.uintScratch[:8]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *Encoder) encodeFloat64SliceDirect(slice []float64) error {
+	header := byte(0x04 | (0 << 3) | (3 << 5)) // typed array, float group, 8 bytes
+	if err := e.WriteByte(header); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+
+	if len(slice) == 0 {
+		return nil
+	}
+
+	if e.Buf != nil {
+		buf := e.Buf.data
+		for _, val := range slice {
+			bits := math.Float64bits(val)
+			buf = append(buf,
+				byte(bits), byte(bits>>8), byte(bits>>16), byte(bits>>24),
+				byte(bits>>32), byte(bits>>40), byte(bits>>48), byte(bits>>56),
+			)
+		}
+		e.Buf.data = buf
+		return nil
+	}
+
+	for _, val := range slice {
+		bits := math.Float64bits(val)
+		binary.LittleEndian.PutUint64(e.uintScratch[:8], bits)
+		if err := e.WriteBytes(e.uintScratch[:8]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// encodeBoolTypedArray encodes a bool slice as typed array (bitpacked).
+// Header: type=4, group=3 (bool/string), string flag=0
+func (e *Encoder) encodeBoolTypedArray(v reflect.Value) error {
+	return e.encodeBoolSliceDirect(v.Interface().([]bool))
+}
+
+// encodeInt8TypedArray encodes an int8 slice as typed array.
+// Header: type=4, group=1 (signed), byte count=1
+func (e *Encoder) encodeInt8TypedArray(v reflect.Value) error {
+	return e.encodeInt8SliceDirect(v.Interface().([]int8))
+}
+
+// encodeInt16TypedArray encodes an int16 slice as typed array.
+// Header: type=4, group=1 (signed), byte count=2
+func (e *Encoder) encodeInt16TypedArray(v reflect.Value) error {
+	return e.encodeInt16SliceDirect(v.Interface().([]int16))
+}
+
+// encodeInt32TypedArray encodes an int32 slice as typed array.
+// Header: type=4, group=1 (signed), byte count=4
+func (e *Encoder) encodeInt32TypedArray(v reflect.Value) error {
+	return e.encodeInt32SliceDirect(v.Interface().([]int32))
+}
+
+// encodeInt64TypedArray encodes an int64 slice as typed array.
+// Header: type=4, group=1 (signed), byte count=8
+func (e *Encoder) encodeInt64TypedArray(v reflect.Value) error {
+	return e.encodeInt64SliceDirect(v.Interface().([]int64))
+}
+
+// encodeUint8TypedArray encodes a uint8 slice as typed array.
+// Header: type=4, group=2 (unsigned), byte count=1
+func (e *Encoder) encodeUint8TypedArray(v reflect.Value) error {
+	return e.encodeUint8SliceDirect(v.Interface().([]uint8))
+}
+
+// encodeUint16TypedArray encodes a uint16 slice as typed array.
+// Header: type=4, group=2 (unsigned), byte count=2
+func (e *Encoder) encodeUint16TypedArray(v reflect.Value) error {
+	return e.encodeUint16SliceDirect(v.Interface().([]uint16))
+}
+
+// encodeUint32TypedArray encodes a uint32 slice as typed array.
+// Header: type=4, group=2 (unsigned), byte count=4
+func (e *Encoder) encodeUint32TypedArray(v reflect.Value) error {
+	return e.encodeUint32SliceDirect(v.Interface().([]uint32))
+}
+
+// encodeUint64TypedArray encodes a uint64 slice as typed array.
+// Header: type=4, group=2 (unsigned), byte count=8
+func (e *Encoder) encodeUint64TypedArray(v reflect.Value) error {
+	return e.encodeUint64SliceDirect(v.Interface().([]uint64))
 }
 
 // Helper functions
@@ -1267,40 +1751,11 @@ func isEmptyValue(v reflect.Value) bool {
 // encodeFloat32TypedArray encodes a float32 slice as typed array.
 // Header: type=4, group=0 (float), byte count=4
 func (e *Encoder) encodeFloat32TypedArray(v reflect.Value) error {
-	length := v.Len()
+	return e.encodeFloat32SliceDirect(v.Interface().([]float32))
+}
 
-	// Typed array header: type=4, group=0 (float), byteCount=2 (means 4 bytes)
-	header := byte(0x04 | (0 << 3) | (2 << 5)) // 0x44
-	if err := e.WriteByte(header); err != nil {
-		return err
-	}
-
-	if err := e.WriteCompressedUint(uint64(length)); err != nil {
-		return err
-	}
-
-	if length == 0 {
-		return nil
-	}
-
-	slice := v.Interface().([]float32)
-	if e.Buf != nil {
-		buf := e.Buf.data
-		for _, val := range slice {
-			bits := math.Float32bits(val)
-			buf = append(buf, byte(bits), byte(bits>>8), byte(bits>>16), byte(bits>>24))
-		}
-		e.Buf.data = buf
-		return nil
-	}
-
-	for _, val := range slice {
-		bits := math.Float32bits(val)
-		binary.LittleEndian.PutUint32(e.uintScratch[:4], bits)
-		if err := e.WriteBytes(e.uintScratch[:4]); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// encodeFloat64TypedArray encodes a float64 slice as typed array.
+// Header: type=4, group=0 (float), byte count=8
+func (e *Encoder) encodeFloat64TypedArray(v reflect.Value) error {
+	return e.encodeFloat64SliceDirect(v.Interface().([]float64))
 }

@@ -1,3 +1,6 @@
 *.prof
 *.tmp
 *.out
+*.test
+benchmarks/*.json
+benchmarks/*.png

@@ -107,6 +107,11 @@ func getEncoderFunc(t reflect.Type) encoderFunc {
 		return storeEncoderFunc(t, build)
 	}
 
+	if t.Kind() == reflect.Struct {
+		build = buildStructEncoder(t)
+		return storeEncoderFunc(t, build)
+	}
+
 	// Kind-based encoder
 	build = encodeByKind
 	return storeEncoderFunc(t, build)
