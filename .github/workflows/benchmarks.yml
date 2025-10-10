@@ -154,6 +154,11 @@ jobs:
         with:
           path: artifacts
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Compose multi-platform summary
         shell: bash
         run: |
@@ -179,7 +184,7 @@ jobs:
                   return "n/a"
               return str(value)
 
-          for json_path in sorted(artifacts_root.glob("**/benchmarks/*/benchmark.json")):
+          for json_path in sorted(artifacts_root.glob("**/benchmark.json")):
               cpu_dir = json_path.parent
               slug = cpu_dir.name
               data = json.loads(json_path.read_text(encoding="utf-8"))
