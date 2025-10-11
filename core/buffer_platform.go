@@ -29,5 +29,3 @@ func init() {
 func getOptimalBufferCapacity() int {
 	return optimalBufferCapacity
 }
-
-

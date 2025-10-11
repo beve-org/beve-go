@@ -33,7 +33,7 @@ func (e *Encoder) encodeBool(b bool) error {
 		}
 		return e.Buf.WriteByte(0x08) // false
 	}
-	
+
 	// Fallback for io.Writer
 	if b {
 		return e.WriteByte(0x18)
