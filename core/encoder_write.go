@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/binary"
 	"io"
 	"unsafe"
 )
@@ -85,28 +84,6 @@ func (e *Encoder) WriteStringBytes(s string) error {
 	// Safe because data is immediately written and not retained
 	_, err := e.w.Write(stringToBytes(s))
 	return err
-}
-
-// writeIntBytes writes a signed integer as little-endian bytes.
-//
-// This is a convenience method for typed array encoding.
-// Uses scratch buffer to avoid allocation.
-//
-//go:inline
-func (e *Encoder) writeIntBytes(value int64, count int) error {
-	binary.LittleEndian.PutUint64(e.uintScratch[:], uint64(value))
-	return e.WriteBytes(e.uintScratch[:count])
-}
-
-// writeUintBytes writes an unsigned integer as little-endian bytes.
-//
-// This is a convenience method for typed array encoding.
-// Uses scratch buffer to avoid allocation.
-//
-//go:inline
-func (e *Encoder) writeUintBytes(value uint64, count int) error {
-	binary.LittleEndian.PutUint64(e.uintScratch[:], value)
-	return e.WriteBytes(e.uintScratch[:count])
 }
 
 // writeCompressedUint writes a variable-length encoded unsigned integer.

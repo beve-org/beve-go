@@ -986,9 +986,18 @@ func ensureAddressableStruct(v reflect.Value) (reflect.Value, unsafe.Pointer, in
 	if v.CanAddr() {
 		return v, unsafe.Pointer(v.UnsafeAddr()), nil
 	}
-	iface := v.Interface()
-	ptr := unsafe.Pointer((*[2]uintptr)(unsafe.Pointer(&iface))[1])
-	return reflect.ValueOf(iface), ptr, iface
+	// For non-addressable structs, we need to make a heap-allocated copy
+	// to ensure the pointer remains valid during field access
+	typ := v.Type()
+	ptr := reflect.New(typ)
+	ptr.Elem().Set(v)
+	
+	// Return the addressable copy
+	addrValue := ptr.Elem()
+	basePtr := unsafe.Pointer(addrValue.UnsafeAddr())
+	
+	// Keep the pointer alive by returning it as the keep-alive value
+	return addrValue, basePtr, ptr.Interface()
 }
 
 func isStructFieldEmpty(field *encoderStructField, ptr unsafe.Pointer) bool {

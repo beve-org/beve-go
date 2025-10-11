@@ -24,22 +24,20 @@ import (
 type Encoder struct {
 	// Phase 4: Optimized field layout for cache efficiency
 	// Hot path fields (first 64 bytes - one cache line):
-	
+
 	// Most frequently accessed fields (pointers: 8 bytes each)
 	Buf *Buffer   // Pre-allocated buffer (pooled) - exported for backward compat
 	w   io.Writer // Target writer (may be nil if using Buf)
-	
-	// High-frequency scratch buffers (40 bytes total)
-	uintScratch   [9]byte  // Integer encoding: 1 byte header + 8 bytes max value
-	floatBuf      [9]byte  // Float encoding: 1 byte header + 8 bytes IEEE 754
-	intBuf        [10]byte // Int encoding: 1 byte header + 9 bytes varint
-	varintScratch [5]byte  // Varint encoding
-	stringLenBuf  [5]byte  // String length encoding
-	single        [1]byte  // Single byte writes
-	batchLen      int      // Current batch length (8 bytes on 64-bit)
-	
-	// = 16 (pointers) + 40 (buffers) + 8 (int) = 64 bytes (one cache line)
-	
+
+	// High-frequency scratch buffers (24 bytes total)
+	uintScratch   [9]byte // Integer encoding: 1 byte header + 8 bytes max value
+	floatBuf      [9]byte // Float encoding: 1 byte header + 8 bytes IEEE 754
+	varintScratch [5]byte // Varint encoding
+	single        [1]byte // Single byte writes
+	batchLen      int     // Current batch length (8 bytes on 64-bit)
+
+	// = 16 (pointers) + 24 (buffers) + 8 (int) = 48 bytes (fits in one cache line)
+
 	// Cold path (rarely accessed, second cache line):
 	batchBuf [256]byte // Batch buffer for small writes (cold path)
 }
