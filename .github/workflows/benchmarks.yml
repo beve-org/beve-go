@@ -221,7 +221,26 @@ jobs:
                       order.append(key)
                   grouped[key].append(entry)
 
-              detail_lines.extend([f"## {cpu_name} — {os_name}", "", "| Scenario | Codec | Operation | ns/op | B/op | allocs/op |", "|----------|-------|-----------|-------|------|-----------|"])
+              # Add header
+              detail_lines.extend([f"## {cpu_name} — {os_name}", ""])
+              
+              # Add chart image first (visual representation)
+              chart_path = f"benchmarks/{slug}/benchmark.png"
+              detail_lines.extend([
+                  f"![Benchmark Chart]({chart_path})",
+                  "",
+                  "_Performance visualization: lower is better. Chart shows relative performance across different codecs and scenarios._",
+                  ""
+              ])
+              
+              # Then add detailed table
+              detail_lines.extend([
+                  "### Detailed Results",
+                  "",
+                  "| Scenario | Codec | Operation | ns/op | B/op | allocs/op |",
+                  "|----------|-------|-----------|-------|------|-----------|"
+              ])
+              
               for key in order:
                   scenario, operation = key
                   entries = sorted(
