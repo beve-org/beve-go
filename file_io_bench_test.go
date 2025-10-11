@@ -238,6 +238,8 @@ func BenchmarkRoundTrip_CBOR(b *testing.B) {
 }
 
 // ==================== STREAMING BENCHMARKS ====================
+// Note: These test file I/O + encoding together. For pure streaming performance,
+// see stream_bench_test.go which uses in-memory buffers.
 
 func BenchmarkStream_BEVE(b *testing.B) {
 	data := generateComplexData(10, 20)
@@ -248,8 +250,12 @@ func BenchmarkStream_BEVE(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		filePath := filepath.Join(tmpDir, "stream.beve")
 		f, _ := os.Create(filePath)
-		enc := NewEncoder(f)
-		_, _ = enc.Encode(data)
+
+		// Use StreamEncoder for better performance
+		stream := NewStreamEncoder(f)
+		_ = stream.Encode(data)
+		_ = stream.Close()
+
 		f.Close()
 	}
 }

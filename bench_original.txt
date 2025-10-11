@@ -1,8 +1,0 @@
-goos: darwin
-goarch: arm64
-pkg: github.com/beve-org/beve-go
-cpu: Apple M2 Max
-BenchmarkSmallStruct_BEVE_Marshal-12            	   10000	      1153 ns/op	    2845 B/op	       2 allocs/op
-BenchmarkSmallStruct_BEVE_MarshalZeroCopy-12    	   10000	       697.4 ns/op	     145 B/op	       1 allocs/op
-PASS
-ok  	github.com/beve-org/beve-go	0.332s

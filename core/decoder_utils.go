@@ -2,12 +2,20 @@ package core
 
 import (
 	"reflect"
+	"time"
 )
 
 // decoder_utils.go - Utility functions for decoder
 
 // setIntValue writes a signed integer into the destination reflect.Value.
 func setIntValue(v reflect.Value, value int64) error {
+	// Special case: time.Time (stored as int64 Unix nanos)
+	if v.Type().PkgPath() == "time" && v.Type().Name() == "Time" {
+		t := time.Unix(0, value)
+		v.Set(reflect.ValueOf(t))
+		return nil
+	}
+
 	switch v.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		v.SetInt(value)

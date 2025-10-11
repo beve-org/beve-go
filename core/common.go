@@ -68,6 +68,17 @@ func getEncoderFunc(t reflect.Type) encoderFunc {
 	// Determine the encoder function based on type
 	var build encoderFunc
 
+	// Check for time.Time (encode as int64 Unix nanos)
+	if t.PkgPath() == "time" && t.Name() == "Time" {
+		build = func(e *Encoder, v reflect.Value) error {
+			// Get time.Time value and convert to Unix nanos
+			t := v.Interface().(interface{ UnixNano() int64 })
+			nanos := t.UnixNano()
+			return encodeByKind(e, reflect.ValueOf(nanos))
+		}
+		return storeEncoderFunc(t, build)
+	}
+
 	// Check for RawMessage
 	if isRawMessageType(t) {
 		build = func(e *Encoder, v reflect.Value) error {

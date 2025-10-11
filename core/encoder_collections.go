@@ -991,11 +991,11 @@ func ensureAddressableStruct(v reflect.Value) (reflect.Value, unsafe.Pointer, in
 	typ := v.Type()
 	ptr := reflect.New(typ)
 	ptr.Elem().Set(v)
-	
+
 	// Return the addressable copy
 	addrValue := ptr.Elem()
 	basePtr := unsafe.Pointer(addrValue.UnsafeAddr())
-	
+
 	// Keep the pointer alive by returning it as the keep-alive value
 	return addrValue, basePtr, ptr.Interface()
 }

@@ -6,7 +6,15 @@ package core
 import (
 	"reflect"
 	"sync"
+	"time"
 )
+
+// timeFromUnixNano converts Unix nanoseconds to time.Time.
+//
+//go:inline
+func timeFromUnixNano(nanos int64) time.Time {
+	return time.Unix(0, nanos)
+}
 
 // Decoder handles the decoding of BEVE format to values.
 //
@@ -94,6 +102,22 @@ func (d *Decoder) Decode(v reflect.Value) error {
 			}
 			return um.UnmarshalBEVE(raw)
 		}
+	}
+
+	// Special case: time.Time (decode from int64 Unix nanos)
+	if v.Type().PkgPath() == "time" && v.Type().Name() == "Time" {
+		// Decode as int64 (Unix nanoseconds)
+		var nanos int64
+		nanosVal := reflect.ValueOf(&nanos).Elem()
+		d.Pos = start // Reset position to read header again
+		header, _ = d.ReadByte()
+		if err := d.DecodeNumber(nanosVal, header); err != nil {
+			return err
+		}
+		// Convert int64 to time.Time
+		t := timeFromUnixNano(nanos)
+		v.Set(reflect.ValueOf(t))
+		return nil
 	}
 
 	// Dispatch based on type bits (bits 0-2)
