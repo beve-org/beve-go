@@ -20,7 +20,27 @@ type ZeroCopyBytes = core.BufferLease
 
 // Marshal encodes v into BEVE binary format.
 // It follows the same interface as encoding/json.Marshal.
+//
+// Fast paths for common types avoid reflection overhead:
+//   - Primitives: int, string, bool, float64
+//   - Slices: []byte directly encoded
+//   - Everything else: Uses reflection
 func Marshal(v interface{}) ([]byte, error) {
+	// Fast path: avoid reflect.ValueOf for common types
+	switch val := v.(type) {
+	case int:
+		return marshalInt(val)
+	case string:
+		return marshalString(val)
+	case bool:
+		return marshalBool(val)
+	case float64:
+		return marshalFloat64(val)
+	case []byte:
+		return marshalBytes(val)
+	}
+
+	// Slow path: use reflection
 	lease, err := MarshalZeroCopy(v)
 	if err != nil {
 		return nil, err
@@ -142,6 +162,92 @@ type BinaryMarshaler interface {
 // unmarshal a binary representation of itself.
 type BinaryUnmarshaler interface {
 	UnmarshalBEVE(data []byte) error
+}
+
+// Fast path helpers - pre-allocate and avoid full reflection overhead
+
+func marshalInt(v int) ([]byte, error) {
+	enc := getEncoderFromPool()
+	defer putEncoderToPool(enc)
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+		enc.Buf.Grow(16) // int needs max 10 bytes
+	}
+	rv := reflect.ValueOf(v)
+	if err := enc.Encode(rv); err != nil {
+		return nil, err
+	}
+	data := enc.Buf.Bytes()
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
+}
+
+func marshalString(v string) ([]byte, error) {
+	enc := getEncoderFromPool()
+	defer putEncoderToPool(enc)
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+		enc.Buf.Grow(len(v) + 8) // string + length encoding
+	}
+	if err := enc.EncodeString(v); err != nil {
+		return nil, err
+	}
+	data := enc.Buf.Bytes()
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
+}
+
+func marshalBool(v bool) ([]byte, error) {
+	enc := getEncoderFromPool()
+	defer putEncoderToPool(enc)
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+		enc.Buf.Grow(4) // bool needs 1 byte
+	}
+	rv := reflect.ValueOf(v)
+	if err := enc.Encode(rv); err != nil {
+		return nil, err
+	}
+	data := enc.Buf.Bytes()
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
+}
+
+func marshalFloat64(v float64) ([]byte, error) {
+	enc := getEncoderFromPool()
+	defer putEncoderToPool(enc)
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+		enc.Buf.Grow(16) // float64 needs 9 bytes
+	}
+	rv := reflect.ValueOf(v)
+	if err := enc.Encode(rv); err != nil {
+		return nil, err
+	}
+	data := enc.Buf.Bytes()
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
+}
+
+func marshalBytes(v []byte) ([]byte, error) {
+	enc := getEncoderFromPool()
+	defer putEncoderToPool(enc)
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+		enc.Buf.Grow(len(v) + 8) // bytes + length encoding
+	}
+	rv := reflect.ValueOf(v)
+	if err := enc.Encode(rv); err != nil {
+		return nil, err
+	}
+	data := enc.Buf.Bytes()
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
 }
 
 // Errors

@@ -87,45 +87,6 @@ func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w: w}
 }
 
-// estimateSize provides a size hint for pre-allocating buffers.
-//
-// This avoids multiple buffer reallocations during encoding, which is
-// particularly important on Windows where memory allocation is slower.
-//
-// Estimates are conservative (slight over-allocation) to minimize growth.
-//
-//go:inline
-func estimateSize(v reflect.Value) int {
-	switch v.Kind() {
-	case reflect.Struct:
-		// Small struct: 256 bytes covers most cases
-		// Large struct: 512 bytes prevents initial reallocation
-		numField := v.NumField()
-		if numField <= 5 {
-			return 256
-		}
-		return 512
-	case reflect.Slice, reflect.Array:
-		len := v.Len()
-		if len == 0 {
-			return 16
-		}
-		// Estimate 8 bytes per element + overhead
-		return len*8 + 32
-	case reflect.Map:
-		len := v.Len()
-		if len == 0 {
-			return 16
-		}
-		// Estimate 16 bytes per key-value pair + overhead
-		return len*16 + 32
-	case reflect.String:
-		return v.Len() + 8
-	default:
-		return 64
-	}
-}
-
 // encode is the main entry point for encoding a reflect.Value.
 //
 // This method dispatches to type-specific encoders based on reflection.
@@ -141,19 +102,9 @@ func estimateSize(v reflect.Value) int {
 //   - Type info is cached to avoid repeated interface checks
 //   - Primitive types use fast paths with unsafe extraction
 //   - Struct encoding uses cached field accessors
-//   - Buffer pre-growth based on size hints (Windows optimization)
 func (e *Encoder) Encode(v reflect.Value) error {
 	if !v.IsValid() {
 		return e.EncodeNull()
-	}
-
-	// Pre-grow buffer based on estimated size
-	// This significantly reduces allocations, especially on Windows
-	if e.Buf != nil {
-		hint := estimateSize(v)
-		if hint > 0 {
-			e.Buf.Grow(hint)
-		}
 	}
 
 	// Get cached encoder function for this type

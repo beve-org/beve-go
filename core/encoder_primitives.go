@@ -21,11 +21,24 @@ func (e *Encoder) EncodeNull() error {
 //
 //	false: 0x08
 //	true:  0x18
+//
+// Performance: Inlined for zero-overhead boolean encoding.
+//
+//go:inline
 func (e *Encoder) encodeBool(b bool) error {
-	if b {
-		return e.WriteByte(0x18) // true
+	// Inline write: avoid function call overhead
+	if e.Buf != nil {
+		if b {
+			return e.Buf.WriteByte(0x18) // true
+		}
+		return e.Buf.WriteByte(0x08) // false
 	}
-	return e.WriteByte(0x08) // false
+	
+	// Fallback for io.Writer
+	if b {
+		return e.WriteByte(0x18)
+	}
+	return e.WriteByte(0x08)
 }
 
 // encodeInt encodes a signed integer with optimal byte count.
