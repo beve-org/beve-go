@@ -77,7 +77,7 @@ func TestIntegration_E2E_WebAPI(t *testing.T) {
 		if len(decoded.Tags) != len(user.Tags) {
 			t.Errorf("Tags length mismatch: got %d, want %d", len(decoded.Tags), len(user.Tags))
 		}
-		
+
 		t.Log("✓ Marshal successful (unmarshal has known time.Time limitation)")
 	})
 
@@ -312,7 +312,7 @@ func TestIntegration_E2E_Cache(t *testing.T) {
 
 			t.Logf("✓ Retrieved %s", key)
 		}
-		
+
 		t.Log("✓ Cache marshal successful (unmarshal has known time.Time limitation)")
 	})
 }
