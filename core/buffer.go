@@ -159,7 +159,7 @@ func nextPowerOf2(n int) int {
 var bufferPool = sync.Pool{
 	New: func() interface{} {
 		return &Buffer{
-			data: make([]byte, 0, defaultBufferCapacity),
+			data: make([]byte, 0, getOptimalBufferCapacity()),
 		}
 	},
 }
@@ -170,9 +170,10 @@ func acquireBuffer(initialCapacity int) *Buffer {
 	buf := bufferPool.Get().(*Buffer)
 	buf.Reset()
 
+	optimalCap := getOptimalBufferCapacity()
 	target := initialCapacity
-	if target < defaultBufferCapacity {
-		target = defaultBufferCapacity
+	if target < optimalCap {
+		target = optimalCap
 	}
 
 	if target <= maxBufferPoolCapacity {
