@@ -1,0 +1,24 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go
+cpu: Apple M2 Max
+BenchmarkStreamEncoder_BEVE-12            	   10000	     12117 ns/op	   14764 B/op	     209 allocs/op
+BenchmarkStreamEncoder_JSON-12            	   10000	     13057 ns/op	   11383 B/op	     108 allocs/op
+BenchmarkStreamEncoder_SingleRecord/BEVE-12         	   10000	       269.4 ns/op	     544 B/op	       7 allocs/op
+BenchmarkStreamEncoder_SingleRecord/JSON-12         	   10000	       142.4 ns/op	     144 B/op	       3 allocs/op
+BenchmarkStreamEncoder_LargeRecords/BEVE-12         	   10000	    365938 ns/op	  422621 B/op	    2014 allocs/op
+BenchmarkStreamEncoder_LargeRecords/JSON-12         	   10000	    489023 ns/op	  550810 B/op	    6013 allocs/op
+BenchmarkStreamEncoder_BufferSizes/Ѐ-12             	   10000	     10593 ns/op	    9062 B/op	     206 allocs/op
+BenchmarkStreamEncoder_BufferSizes/က-12             	   10000	     10800 ns/op	   11113 B/op	     205 allocs/op
+BenchmarkStreamEncoder_BufferSizes/_-12             	   10000	     11214 ns/op	   15212 B/op	     205 allocs/op
+BenchmarkStreamEncoder_BufferSizes/䀀-12             	   10000	     12016 ns/op	   23411 B/op	     205 allocs/op
+BenchmarkStreamEncoder_BufferSizes/耀-12             	   10000	     14012 ns/op	   39812 B/op	     205 allocs/op
+BenchmarkStreamEncoder_Primitives/Integers-12       	   10000	      2571 ns/op	     624 B/op	       5 allocs/op
+BenchmarkStreamEncoder_Primitives/Strings-12        	   10000	      8916 ns/op	    5860 B/op	     108 allocs/op
+BenchmarkStreamEncoder_SingleInt-12                 	   10000	        40.80 ns/op	       0 B/op	       0 allocs/op
+BenchmarkStreamEncoder_SmallStruct-12               	   10000	        89.94 ns/op	      32 B/op	       1 allocs/op
+BenchmarkStreamEncoder_Batch100-12                  	   10000	      8727 ns/op	    3200 B/op	     200 allocs/op
+BenchmarkStreamEncoder_vs_Marshal/StreamEncoder-12  	   10000	        98.78 ns/op	      64 B/op	       2 allocs/op
+BenchmarkStreamEncoder_vs_Marshal/Marshal-12        	   10000	       119.5 ns/op	      88 B/op	       3 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go	9.956s
