@@ -10,6 +10,10 @@ import (
 	"unsafe"
 )
 
+// GetStructTag is a function pointer that returns the current struct tag name.
+// It's set by the parent package to allow dynamic configuration.
+var GetStructTag func() string
+
 // encoderStructField contains cached metadata for struct encoding.
 type encoderStructField struct {
 	omitEmpty    bool
@@ -84,7 +88,18 @@ func buildEncoderStructFieldsRecursive(t reflect.Type, baseOffset uintptr, flatt
 			continue
 		}
 
-		tag := field.Tag.Get("beve")
+		// Get configured struct tag name (defaults to "beve")
+		structTagName := "beve"
+		if GetStructTag != nil {
+			structTagName = GetStructTag()
+		}
+
+		// Try configured tag first, fallback to "json" if not found
+		tag := field.Tag.Get(structTagName)
+		if tag == "" && structTagName != "json" {
+			tag = field.Tag.Get("json")
+		}
+
 		if tag == "-" {
 			continue
 		}

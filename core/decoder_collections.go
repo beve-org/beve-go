@@ -437,7 +437,18 @@ func getStructInfo(t reflect.Type) *structInfo {
 
 		// Get field name (use tag if available)
 		fieldName := f.Name
-		tag := f.Tag.Get("beve")
+		// Get configured struct tag name (defaults to "beve")
+		structTagName := "beve"
+		if GetStructTag != nil {
+			structTagName = GetStructTag()
+		}
+
+		// Try configured tag first, fallback to "json" if not found
+		tag := f.Tag.Get(structTagName)
+		if tag == "" && structTagName != "json" {
+			tag = f.Tag.Get("json")
+		}
+
 		omitEmpty := false
 		inline := false
 
@@ -448,19 +459,6 @@ func getStructInfo(t reflect.Type) *structInfo {
 		// Parse tag options
 		if tag != "" {
 			parts := parseTag(tag)
-			if len(parts) > 0 && parts[0] != "" {
-				fieldName = parts[0]
-			}
-			for _, opt := range parts[1:] {
-				if opt == "omitempty" {
-					omitEmpty = true
-				} else if opt == "inline" {
-					inline = true
-				}
-			}
-		} else if jsonTag := f.Tag.Get("json"); jsonTag != "" && jsonTag != "-" {
-			// Fallback to json tag
-			parts := parseTag(jsonTag)
 			if len(parts) > 0 && parts[0] != "" {
 				fieldName = parts[0]
 			}
@@ -498,7 +496,20 @@ func getStructInfo(t reflect.Type) *structInfo {
 				}
 
 				nestedName := nestedField.Name
-				if nestedTag := nestedField.Tag.Get("beve"); nestedTag != "" && nestedTag != "-" {
+
+				// Get configured struct tag name for nested field
+				nestedStructTagName := "beve"
+				if GetStructTag != nil {
+					nestedStructTagName = GetStructTag()
+				}
+
+				// Try configured tag first, fallback to "json"
+				nestedTag := nestedField.Tag.Get(nestedStructTagName)
+				if nestedTag == "" && nestedStructTagName != "json" {
+					nestedTag = nestedField.Tag.Get("json")
+				}
+
+				if nestedTag != "" && nestedTag != "-" {
 					parts := parseTag(nestedTag)
 					if len(parts) > 0 && parts[0] != "" {
 						nestedName = parts[0]

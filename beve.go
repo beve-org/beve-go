@@ -16,6 +16,24 @@ import (
 // Version represents the BEVE specification version
 const Version = "1.2.0"
 
+// StructTag is the default struct tag name to use for field configuration.
+// Default is "beve", but can be changed to "json", "msgpack", or any other tag
+// for compatibility with existing codebases.
+//
+// Example:
+//
+//	beve.SetStructTag("json") // Use json tags instead of beve tags
+//
+// The library always falls back to "json" tags if the configured tag is not found.
+var StructTag = "beve"
+
+var structTagMu sync.RWMutex
+
+func init() {
+	// Set up the function pointer for core package to access StructTag
+	core.GetStructTag = GetStructTag
+}
+
 // ZeroCopyBytes represents a leased encoder buffer. Call Release to recycle it.
 type ZeroCopyBytes = core.BufferLease
 
@@ -349,6 +367,40 @@ func (e *InvalidUnmarshalError) Error() string {
 
 // UnsupportedError is an alias for core.UnsupportedError
 type UnsupportedError = core.UnsupportedError
+
+// SetStructTag changes the struct tag name used for field configuration.
+// Default is "beve". Common alternatives are "json", "msgpack", etc.
+//
+// This is useful for compatibility with existing codebases that already use
+// json tags. The library always falls back to "json" tags if the configured
+// tag is not found.
+//
+// Example:
+//
+//	beve.SetStructTag("json") // Use json tags
+//	data, _ := beve.Marshal(myStruct) // Will read json:"..." tags
+//
+// Note: Changing the tag name clears the encoder/decoder cache, so it's
+// recommended to set this once at application startup.
+func SetStructTag(tag string) {
+	if tag == "" {
+		tag = "beve" // Default
+	}
+	structTagMu.Lock()
+	StructTag = tag
+	structTagMu.Unlock()
+	
+	// Clear caches to force rebuilding with new tag
+	core.ClearEncoderCache()
+	core.ClearDecoderCache()
+}
+
+// GetStructTag returns the current struct tag name being used.
+func GetStructTag() string {
+	structTagMu.RLock()
+	defer structTagMu.RUnlock()
+	return StructTag
+}
 
 // Indent sets the indentation for pretty-printed output.
 // Currently not implemented as BEVE is binary.

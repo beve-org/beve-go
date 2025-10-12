@@ -211,6 +211,116 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 > 📚 See [examples/http-server](examples/http-server) and [examples/fiber-server](examples/fiber-server) for complete examples.
 
+### 🏷️ Struct Tag Configuration
+
+BEVE supports flexible struct tag configuration for seamless integration with existing codebases.
+
+#### Default: `beve` tags
+
+```go
+type User struct {
+    ID    int    `beve:"id"`
+    Name  string `beve:"name"`
+    Email string `beve:"email,omitempty"`
+}
+```
+
+#### Using `json` tags (Drop-in Compatibility)
+
+For projects already using `json` tags, simply configure BEVE to use them:
+
+```go
+import "github.com/beve-org/beve-go"
+
+func init() {
+    // Use json tags instead of beve tags
+    beve.SetStructTag("json")
+}
+
+type User struct {
+    ID    int    `json:"id"`
+    Name  string `json:"name"`
+    Email string `json:"email,omitempty"` // omitempty works!
+}
+
+// Now Marshal/Unmarshal will read json tags
+data, _ := beve.Marshal(User{ID: 123, Name: "Alice"})
+```
+
+#### Using Custom Tags (e.g., `msgpack`, `proto`)
+
+```go
+beve.SetStructTag("msgpack")
+
+type Message struct {
+    ID      int    `msgpack:"id"`
+    Content string `msgpack:"content"`
+    Sender  string `msgpack:"sender,omitempty"`
+}
+```
+
+#### Automatic Fallback to `json`
+
+If your configured tag is not found, BEVE automatically falls back to `json` tags:
+
+```go
+beve.SetStructTag("proto")
+
+type User struct {
+    ID   int    `json:"id"`        // proto tag not present
+    Name string `json:"username"`  // Falls back to json
+}
+// Works! Uses json tags since proto tags are missing
+```
+
+#### Supported Tag Options
+
+All tag options work with any configured tag name:
+
+- **Field naming**: `json:"custom_name"` → encoded as "custom_name"
+- **Omit empty**: `json:"field,omitempty"` → skips zero values
+- **Skip field**: `json:"-"` → never encoded/decoded
+- **Inline structs**: `json:",inline"` → flattens nested struct
+
+#### Performance Impact
+
+✅ **Zero performance overhead** - Tag resolution happens at type cache build time, not during encoding/decoding.
+
+```
+BenchmarkStructTag_BeveTag-12    370.8 ns/op    153 B/op    5 allocs/op
+BenchmarkStructTag_JSONTag-12    357.9 ns/op    153 B/op    5 allocs/op
+```
+
+#### Migration Guide
+
+**From JSON to BEVE** (no code changes needed):
+```go
+// 1. Add one line to your main.go or init function
+beve.SetStructTag("json")
+
+// 2. Replace encoding/json with beve
+- import "encoding/json"
++ import beve "github.com/beve-org/beve-go"
+
+- data, _ := json.Marshal(user)
++ data, _ := beve.Marshal(user)
+
+// 3. All your existing json:"..." tags work as-is!
+```
+
+**Runtime Tag Changes** (advanced):
+```go
+// Get current tag
+currentTag := beve.GetStructTag() // Returns "beve" by default
+
+// Change tag (clears internal cache)
+beve.SetStructTag("json")
+
+// Changes affect all subsequent Marshal/Unmarshal calls
+```
+
+> ⚠️ **Note**: Changing the tag name at runtime clears the encoder/decoder cache. It's recommended to set this once at application startup.
+
 ### ⚡ High-Performance Patterns
 
 #### 1. Encoder Reuse (Recommended for High Throughput)

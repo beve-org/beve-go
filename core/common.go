@@ -181,3 +181,19 @@ func encodeByKind(e *Encoder, v reflect.Value) error {
 		return &UnsupportedError{"unsupported type: " + v.Type().String()}
 	}
 }
+
+// ClearEncoderCache clears the encoder function cache.
+// This is useful when changing struct tag configuration.
+func ClearEncoderCache() {
+	encoderFuncCache.Range(func(key, value interface{}) bool {
+		encoderFuncCache.Delete(key)
+		return true
+	})
+}
+
+// ClearDecoderCache clears the decoder cache.
+// This is useful when changing struct tag configuration.
+func ClearDecoderCache() {
+	// Decoder doesn't have a separate cache yet, but we include this
+	// for future-proofing and API consistency.
+}
