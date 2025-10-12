@@ -19,21 +19,6 @@ func getByteSlice() *[]byte {
 	return byteSlicePool.Get().(*[]byte)
 }
 
-// putByteSlice returns a byte slice to the pool
-// The slice is reset to zero length but capacity is preserved
-func putByteSlice(b *[]byte) {
-	if b == nil {
-		return
-	}
-	// Don't pool slices that are too large (> 64KB)
-	// This prevents memory bloat
-	if cap(*b) > 65536 {
-		return
-	}
-	*b = (*b)[:0]
-	byteSlicePool.Put(b)
-}
-
 // growSlice ensures the slice has enough capacity and returns a slice of the desired length
 func growSlice(b *[]byte, n int) []byte {
 	if cap(*b) < n {
@@ -48,31 +33,5 @@ func growSlice(b *[]byte, n int) []byte {
 		return newSlice
 	}
 	*b = (*b)[:n]
-	return *b
-}
-
-// cloneSlice creates a copy of the byte slice
-// Uses pooled memory when possible
-func cloneSlice(src []byte) []byte {
-	if len(src) == 0 {
-		return nil
-	}
-	dst := getByteSlice()
-	result := growSlice(dst, len(src))
-	copy(result, src)
-	// Don't return to pool - caller owns this
-	return result
-}
-
-// appendToSlice appends data to a pooled slice and returns the result
-func appendToSlice(b *[]byte, data ...byte) []byte {
-	oldLen := len(*b)
-	newLen := oldLen + len(data)
-	if cap(*b) < newLen {
-		growSlice(b, newLen)
-	} else {
-		*b = (*b)[:newLen]
-	}
-	copy((*b)[oldLen:], data)
 	return *b
 }

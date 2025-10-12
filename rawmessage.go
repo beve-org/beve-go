@@ -1,17 +1,9 @@
 package beve
 
-import "reflect"
-
 // RawMessage is a raw encoded BEVE value.
 // It can be used with Marshal and Unmarshal to delay decoding or
 // precompute BEVE payloads.
 type RawMessage []byte
-
-var rawMessageType = reflect.TypeOf(RawMessage{})
-
-func isRawMessageType(t reflect.Type) bool {
-	return t == rawMessageType
-}
 
 // MarshalBEVE returns m as the raw BEVE payload.
 func (m RawMessage) MarshalBEVE() ([]byte, error) {

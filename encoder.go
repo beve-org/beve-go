@@ -1,8 +1,6 @@
 package beve
 
 import (
-	"io"
-
 	"github.com/beve-org/beve-go/core"
 )
 
@@ -10,7 +8,7 @@ import (
 // This provides backward compatibility during the migration to modular architecture
 type encoder = core.Encoder
 
-// Buffer is an alias for core.Buffer  
+// Buffer is an alias for core.Buffer
 // This provides backward compatibility during the migration to modular architecture
 type Buffer = core.Buffer
 
@@ -25,9 +23,4 @@ func getEncoderFromPool() *encoder {
 // putEncoderToPool returns an encoder to the pool for reuse
 func putEncoderToPool(enc *encoder) {
 	core.PutEncoderToPool(enc)
-}
-
-// newEncoder creates a new encoder writing to w
-func newEncoder(w io.Writer) *encoder {
-	return core.NewEncoder(w)
 }

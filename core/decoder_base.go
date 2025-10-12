@@ -79,37 +79,6 @@ func getStringSlice(length int) []string {
 	return slice
 }
 
-// putStringSlice returns a string slice to the pool.
-func putStringSlice(slice []string) {
-	if cap(slice) > 4096 {
-		return // Too large, let GC handle it
-	}
-
-	// Clear strings to allow GC
-	for i := range slice {
-		slice[i] = ""
-	}
-	slice = slice[:0]
-
-	var poolIdx int
-	switch cap(slice) {
-	case 16:
-		poolIdx = 0
-	case 64:
-		poolIdx = 1
-	case 256:
-		poolIdx = 2
-	case 1024:
-		poolIdx = 3
-	case 4096:
-		poolIdx = 4
-	default:
-		return // Not from our pool
-	}
-
-	stringSlicePools[poolIdx].Put(&slice)
-}
-
 // NewDecoder creates a new decoder for the given data.
 func NewDecoder(data []byte) *Decoder {
 	dec := decoderPool.Get().(*Decoder)
