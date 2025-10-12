@@ -98,18 +98,15 @@ func (e *Encoder) encodeMapStringString(mapInterface interface{}, mapLen int) er
 
 	m := mapInterface.(map[string]string)
 	for k, v := range m {
-		// Encode key
+		// Encode key (raw: length + bytes, no header for map keys)
 		if err := e.WriteCompressedUint(uint64(len(k))); err != nil {
 			return err
 		}
 		if err := e.WriteStringBytes(k); err != nil {
 			return err
 		}
-		// Encode value
-		if err := e.WriteCompressedUint(uint64(len(v))); err != nil {
-			return err
-		}
-		if err := e.WriteStringBytes(v); err != nil {
+		// Encode value (full BEVE encoding with header)
+		if err := e.EncodeString(v); err != nil {
 			return err
 		}
 	}

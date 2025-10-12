@@ -1247,69 +1247,101 @@ func (d *Decoder) decodeStringTypedArray(v reflect.Value, length int) error {
 		if v.Type().Elem().Kind() == reflect.String && v.CanAddr() {
 			slicePtr := (*[]string)(unsafe.Pointer(v.UnsafeAddr()))
 			slice := *slicePtr
-			if cap(slice) < length {
-				slice = make([]string, length)
+
+			// OPTIMIZATION: Use pooled slice to reduce allocations
+			needsPool := cap(slice) < length
+			if needsPool {
+				slice = getStringSlice(length)
 			} else {
 				slice = slice[:length]
 			}
+
+			// OPTIMIZATION: Direct loop without intermediate allocation
+			// Format is interleaved: [len1, bytes1, len2, bytes2, ...]
+			// ReadBytes already returns zero-copy slice from d.Data
 			for i := 0; i < length; i++ {
 				size, err := d.ReadCompressedUint()
 				if err != nil {
 					return err
 				}
-				data, err := d.ReadBytes(int(size))
-				if err != nil {
-					return err
+				if size > 0 {
+					data, err := d.ReadBytes(int(size))
+					if err != nil {
+						return err
+					}
+					slice[i] = bytesToString(data)
+				} else {
+					slice[i] = ""
 				}
-				slice[i] = bytesToString(data)
 			}
+
 			*slicePtr = slice
 			return nil
 		}
 		if err := EnsureSliceLength(v, length); err != nil {
 			return err
 		}
+
+		// Read strings directly (format is interleaved)
 		for i := 0; i < length; i++ {
 			size, err := d.ReadCompressedUint()
 			if err != nil {
 				return err
 			}
-			data, err := d.ReadBytes(int(size))
-			if err != nil {
-				return err
+			if size > 0 {
+				data, err := d.ReadBytes(int(size))
+				if err != nil {
+					return err
+				}
+				v.Index(i).SetString(bytesToString(data))
+			} else {
+				v.Index(i).SetString("")
 			}
-			v.Index(i).SetString(bytesToString(data))
 		}
 		return nil
 	case reflect.Array:
 		if v.Len() < length {
 			return &UnsupportedError{"array too small"}
 		}
+
+		// Read strings directly (format is interleaved)
 		for i := 0; i < length; i++ {
 			size, err := d.ReadCompressedUint()
 			if err != nil {
 				return err
 			}
-			data, err := d.ReadBytes(int(size))
-			if err != nil {
-				return err
+			if size > 0 {
+				data, err := d.ReadBytes(int(size))
+				if err != nil {
+					return err
+				}
+				v.Index(i).SetString(bytesToString(data))
+			} else {
+				v.Index(i).SetString("")
 			}
-			v.Index(i).SetString(bytesToString(data))
 		}
 		return nil
 	case reflect.Interface:
-		slice := make([]string, length)
+		// OPTIMIZATION: Use pooled slice
+		slice := getStringSlice(length)
+
+		// Read strings directly (format is interleaved)
 		for i := 0; i < length; i++ {
 			size, err := d.ReadCompressedUint()
 			if err != nil {
 				return err
 			}
-			data, err := d.ReadBytes(int(size))
-			if err != nil {
-				return err
+			if size > 0 {
+				data, err := d.ReadBytes(int(size))
+				if err != nil {
+					return err
+				}
+				slice[i] = bytesToString(data)
+			} else {
+				slice[i] = ""
 			}
-			slice[i] = bytesToString(data)
 		}
+
 		v.Set(reflect.ValueOf(slice))
 		return nil
 	default:

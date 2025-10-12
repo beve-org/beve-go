@@ -56,7 +56,7 @@ func (l *BufferLease) Release() {
 	if l == nil || l.buf == nil {
 		return
 	}
-	releaseBuffer(l.buf)
+	ReleaseBuffer(l.buf)
 	l.buf = nil
 	l.data = nil
 }
@@ -89,11 +89,10 @@ func (b *Buffer) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// WriteByte appends a single byte to the buffer.
-func (b *Buffer) WriteByte(c byte) error {
-	b.data = append(b.data, c)
-	return nil
-}
+// WriteByte is implemented in platform-specific files:
+//   - buffer_amd64.go (assembly optimized)
+//   - buffer_arm64.go (assembly optimized)
+//   - buffer_generic.go (pure Go fallback)
 
 // Grow ensures the buffer has capacity for at least n more bytes.
 //
@@ -156,6 +155,8 @@ func nextPowerOf2(n int) int {
 // Pool hygiene:
 //   - Buffers up to maxBufferPoolCapacity (1MB) are pooled (prevents bloat)
 //   - Buffers are reset before being returned to pool
+//
+//go:inline
 var bufferPool = sync.Pool{
 	New: func() interface{} {
 		return &Buffer{
@@ -164,9 +165,11 @@ var bufferPool = sync.Pool{
 	},
 }
 
-// acquireBuffer gets a buffer from the pool.
+// AcquireBuffer gets a buffer from the pool.
 // If initialCapacity is >0, ensures the buffer starts with that capacity.
-func acquireBuffer(initialCapacity int) *Buffer {
+//
+//go:inline
+func AcquireBuffer(initialCapacity int) *Buffer {
 	buf := bufferPool.Get().(*Buffer)
 	buf.Reset()
 
@@ -187,9 +190,11 @@ func acquireBuffer(initialCapacity int) *Buffer {
 	return buf
 }
 
-// releaseBuffer returns a buffer to the pool for reuse.
+// ReleaseBuffer returns a buffer to the pool for reuse.
 // Buffers up to maxBufferPoolCapacity (1MB) are pooled to enable reuse.
-func releaseBuffer(buf *Buffer) {
+//
+//go:inline
+func ReleaseBuffer(buf *Buffer) {
 	if buf == nil {
 		return
 	}
@@ -199,4 +204,11 @@ func releaseBuffer(buf *Buffer) {
 		bufferPool.Put(buf)
 		return
 	}
+}
+
+// Cap returns the capacity of the buffer's underlying slice.
+//
+//go:inline
+func (b *Buffer) Cap() int {
+	return cap(b.data)
 }

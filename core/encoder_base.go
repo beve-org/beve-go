@@ -52,15 +52,19 @@ type Encoder struct {
 // Hygiene:
 //   - Encoders retain buffers up to maxBufferPoolCapacity (1MB)
 //   - Encoders are reset before being returned to pool
+//
+//go:inline
 var encoderPool = sync.Pool{
 	New: func() interface{} {
 		return &Encoder{
-			Buf: acquireBuffer(getOptimalBufferCapacity()),
+			Buf: AcquireBuffer(getOptimalBufferCapacity()),
 		}
 	},
 }
 
 // GetEncoderFromPool acquires an encoder from the pool.
+//
+//go:inline
 func GetEncoderFromPool() *Encoder {
 	return encoderPool.Get().(*Encoder)
 }
@@ -69,6 +73,8 @@ func GetEncoderFromPool() *Encoder {
 //
 // Encoders keep buffers up to maxBufferPoolCapacity (1MB) so large payloads
 // benefit from pooling without unbounded memory growth.
+//
+//go:inline
 func PutEncoderToPool(enc *Encoder) {
 	// Reset state
 	enc.w = nil
@@ -77,12 +83,10 @@ func PutEncoderToPool(enc *Encoder) {
 	// Only pool encoders with reasonable buffer sizes
 	if enc.Buf != nil && cap(enc.Buf.data) <= maxBufferPoolCapacity {
 		encoderPool.Put(enc)
+		return
 	}
-	// Large encoders are discarded and will be GC'd
-}
-
-// NewEncoder creates a new encoder writing to w.
-//
+	// Large or nil buffer encoders are discarded and will be GC'd
+} // NewEncoder creates a new encoder writing to w.
 // For most use cases, prefer GetEncoderFromPool() instead.
 // This function is used when you need a specific io.Writer target.
 func NewEncoder(w io.Writer) *Encoder {
@@ -104,6 +108,8 @@ func NewEncoder(w io.Writer) *Encoder {
 //   - Type info is cached to avoid repeated interface checks
 //   - Primitive types use fast paths with unsafe extraction
 //   - Struct encoding uses cached field accessors
+//
+//go:inline
 func (e *Encoder) Encode(v reflect.Value) error {
 	if !v.IsValid() {
 		return e.EncodeNull()
@@ -120,6 +126,8 @@ func (e *Encoder) Encode(v reflect.Value) error {
 // The returned lease shares the encoder's underlying storage and must be
 // released when no longer needed so the buffer can be recycled. The encoder is
 // immediately equipped with a fresh buffer so it can be returned to the pool.
+//
+//go:inline
 func (e *Encoder) DetachBytes() BufferLease {
 	if e.Buf == nil {
 		return BufferLease{}
@@ -134,7 +142,7 @@ func (e *Encoder) DetachBytes() BufferLease {
 	} else if reuseCap > maxBufferPoolCapacity {
 		reuseCap = maxBufferPoolCapacity
 	}
-	e.Buf = acquireBuffer(reuseCap)
+	e.Buf = AcquireBuffer(reuseCap)
 	e.batchLen = 0
 
 	return lease

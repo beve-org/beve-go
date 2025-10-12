@@ -1,5 +1,40 @@
 # GitHub Copilot Instructions for BEVE-Go
 
+## ⚠️ CRITICAL: Terminal Usage Guidelines
+
+### DO NOT Send Large Commands to Terminal
+
+**VSCode PTY Host crashes with large terminal outputs!**
+
+❌ **NEVER DO THIS:**
+- Long heredoc commands (`cat << 'EOF' ... EOF`) with >50 lines
+- Large code blocks in terminal
+- Multi-page reports/summaries via echo/cat
+- Verbose benchmark outputs without filtering
+
+✅ **ALWAYS DO THIS:**
+- Create files for reports: `create_file` tool
+- Use `tee` to save outputs: `go test ... | tee result.txt`
+- Filter outputs: `| head -20`, `| grep pattern`
+- Split large commands into smaller ones
+- Use `>` or `>>` for file redirection instead of heredoc
+
+**Example - Wrong:**
+```bash
+cat << 'EOF'
+[500 lines of report...]
+EOF
+```
+
+**Example - Correct:**
+```bash
+# Create file instead
+create_file("REPORT.md", content)
+
+# Or filter output
+go test -bench=. | head -30 | tee results.txt
+```
+
 ## 🎯 Project Overview
 
 **BEVE (Binary Encoded Values)** is a high-performance binary serialization library for Go, optimized for speed, efficiency, and type safety. This project prioritizes **EXTREME PERFORMANCE**, **MEMORY EFFICIENCY**, and **DEVELOPER EXPERIENCE**.

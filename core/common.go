@@ -136,6 +136,8 @@ func storeEncoderFunc(t reflect.Type, fn encoderFunc) encoderFunc {
 }
 
 // encodeByKind encodes a value based on its kind.
+//
+//go:inline
 func encodeByKind(e *Encoder, v reflect.Value) error {
 	switch v.Kind() {
 	case reflect.Invalid:
@@ -184,6 +186,8 @@ func encodeByKind(e *Encoder, v reflect.Value) error {
 
 // ClearEncoderCache clears the encoder function cache.
 // This is useful when changing struct tag configuration.
+//
+//go:inline
 func ClearEncoderCache() {
 	encoderFuncCache.Range(func(key, value interface{}) bool {
 		encoderFuncCache.Delete(key)

@@ -41,92 +41,10 @@ func (e *Encoder) encodeBool(b bool) error {
 	return e.WriteByte(0x08)
 }
 
-// encodeInt encodes a signed integer with optimal byte count.
-//
-// BEVE int encoding uses variable-length encoding based on value range:
-//
-//	[-128, 127]:              2 bytes (header + 1 byte)
-//	[-32768, 32767]:          3 bytes (header + 2 bytes)
-//	[-2147483648, 2147483647]: 5 bytes (header + 4 bytes)
-//	Otherwise:                9 bytes (header + 8 bytes)
-//
-// Header format: type=1 | signed=1 | byteCount (2 bits)
-//
-// Performance: Uses scratch buffer to batch header+value write.
-//
-//go:inline
-func (e *Encoder) encodeInt(i int64) error {
-	// Determine optimal byte count for value
-	var byteCount int
-	var byteCountBits byte
-
-	if i >= -128 && i <= 127 {
-		byteCount = 1
-		byteCountBits = 0
-	} else if i >= -32768 && i <= 32767 {
-		byteCount = 2
-		byteCountBits = 1
-	} else if i >= -2147483648 && i <= 2147483647 {
-		byteCount = 4
-		byteCountBits = 2
-	} else {
-		byteCount = 8
-		byteCountBits = 3
-	}
-
-	// Construct header: type=1 (number) | mod=1 (signed) | byteCount
-	header := byte(0x01) | (1 << 3) | (byteCountBits << 5)
-
-	// Use scratch buffer to batch the write (avoids 2 write calls)
-	e.uintScratch[0] = header
-	for j := 0; j < byteCount; j++ {
-		e.uintScratch[j+1] = byte(i >> (j * 8))
-	}
-
-	return e.WriteBytes(e.uintScratch[:byteCount+1])
-}
-
-// encodeUint encodes an unsigned integer with optimal byte count.
-//
-// BEVE uint encoding uses variable-length encoding based on value range:
-//
-//	[0, 255]:         2 bytes (header + 1 byte)
-//	[0, 65535]:       3 bytes (header + 2 bytes)
-//	[0, 4294967295]:  5 bytes (header + 4 bytes)
-//	Otherwise:        9 bytes (header + 8 bytes)
-//
-// Header format: type=1 | unsigned=2 | byteCount (2 bits)
-//
-//go:inline
-func (e *Encoder) encodeUint(u uint64) error {
-	var byteCount int
-	var byteCountBits byte
-
-	if u <= 255 {
-		byteCount = 1
-		byteCountBits = 0
-	} else if u <= 65535 {
-		byteCount = 2
-		byteCountBits = 1
-	} else if u <= 4294967295 {
-		byteCount = 4
-		byteCountBits = 2
-	} else {
-		byteCount = 8
-		byteCountBits = 3
-	}
-
-	// Construct header: type=1 (number) | mod=2 (unsigned) | byteCount
-	header := byte(0x01) | (2 << 3) | (byteCountBits << 5)
-
-	// Batch write using scratch buffer
-	e.uintScratch[0] = header
-	for j := 0; j < byteCount; j++ {
-		e.uintScratch[j+1] = byte(u >> (j * 8))
-	}
-
-	return e.WriteBytes(e.uintScratch[:byteCount+1])
-}
+// encodeInt and encodeUint are implemented in platform-specific files:
+//   - encoder_primitives_amd64.go (assembly optimized)
+//   - encoder_primitives_arm64.go (assembly optimized)
+//   - encoder_primitives_generic.go (pure Go fallback)
 
 // encodeFloat encodes a floating point number using IEEE 754 format.
 //

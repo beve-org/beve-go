@@ -162,8 +162,8 @@ func TestUnsupportedTypeError(t *testing.T) {
 
 // TestBufferGrowthStress tests buffer reallocation under stress
 func TestBufferGrowthStress(t *testing.T) {
-	buf := acquireBuffer(8)
-	defer releaseBuffer(buf)
+	buf := AcquireBuffer(8)
+	defer ReleaseBuffer(buf)
 
 	// Grow beyond initial capacity multiple times
 	for size := 16; size <= 4096; size *= 2 {

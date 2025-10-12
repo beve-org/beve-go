@@ -61,16 +61,27 @@ func Marshal(v interface{}) ([]byte, error) {
 		return marshalTime(val)
 	}
 
-	// Slow path: use reflection
-	lease, err := MarshalZeroCopy(v)
-	if err != nil {
+	// Slow path: use reflection with buffer pooling
+	enc := getEncoderFromPool()
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+	}
+
+	rv := reflect.ValueOf(v)
+	if err := enc.Encode(rv); err != nil {
+		putEncoderToPool(enc)
 		return nil, err
 	}
 
-	data := lease.Bytes()
-	result := make([]byte, len(data))
-	copy(result, data)
-	lease.Release()
+	// Copy encoded data - make+copy is consistently faster than append for small sizes
+	encoded := enc.Buf.Bytes()
+	n := len(encoded)
+	result := make([]byte, n)
+	copy(result, encoded)
+
+	// Return encoder to pool (buffer is retained and reset for next use)
+	putEncoderToPool(enc)
+
 	return result, nil
 }
 
@@ -227,20 +238,19 @@ type BinaryUnmarshaler interface {
 
 func marshalInt(v int) ([]byte, error) {
 	enc := getEncoderFromPool()
+	defer putEncoderToPool(enc)
 	if enc.Buf != nil {
 		enc.Buf.Reset()
 		enc.Buf.Grow(16) // int needs max 10 bytes
 	}
 	rv := reflect.ValueOf(v)
 	if err := enc.Encode(rv); err != nil {
-		putEncoderToPool(enc)
 		return nil, err
 	}
-	// Copy data before returning encoder to pool
+	// Copy data - make+copy for consistent small allocations
 	data := enc.Buf.Bytes()
 	result := make([]byte, len(data))
 	copy(result, data)
-	putEncoderToPool(enc)
 	return result, nil
 }
 
