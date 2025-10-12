@@ -28,11 +28,11 @@ import (
 //	    }
 //	}
 type StreamEncoder struct {
-	enc          *core.Encoder
-	bw           *bufio.Writer
-	w            io.Writer
-	avgSize      int // Rolling average of encoded size
-	encodeCount  int // Number of encodes performed
+	enc         *core.Encoder
+	bw          *bufio.Writer
+	w           io.Writer
+	avgSize     int // Rolling average of encoded size
+	encodeCount int // Number of encodes performed
 }
 
 const (

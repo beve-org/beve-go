@@ -1,0 +1,11 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go
+cpu: Apple M2 Max
+BenchmarkFileWriteOptimized_BEVE-12           	   10000	     71853 ns/op	     94150 bytes	     216 B/op	       3 allocs/op
+BenchmarkFileWriteOptimized_JSON-12           	   10000	     90942 ns/op	    101687 bytes	     216 B/op	       3 allocs/op
+BenchmarkFileWriteOptimized_Sonic-12          	   10000	     88487 ns/op	    106587 bytes	     216 B/op	       3 allocs/op
+BenchmarkFileWriteOptimized_MessagePack-12    	   10000	     80014 ns/op	    102023 bytes	     232 B/op	       3 allocs/op
+BenchmarkFileWriteOptimized_CBOR-12           	   10000	     79908 ns/op	    104420 bytes	     216 B/op	       3 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go	4.485s
