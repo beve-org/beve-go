@@ -389,7 +389,7 @@ func SetStructTag(tag string) {
 	structTagMu.Lock()
 	StructTag = tag
 	structTagMu.Unlock()
-	
+
 	// Clear caches to force rebuilding with new tag
 	core.ClearEncoderCache()
 	core.ClearDecoderCache()

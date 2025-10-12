@@ -53,7 +53,7 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("Encoded size: %d bytes\n", len(data1))
-	
+
 	var decoded1 UserBEVE
 	if err := beve.Unmarshal(data1, &decoded1); err != nil {
 		log.Fatal(err)
@@ -64,14 +64,14 @@ func main() {
 	fmt.Println("📌 Scenario 2: Switch to JSON Tags")
 	beve.SetStructTag("json")
 	fmt.Println("Current tag:", beve.GetStructTag())
-	
+
 	user2 := UserJSON{ID: 2, Username: "bob", Email: "bob@example.com", IsActive: false}
 	data2, err := beve.Marshal(user2)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Encoded size: %d bytes\n", len(data2))
-	
+
 	var decoded2 UserJSON
 	if err := beve.Unmarshal(data2, &decoded2); err != nil {
 		log.Fatal(err)
@@ -82,14 +82,14 @@ func main() {
 	fmt.Println("📌 Scenario 3: Custom MsgPack Tags")
 	beve.SetStructTag("msgpack")
 	fmt.Println("Current tag:", beve.GetStructTag())
-	
+
 	user3 := UserMsgPack{ID: 3, Username: "charlie", Email: "", IsActive: true}
 	data3, err := beve.Marshal(user3)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Encoded size: %d bytes (empty email omitted)\n", len(data3))
-	
+
 	var decoded3 UserMsgPack
 	if err := beve.Unmarshal(data3, &decoded3); err != nil {
 		log.Fatal(err)
@@ -99,17 +99,17 @@ func main() {
 	// Scenario 4: Multi-tag struct with different configurations
 	fmt.Println("📌 Scenario 4: Multi-Tag Struct (Same Data, Different Tags)")
 	user4 := UserMultiTag{ID: 4, Username: "david", Email: "david@example.com", IsActive: true}
-	
+
 	// Encode with beve tag
 	beve.SetStructTag("beve")
 	dataBeve, _ := beve.Marshal(user4)
 	fmt.Printf("With 'beve' tag -> Size: %d bytes\n", len(dataBeve))
-	
+
 	// Encode with json tag
 	beve.SetStructTag("json")
 	dataJSON, _ := beve.Marshal(user4)
 	fmt.Printf("With 'json' tag -> Size: %d bytes\n", len(dataJSON))
-	
+
 	// Encode with msgpack tag
 	beve.SetStructTag("msgpack")
 	dataMsgPack, _ := beve.Marshal(user4)
@@ -120,14 +120,14 @@ func main() {
 	beve.SetStructTag("proto") // proto tags don't exist in UserJSON
 	fmt.Println("Current tag: proto (not present in struct)")
 	fmt.Println("Fallback: Automatically uses 'json' tags")
-	
+
 	user5 := UserJSON{ID: 5, Username: "eve", Email: "eve@example.com", IsActive: false}
 	data5, err := beve.Marshal(user5)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Encoded size: %d bytes\n", len(data5))
-	
+
 	var decoded5 UserJSON
 	if err := beve.Unmarshal(data5, &decoded5); err != nil {
 		log.Fatal(err)
@@ -137,19 +137,19 @@ func main() {
 	// Scenario 6: Skip fields with "-"
 	fmt.Println("📌 Scenario 6: Skip Fields with '-' Tag")
 	beve.SetStructTag("json")
-	
+
 	type Credentials struct {
 		Username string `json:"username"`
 		Password string `json:"-"` // This field will be skipped
 		Token    string `json:"token"`
 	}
-	
+
 	cred := Credentials{Username: "admin", Password: "secret123", Token: "abc"}
 	dataCred, _ := beve.Marshal(cred)
-	
+
 	var decodedCred Credentials
 	beve.Unmarshal(dataCred, &decodedCred)
-	
+
 	fmt.Printf("Original: %+v\n", cred)
 	fmt.Printf("Decoded:  %+v (password not encoded/decoded)\n\n", decodedCred)
 

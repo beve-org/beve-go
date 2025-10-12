@@ -13,7 +13,7 @@ func TestStructTag_Default(t *testing.T) {
 	}
 
 	p := Person{Name: "Alice", Age: 30, Email: "alice@example.com"}
-	
+
 	data, err := Marshal(p)
 	if err != nil {
 		t.Fatalf("Marshal failed: %v", err)
@@ -46,7 +46,7 @@ func TestStructTag_JSONTag(t *testing.T) {
 	}
 
 	p := Product{ID: 123, Name: "Widget", Price: 19.99}
-	
+
 	data, err := Marshal(p)
 	if err != nil {
 		t.Fatalf("Marshal failed: %v", err)
@@ -77,7 +77,7 @@ func TestStructTag_CustomTag(t *testing.T) {
 	}
 
 	m := Message{ID: 456, Content: "Hello", Sender: "Bob"}
-	
+
 	data, err := Marshal(m)
 	if err != nil {
 		t.Fatalf("Marshal failed: %v", err)
@@ -103,13 +103,13 @@ func TestStructTag_FallbackToJSON(t *testing.T) {
 	SetStructTag("proto")
 
 	type User struct {
-		ID       int    `json:"id"`        // proto tag not present, should fallback to json
+		ID       int    `json:"id"` // proto tag not present, should fallback to json
 		Username string `json:"username"`
 		Active   bool   `json:"active,omitempty"`
 	}
 
 	u := User{ID: 789, Username: "john_doe", Active: true}
-	
+
 	data, err := Marshal(u)
 	if err != nil {
 		t.Fatalf("Marshal failed: %v", err)
@@ -187,7 +187,7 @@ func TestStructTag_FieldNameMapping(t *testing.T) {
 	}
 
 	resp := APIResponse{StatusCode: 200, Message: "OK", Data: "result"}
-	
+
 	data, err := Marshal(resp)
 	if err != nil {
 		t.Fatalf("Marshal failed: %v", err)
@@ -218,7 +218,7 @@ func TestStructTag_SkipField(t *testing.T) {
 	}
 
 	cred := Credentials{Username: "admin", Password: "secret123", Token: "abc"}
-	
+
 	data, err := Marshal(cred)
 	if err != nil {
 		t.Fatalf("Marshal failed: %v", err)
@@ -331,9 +331,9 @@ func TestStructTag_NestedStructs(t *testing.T) {
 		t.Errorf("Person data mismatch: got %+v, want %+v", result, p)
 	}
 
-	if result.Address.Street != p.Address.Street || 
-	   result.Address.City != p.Address.City || 
-	   result.Address.Zip != p.Address.Zip {
+	if result.Address.Street != p.Address.Street ||
+		result.Address.City != p.Address.City ||
+		result.Address.Zip != p.Address.Zip {
 		t.Errorf("Address data mismatch: got %+v, want %+v", result.Address, p.Address)
 	}
 }

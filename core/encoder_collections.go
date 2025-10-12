@@ -29,11 +29,12 @@ type encoderStructField struct {
 
 // encoderStructInfo caches struct field metadata for fast encoding.
 type encoderStructInfo struct {
-	fields      []encoderStructField
-	staticCount int
-	omitEmpty   []int
-	baseSize    int
-	sizeHint    uint32
+	fields        []encoderStructField
+	staticCount   int
+	omitEmpty     []int
+	baseSize      int
+	sizeHint      uint32
+	useFastPath   bool  // True if struct qualifies for wide struct fast path
 }
 
 type mapEncoderFunc func(*Encoder, unsafe.Pointer) error
@@ -43,6 +44,20 @@ var encoderStructInfoCache sync.Map // map[reflect.Type]*encoderStructInfo
 
 func buildStructEncoder(t reflect.Type) encoderFunc {
 	info := getEncoderStructInfo(t)
+	
+	// Use fast path for wide structs with primitive fields
+	if info.useFastPath {
+		return func(e *Encoder, v reflect.Value) error {
+			_, basePtr, keep := ensureAddressableStruct(v)
+			err := e.encodeWideStructFastPath(info, basePtr)
+			if keep != nil {
+				runtime.KeepAlive(keep)
+			}
+			return err
+		}
+	}
+	
+	// Normal path for other structs
 	return func(e *Encoder, v reflect.Value) error {
 		_, basePtr, keep := ensureAddressableStruct(v)
 		err := e.encodeStructPtr(info, basePtr)
@@ -187,6 +202,9 @@ func finalizeEncoderStructInfo(info *encoderStructInfo) {
 		base = max
 	}
 	atomic.StoreUint32(&info.sizeHint, uint32(base))
+	
+	// Check if struct qualifies for fast path
+	info.useFastPath = isWideStructSmallValues(info)
 }
 
 func minimalValueSize(field *encoderStructField) int {
