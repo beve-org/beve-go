@@ -1,0 +1,11 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go
+cpu: Apple M2 Max
+BenchmarkDeepNested_BEVE_Marshal-12           	   10000	       462.5 ns/op	     176 B/op	       3 allocs/op
+BenchmarkDeepNested_JSON_Marshal-12           	   10000	       804.3 ns/op	     200 B/op	       2 allocs/op
+BenchmarkDeepNested_Sonic_Marshal-12          	   10000	      1232 ns/op	     230 B/op	       3 allocs/op
+BenchmarkDeepNested_MessagePack_Marshal-12    	   10000	      1231 ns/op	     520 B/op	       5 allocs/op
+BenchmarkDeepNested_CBOR_Marshal-12           	   10000	       635.2 ns/op	     136 B/op	       2 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go	0.362s

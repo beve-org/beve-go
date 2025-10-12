@@ -154,8 +154,13 @@ func buildEncoderStructFieldsRecursive(t reflect.Type, baseOffset uintptr, flatt
 			typ:       field.Type,
 			encoder:   getEncoderFunc(field.Type),
 			structInfo: func() *encoderStructInfo {
+				// Phase 8: Support nested pointer-to-struct (e.g., *DeepNested1)
 				if field.Type.Kind() == reflect.Struct {
 					return getEncoderStructInfo(field.Type)
+				}
+				// NEW: Handle pointer-to-struct for deep nested optimization
+				if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
+					return getEncoderStructInfo(field.Type.Elem())
 				}
 				return nil
 			}(),
@@ -1359,6 +1364,27 @@ func encodeStructFieldValue(e *Encoder, field *encoderStructField, ptr unsafe.Po
 			}
 			return writeStructFieldsPtr(e, field.structInfo, ptr)
 		}
+		val := reflect.NewAt(field.typ, ptr).Elem()
+		return field.encoder(e, val)
+	case reflect.Ptr:
+		// Phase 8: Fast path for pointer-to-struct (deep nested optimization)
+		ptrVal := *(*unsafe.Pointer)(ptr)
+		if ptrVal == nil {
+			return e.EncodeNull()
+		}
+		// Check if it's pointer to struct with cached info
+		if field.structInfo != nil {
+			// Direct pointer-based encoding (no reflection!)
+			count := countStructFieldsPtr(field.structInfo, ptrVal)
+			if err := e.WriteByte(0x03); err != nil {
+				return err
+			}
+			if err := e.WriteCompressedUint(uint64(count)); err != nil {
+				return err
+			}
+			return writeStructFieldsPtr(e, field.structInfo, ptrVal)
+		}
+		// Fallback to reflection for other pointer types
 		val := reflect.NewAt(field.typ, ptr).Elem()
 		return field.encoder(e, val)
 	case reflect.Map:
