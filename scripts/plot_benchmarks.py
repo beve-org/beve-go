@@ -116,8 +116,9 @@ def render_chart(data: dict, output_path: Path, metric: str, unit_option: str) -
     all_values = [item[metric] for _, entries in groups for item in entries]
     unit_label, scale = select_unit(metric, unit_option, all_values)
 
-    figure_height = max(4.0, 2.5 * len(groups))
-    fig, axes = plt.subplots(len(groups), 1, figsize=(12, figure_height), squeeze=False)
+    # Compact layout: smaller height per group for more density
+    figure_height = max(3.5, 1.8 * len(groups))
+    fig, axes = plt.subplots(len(groups), 1, figsize=(10, figure_height), squeeze=False)
     axes = axes.flatten()
 
     for ax, ((scenario, operation), entries) in zip(axes, groups):
@@ -126,43 +127,88 @@ def render_chart(data: dict, output_path: Path, metric: str, unit_option: str) -
         values = [entry[metric] * scale for entry in entries]
         colors = pick_colors(codecs)
 
-        y_positions = list(range(len(entries)))
-        bars = ax.barh(y_positions, values, color=colors)
-        ax.set_yticks(y_positions)
-        ax.set_yticklabels(codecs)
-        ax.invert_yaxis()  # Best performer at the top
-        ax.set_xlabel(unit_label)
-        ax.set_title(f"{scenario} · {operation}")
-        ax.grid(axis="x", linestyle="--", linewidth=0.5, alpha=0.5)
+        # Calculate percentage differences from best (first entry)
+        best_value = values[0] if values else 1
+        percentages = [((v / best_value - 1) * 100) if best_value > 0 else 0 for v in values]
 
-        ax.bar_label(bars, labels=[f"{value:.3g}" for value in values], padding=4, fontsize=8)
+        y_positions = list(range(len(entries)))
+        bars = ax.barh(y_positions, values, color=colors, alpha=0.85)
+        ax.set_yticks(y_positions)
+        
+        # Add ranking medals to y-labels
+        medals = ["🥇", "🥈", "🥉"] + [""] * (len(codecs) - 3)
+        yticklabels = [f"{medal} {codec}" for medal, codec in zip(medals, codecs)]
+        ax.set_yticklabels(yticklabels, fontsize=9)
+        
+        ax.invert_yaxis()  # Best performer at the top
+        ax.set_xlabel(unit_label, fontsize=9)
+        ax.set_title(f"{scenario} · {operation}", fontsize=10, fontweight='bold')
+        ax.grid(axis="x", linestyle="--", linewidth=0.5, alpha=0.3)
+
+        # Enhanced labels with percentage difference
+        labels = []
+        for i, (value, pct) in enumerate(zip(values, percentages)):
+            if i == 0:
+                labels.append(f"{value:.3g}")  # Best performer - no percentage
+            else:
+                labels.append(f"{value:.3g} (+{pct:.0f}%)")  # Show how much slower
+        
+        ax.bar_label(bars, labels=labels, padding=3, fontsize=7.5, fontweight='medium')
 
         max_value = max(values) if values else 0
         if max_value > 0:
-            ax.set_xlim(0, max_value * 1.15)
+            ax.set_xlim(0, max_value * 1.25)  # More space for labels
 
     environment = data.get("environment", {})
     meta_lines = []
     if environment:
-        os_info = environment.get("os")
-        cpu_info = environment.get("cpu")
-        if os_info:
-            meta_lines.append(str(os_info))
-        if cpu_info:
-            meta_lines.append(str(cpu_info))
-    generated = data.get("generated_at")
+        # Compact system info
+        arch = environment.get("architecture", "")
+        cpu_info = environment.get("cpu", "")
+        go_ver = environment.get("go_version", "")
+        
+        # Extract short CPU name (first part before @)
+        cpu_short = cpu_info.split("@")[0].strip() if cpu_info else ""
+        
+        # Extract Go version number
+        go_short = ""
+        if go_ver:
+            parts = go_ver.split()
+            go_short = parts[2] if len(parts) > 2 else go_ver
+        
+        if arch and cpu_short:
+            meta_lines.append(f"{arch} · {cpu_short}")
+        if go_short:
+            meta_lines.append(f"Go {go_short}")
+    
+    generated = data.get("generated_at", "")
+    if generated:
+        # Compact date format
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(generated.replace('Z', '+00:00'))
+            generated_short = dt.strftime("%Y-%m-%d %H:%M UTC")
+        except:
+            generated_short = generated
+        meta_lines.append(generated_short)
+    
     subtitle = " · ".join(meta_lines) if meta_lines else None
 
-    title = "BEVE Benchmark Comparison"
+    # Main title with compact subtitle
+    title = "🏆 BEVE Benchmark Comparison"
     if subtitle:
-        title = f"{title}\n{subtitle}"
-    fig.suptitle(title, fontsize=16)
-    if generated:
-        fig.text(0.99, 0.01, f"Generated: {generated}", ha="right", va="bottom", fontsize=8)
+        fig.text(0.5, 0.99, title, ha="center", va="top", fontsize=14, fontweight='bold')
+        fig.text(0.5, 0.97, subtitle, ha="center", va="top", fontsize=8, style='italic', color='#666')
+    else:
+        fig.suptitle(title, fontsize=14, fontweight='bold')
 
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    # Add legend for percentages at bottom
+    legend_text = "📊 Values show performance metrics. +X% indicates how much slower than the fastest."
+    fig.text(0.5, 0.01, legend_text, ha="center", va="bottom", fontsize=7, style='italic', color='#666')
+
+    fig.tight_layout(rect=[0, 0.025, 1, 0.96])
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=200)
+    fig.savefig(output_path, dpi=300, bbox_inches='tight')  # Higher DPI for better quality
     plt.close(fig)
 
 
