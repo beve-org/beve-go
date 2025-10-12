@@ -157,11 +157,56 @@ func createInterfaceSlice(size int) []interface{} {
 
 // Scenario 5: Struct with many fields (struct field enumeration overhead)
 type WideStruct struct {
-	F1, F2, F3, F4, F5, F6, F7, F8, F9, F10          int `beve:"f1,f2,f3,f4,f5,f6,f7,f8,f9,f10" json:"f1,f2,f3,f4,f5,f6,f7,f8,f9,f10"`
-	F11, F12, F13, F14, F15, F16, F17, F18, F19, F20 int `beve:"f11,f12,f13,f14,f15,f16,f17,f18,f19,f20" json:"f11,f12,f13,f14,f15,f16,f17,f18,f19,f20"`
-	F21, F22, F23, F24, F25, F26, F27, F28, F29, F30 int `beve:"f21,f22,f23,f24,f25,f26,f27,f28,f29,f30" json:"f21,f22,f23,f24,f25,f26,f27,f28,f29,f30"`
-	F31, F32, F33, F34, F35, F36, F37, F38, F39, F40 int `beve:"f31,f32,f33,f34,f35,f36,f37,f38,f39,f40" json:"f31,f32,f33,f34,f35,f36,f37,f38,f39,f40"`
-	F41, F42, F43, F44, F45, F46, F47, F48, F49, F50 int `beve:"f41,f42,f43,f44,f45,f46,f47,f48,f49,f50" json:"f41,f42,f43,f44,f45,f46,f47,f48,f49,f50"`
+	F1  int `beve:"f1" json:"f1"`
+	F2  int `beve:"f2" json:"f2"`
+	F3  int `beve:"f3" json:"f3"`
+	F4  int `beve:"f4" json:"f4"`
+	F5  int `beve:"f5" json:"f5"`
+	F6  int `beve:"f6" json:"f6"`
+	F7  int `beve:"f7" json:"f7"`
+	F8  int `beve:"f8" json:"f8"`
+	F9  int `beve:"f9" json:"f9"`
+	F10 int `beve:"f10" json:"f10"`
+	F11 int `beve:"f11" json:"f11"`
+	F12 int `beve:"f12" json:"f12"`
+	F13 int `beve:"f13" json:"f13"`
+	F14 int `beve:"f14" json:"f14"`
+	F15 int `beve:"f15" json:"f15"`
+	F16 int `beve:"f16" json:"f16"`
+	F17 int `beve:"f17" json:"f17"`
+	F18 int `beve:"f18" json:"f18"`
+	F19 int `beve:"f19" json:"f19"`
+	F20 int `beve:"f20" json:"f20"`
+	F21 int `beve:"f21" json:"f21"`
+	F22 int `beve:"f22" json:"f22"`
+	F23 int `beve:"f23" json:"f23"`
+	F24 int `beve:"f24" json:"f24"`
+	F25 int `beve:"f25" json:"f25"`
+	F26 int `beve:"f26" json:"f26"`
+	F27 int `beve:"f27" json:"f27"`
+	F28 int `beve:"f28" json:"f28"`
+	F29 int `beve:"f29" json:"f29"`
+	F30 int `beve:"f30" json:"f30"`
+	F31 int `beve:"f31" json:"f31"`
+	F32 int `beve:"f32" json:"f32"`
+	F33 int `beve:"f33" json:"f33"`
+	F34 int `beve:"f34" json:"f34"`
+	F35 int `beve:"f35" json:"f35"`
+	F36 int `beve:"f36" json:"f36"`
+	F37 int `beve:"f37" json:"f37"`
+	F38 int `beve:"f38" json:"f38"`
+	F39 int `beve:"f39" json:"f39"`
+	F40 int `beve:"f40" json:"f40"`
+	F41 int `beve:"f41" json:"f41"`
+	F42 int `beve:"f42" json:"f42"`
+	F43 int `beve:"f43" json:"f43"`
+	F44 int `beve:"f44" json:"f44"`
+	F45 int `beve:"f45" json:"f45"`
+	F46 int `beve:"f46" json:"f46"`
+	F47 int `beve:"f47" json:"f47"`
+	F48 int `beve:"f48" json:"f48"`
+	F49 int `beve:"f49" json:"f49"`
+	F50 int `beve:"f50" json:"f50"`
 }
 
 // =============================================================================

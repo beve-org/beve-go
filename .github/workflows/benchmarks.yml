@@ -225,7 +225,7 @@ jobs:
               detail_lines.extend([f"## {cpu_name} — {os_name}", ""])
               
               # Add chart image first (visual representation)
-              chart_path = f"benchmarks/{slug}/benchmark.png"
+              chart_path = f"{slug}/benchmark.png"
               detail_lines.extend([
                   f"![Benchmark Chart]({chart_path})",
                   "",
