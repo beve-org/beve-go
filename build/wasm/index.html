@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEVE-Go WASM Demo</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .version {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .benchmark-results {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .benchmark-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .benchmark-row:last-child {
+            border-bottom: none;
+        }
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .success {
+            background: #efe;
+            border: 2px solid #cfc;
+            color: #060;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2rem;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 BEVE-Go WASM Demo</h1>
+        <div class="version" id="version">Loading WASM module...</div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading WebAssembly module...</p>
+        </div>
+
+        <div id="app" style="display: none;">
+            <!-- Marshal/Unmarshal Demo -->
+            <div class="card">
+                <h2>📦 Marshal & Unmarshal</h2>
+                <div class="input-group">
+                    <label>Input JSON:</label>
+                    <textarea id="inputJson">{
+  "id": 12345,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "age": 30,
+  "active": true,
+  "tags": ["developer", "golang", "wasm"],
+  "metadata": {
+    "created": "2025-10-12",
+    "updated": "2025-10-12"
+  }
+}</textarea>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="testMarshal()">🔒 Marshal (Encode)</button>
+                    <button class="btn-primary" onclick="testUnmarshal()">🔓 Unmarshal (Decode)</button>
+                    <button class="btn-secondary" onclick="clearIO()">🗑️ Clear</button>
+                </div>
+                <div class="input-group">
+                    <label>BEVE Binary (Hex):</label>
+                    <div class="output" id="beveOutput">Click "Marshal" to encode...</div>
+                </div>
+                <div class="input-group">
+                    <label>Decoded Output:</label>
+                    <div class="output" id="decodedOutput">Click "Unmarshal" to decode...</div>
+                </div>
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-label">JSON Size</div>
+                        <div class="stat-value" id="jsonSize">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">BEVE Size</div>
+                        <div class="stat-value" id="beveSize">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Compression</div>
+                        <div class="stat-value" id="compression">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Time Taken</div>
+                        <div class="stat-value" id="timeTaken">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benchmark -->
+            <div class="card">
+                <h2>⚡ Performance Benchmark</h2>
+                <div class="input-group">
+                    <label>Iterations:</label>
+                    <input type="number" id="iterations" value="10000" min="100" max="1000000" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                </div>
+                <button class="btn-primary" onclick="runBenchmark()">🏃 Run Benchmark</button>
+                <div id="benchmarkResults"></div>
+            </div>
+
+            <!-- Examples -->
+            <div class="card">
+                <h2>📚 Example Payloads</h2>
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="loadExample('small')">Small Struct</button>
+                    <button class="btn-secondary" onclick="loadExample('medium')">Medium Struct</button>
+                    <button class="btn-secondary" onclick="loadExample('large')">Large Struct</button>
+                    <button class="btn-secondary" onclick="loadExample('array')">Array</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    <script>
+        let beveBytes = null;
+        let wasmReady = false;
+
+        // Example payloads
+        const examples = {
+            small: {
+                id: 123,
+                name: "Alice",
+                email: "alice@example.com",
+                active: true
+            },
+            medium: {
+                id: 456,
+                name: "Bob Smith",
+                email: "bob@example.com",
+                age: 35,
+                active: true,
+                role: "engineer",
+                tags: ["senior", "backend"],
+                metadata: { team: "platform", location: "remote" }
+            },
+            large: {
+                id: 789,
+                name: "Charlie Johnson",
+                email: "charlie@company.com",
+                age: 42,
+                active: true,
+                role: "architect",
+                department: "engineering",
+                salary: 150000,
+                tags: ["expert", "golang", "distributed-systems"],
+                address: {
+                    street: "123 Main St",
+                    city: "San Francisco",
+                    state: "CA",
+                    zip: "94105"
+                },
+                metadata: {
+                    hired: "2020-01-15",
+                    lastReview: "2025-06-01",
+                    skills: ["go", "kubernetes", "aws"]
+                }
+            },
+            array: Array.from({length: 10}, (_, i) => ({
+                id: i + 1,
+                value: Math.random() * 100,
+                label: `Item ${i + 1}`
+            }))
+        };
+
+        // Initialize WASM
+        async function initWasm() {
+            try {
+                const go = new Go();
+                // Add timestamp to bypass browser cache
+                const wasmUrl = `beve.wasm?v=${Date.now()}`;
+                const result = await WebAssembly.instantiateStreaming(fetch(wasmUrl), go.importObject);
+                go.run(result.instance);
+                
+                // Wait for WASM to be ready
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (typeof beveWasm === 'undefined') {
+                    throw new Error('beveWasm not loaded');
+                }
+                
+                wasmReady = true;
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                
+                const version = beveWasm.version();
+                document.getElementById('version').textContent = `Version: ${version} | TinyGo 0.39.0 | WebAssembly`;
+            } catch (err) {
+                document.getElementById('loading').innerHTML = `
+                    <div class="error">
+                        ❌ Failed to load WASM module: ${err.message}
+                    </div>
+                `;
+            }
+        }
+
+        function testMarshal() {
+            if (!wasmReady) return;
+            
+            const start = performance.now();
+            try {
+                const input = JSON.parse(document.getElementById('inputJson').value);
+                const result = beveWasm.marshal(input);
+                
+                if (result.error) {
+                    showError('Marshal Error: ' + result.error);
+                    return;
+                }
+                
+                beveBytes = result.data;
+                const hex = Array.from(new Uint8Array(beveBytes))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join(' ');
+                
+                document.getElementById('beveOutput').textContent = hex;
+                
+                const end = performance.now();
+                const jsonStr = JSON.stringify(input);
+                
+                document.getElementById('jsonSize').textContent = jsonStr.length + ' bytes';
+                document.getElementById('beveSize').textContent = beveBytes.length + ' bytes';
+                const ratio = ((1 - beveBytes.length / jsonStr.length) * 100).toFixed(1);
+                document.getElementById('compression').textContent = ratio + '%';
+                document.getElementById('timeTaken').textContent = (end - start).toFixed(2) + ' ms';
+                
+                document.getElementById('decodedOutput').textContent = 'Click "Unmarshal" to decode...';
+            } catch (err) {
+                showError('Error: ' + err.message);
+            }
+        }
+
+        function testUnmarshal() {
+            if (!wasmReady || !beveBytes) {
+                showError('Please marshal data first!');
+                return;
+            }
+            
+            const start = performance.now();
+            try {
+                const result = beveWasm.unmarshal(beveBytes);
+                
+                if (result.error) {
+                    showError('Unmarshal Error: ' + result.error);
+                    return;
+                }
+                
+                const decoded = JSON.stringify(result.data, null, 2);
+                document.getElementById('decodedOutput').textContent = decoded;
+                
+                const end = performance.now();
+                document.getElementById('timeTaken').textContent = (end - start).toFixed(2) + ' ms';
+            } catch (err) {
+                showError('Error: ' + err.message);
+            }
+        }
+
+        function clearIO() {
+            document.getElementById('beveOutput').textContent = 'Click "Marshal" to encode...';
+            document.getElementById('decodedOutput').textContent = 'Click "Unmarshal" to decode...';
+            document.getElementById('jsonSize').textContent = '-';
+            document.getElementById('beveSize').textContent = '-';
+            document.getElementById('compression').textContent = '-';
+            document.getElementById('timeTaken').textContent = '-';
+            beveBytes = null;
+        }
+
+        function runBenchmark() {
+            if (!wasmReady) return;
+            
+            const iterations = parseInt(document.getElementById('iterations').value);
+            const input = JSON.parse(document.getElementById('inputJson').value);
+            
+            document.getElementById('benchmarkResults').innerHTML = '<div class="loading"><div class="spinner"></div><p>Running benchmark...</p></div>';
+            
+            setTimeout(() => {
+                try {
+                    const result = beveWasm.benchmark(input, iterations);
+                    
+                    if (result.error) {
+                        showError('Benchmark Error: ' + result.error);
+                        return;
+                    }
+                    
+                    const html = `
+                        <div class="benchmark-results">
+                            <h3 style="margin-bottom: 15px; color: #667eea;">Results (${iterations.toLocaleString()} iterations)</h3>
+                            <div class="benchmark-row">
+                                <strong>Marshal Avg:</strong>
+                                <span>${result.marshal.avgMs.toFixed(4)} ms</span>
+                            </div>
+                            <div class="benchmark-row">
+                                <strong>Marshal Throughput:</strong>
+                                <span>${Math.round(result.marshal.opsPerSec).toLocaleString()} ops/sec</span>
+                            </div>
+                            <div class="benchmark-row">
+                                <strong>Unmarshal Avg:</strong>
+                                <span>${result.unmarshal.avgMs.toFixed(4)} ms</span>
+                            </div>
+                            <div class="benchmark-row">
+                                <strong>Unmarshal Throughput:</strong>
+                                <span>${Math.round(result.unmarshal.opsPerSec).toLocaleString()} ops/sec</span>
+                            </div>
+                            <div class="benchmark-row">
+                                <strong>Payload Size:</strong>
+                                <span>${result.payloadSize} bytes</span>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('benchmarkResults').innerHTML = html;
+                } catch (err) {
+                    showError('Benchmark Error: ' + err.message);
+                }
+            }, 100);
+        }
+
+        function loadExample(type) {
+            const example = examples[type];
+            document.getElementById('inputJson').value = JSON.stringify(example, null, 2);
+            clearIO();
+        }
+
+        function showError(msg) {
+            document.getElementById('benchmarkResults').innerHTML = `<div class="error">${msg}</div>`;
+        }
+
+        // Initialize on load
+        initWasm();
+    </script>
+</body>
+</html>

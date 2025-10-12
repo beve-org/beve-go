@@ -26,6 +26,18 @@ func (d *Decoder) DecodeObject(v reflect.Value, header byte) error {
 		return err
 	}
 
+	// Handle interface{} by creating a concrete map
+	if v.Kind() == reflect.Interface {
+		// Create a map[string]interface{} to hold the object
+		concreteMap := make(map[string]interface{})
+		mapValue := reflect.ValueOf(concreteMap)
+		if err := d.DecodeMap(mapValue, keyType, int(size)); err != nil {
+			return err
+		}
+		v.Set(mapValue)
+		return nil
+	}
+
 	if v.Kind() == reflect.Map {
 		return d.DecodeMap(v, keyType, int(size))
 	} else if v.Kind() == reflect.Struct {
