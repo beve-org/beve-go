@@ -100,6 +100,7 @@ JSON: 222 bytes
 ## ✨ Key Features
 
 ### 🔧 Binary Format
+- ✅ **MIME Type**: `application/beve` (recommended for HTTP/REST APIs)
 - ✅ **30% smaller** payloads than JSON on typical structs
 - ✅ **Varint encoding** for efficient integer representation
 - ✅ **Type-aware encoding** for optimal space usage
@@ -185,6 +186,30 @@ func main() {
 Encoded size: 42 bytes  (vs JSON: ~65 bytes)
 Decoded: {Name:Alice Age:30 Email:alice@example.com}
 ```
+
+### 🌐 HTTP API Usage
+
+Use `application/beve` MIME type for REST APIs:
+
+```go
+import (
+    "net/http"
+    "github.com/beve-org/beve-go"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    user := User{Name: "Alice", Age: 30}
+    
+    // Marshal to BEVE
+    data, _ := beve.Marshal(user)
+    
+    // Set MIME type
+    w.Header().Set("Content-Type", "application/beve")
+    w.Write(data)
+}
+```
+
+> 📚 See [examples/http-server](examples/http-server) and [examples/fiber-server](examples/fiber-server) for complete examples.
 
 ### ⚡ High-Performance Patterns
 
