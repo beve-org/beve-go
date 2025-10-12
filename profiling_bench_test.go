@@ -16,16 +16,16 @@ import (
 // =============================================================================
 
 type WideStructProfile struct {
-	F1, F2, F3, F4, F5       int `beve:"f1" json:"f1"`
-	F6, F7, F8, F9, F10      int `beve:"f6" json:"f6"`
-	F11, F12, F13, F14, F15  int `beve:"f11" json:"f11"`
-	F16, F17, F18, F19, F20  int `beve:"f16" json:"f16"`
-	F21, F22, F23, F24, F25  int `beve:"f21" json:"f21"`
-	F26, F27, F28, F29, F30  int `beve:"f26" json:"f26"`
-	F31, F32, F33, F34, F35  int `beve:"f31" json:"f31"`
-	F36, F37, F38, F39, F40  int `beve:"f36" json:"f36"`
-	F41, F42, F43, F44, F45  int `beve:"f41" json:"f41"`
-	F46, F47, F48, F49, F50  int `beve:"f46" json:"f46"`
+	F1, F2, F3, F4, F5      int `beve:"f1" json:"f1"`
+	F6, F7, F8, F9, F10     int `beve:"f6" json:"f6"`
+	F11, F12, F13, F14, F15 int `beve:"f11" json:"f11"`
+	F16, F17, F18, F19, F20 int `beve:"f16" json:"f16"`
+	F21, F22, F23, F24, F25 int `beve:"f21" json:"f21"`
+	F26, F27, F28, F29, F30 int `beve:"f26" json:"f26"`
+	F31, F32, F33, F34, F35 int `beve:"f31" json:"f31"`
+	F36, F37, F38, F39, F40 int `beve:"f36" json:"f36"`
+	F41, F42, F43, F44, F45 int `beve:"f41" json:"f41"`
+	F46, F47, F48, F49, F50 int `beve:"f46" json:"f46"`
 }
 
 func BenchmarkProfile_WideStruct_BEVE(b *testing.B) {
@@ -182,9 +182,9 @@ func BenchmarkProfile_InterfaceSlice_CBOR(b *testing.B) {
 // Test different struct layouts to understand cache effects
 type CacheFriendlyStruct struct {
 	// Hot fields first (most accessed)
-	ID     int64  `beve:"id" json:"id"`
-	Status byte   `beve:"status" json:"status"`
-	Count  int32  `beve:"count" json:"count"`
+	ID     int64 `beve:"id" json:"id"`
+	Status byte  `beve:"status" json:"status"`
+	Count  int32 `beve:"count" json:"count"`
 	// Cold fields last
 	Metadata string `beve:"metadata" json:"metadata"`
 	Extra    []byte `beve:"extra" json:"extra"`
@@ -309,17 +309,17 @@ type TinyStruct struct {
 }
 
 type MediumStruct struct {
-	A, B, C, D, E       int `beve:"a" json:"a"`
-	F, G, H, I, J       int `beve:"f" json:"f"`
+	A, B, C, D, E int `beve:"a" json:"a"`
+	F, G, H, I, J int `beve:"f" json:"f"`
 }
 
 type LargeStruct struct {
-	A, B, C, D, E       int    `beve:"a" json:"a"`
-	F, G, H, I, J       int    `beve:"f" json:"f"`
-	K, L, M, N, O       int    `beve:"k" json:"k"`
-	P, Q, R, S, T       int    `beve:"p" json:"p"`
-	U, V, W, X, Y, Z    int    `beve:"u" json:"u"`
-	Data                string `beve:"data" json:"data"`
+	A, B, C, D, E    int    `beve:"a" json:"a"`
+	F, G, H, I, J    int    `beve:"f" json:"f"`
+	K, L, M, N, O    int    `beve:"k" json:"k"`
+	P, Q, R, S, T    int    `beve:"p" json:"p"`
+	U, V, W, X, Y, Z int    `beve:"u" json:"u"`
+	Data             string `beve:"data" json:"data"`
 }
 
 func BenchmarkProfile_TinyStruct_BEVE(b *testing.B) {
@@ -405,10 +405,10 @@ func BenchmarkProfile_EncoderReuse_BEVE(b *testing.B) {
 		A: 1, B: 2, C: 3, D: 4, E: 5,
 		F: 6, G: 7, H: 8, I: 9, J: 10,
 	}
-	
+
 	lease, _ := MarshalZeroCopy(data)
 	lease.Release()
-	
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

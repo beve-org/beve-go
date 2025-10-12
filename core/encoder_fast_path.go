@@ -14,7 +14,7 @@ func isWideStructSmallValues(info *encoderStructInfo) bool {
 	if len(info.fields) < 20 {
 		return false // Not wide enough
 	}
-	
+
 	// Check if most fields are primitives (int, bool, float)
 	primitiveCount := 0
 	for i := range info.fields {
@@ -27,7 +27,7 @@ func isWideStructSmallValues(info *encoderStructInfo) bool {
 			primitiveCount++
 		}
 	}
-	
+
 	// If 80%+ fields are primitives, use fast path
 	return primitiveCount*100/len(info.fields) >= 80
 }
@@ -41,16 +41,16 @@ func (e *Encoder) encodeWideStructFastPath(info *encoderStructInfo, base unsafe.
 		// Fast path only works with buffered encoding
 		return e.encodeStructPtr(info, base)
 	}
-	
+
 	// Pre-allocate generous buffer for wide struct
 	estimate := len(info.fields) * 8 // Assume ~8 bytes per field
 	e.Buf.Grow(estimate)
-	
+
 	// Write struct header
 	if err := e.WriteByte(0x03); err != nil {
 		return err
 	}
-	
+
 	// Count non-empty fields
 	count := info.staticCount
 	for _, idx := range info.omitEmpty {
@@ -60,16 +60,16 @@ func (e *Encoder) encodeWideStructFastPath(info *encoderStructInfo, base unsafe.
 			count++
 		}
 	}
-	
+
 	if err := e.WriteCompressedUint(uint64(count)); err != nil {
 		return err
 	}
-	
+
 	// Inline field encoding (critical hot path)
 	buf := e.Buf.data
 	for i := range info.fields {
 		field := &info.fields[i]
-		
+
 		// Skip empty fields
 		if field.omitEmpty {
 			fieldPtr := unsafe.Add(base, field.offset)
@@ -77,15 +77,15 @@ func (e *Encoder) encodeWideStructFastPath(info *encoderStructInfo, base unsafe.
 				continue
 			}
 		}
-		
+
 		// Write field key (pre-computed)
 		buf = append(buf, field.key...)
-		
+
 		// Write field value (inline for primitives)
 		fieldPtr := unsafe.Add(base, field.offset)
 		buf = appendFieldValueInline(buf, field, fieldPtr)
 	}
-	
+
 	e.Buf.data = buf
 	return nil
 }

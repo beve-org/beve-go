@@ -29,12 +29,12 @@ type encoderStructField struct {
 
 // encoderStructInfo caches struct field metadata for fast encoding.
 type encoderStructInfo struct {
-	fields        []encoderStructField
-	staticCount   int
-	omitEmpty     []int
-	baseSize      int
-	sizeHint      uint32
-	useFastPath   bool  // True if struct qualifies for wide struct fast path
+	fields      []encoderStructField
+	staticCount int
+	omitEmpty   []int
+	baseSize    int
+	sizeHint    uint32
+	useFastPath bool // True if struct qualifies for wide struct fast path
 }
 
 type mapEncoderFunc func(*Encoder, unsafe.Pointer) error
@@ -44,7 +44,7 @@ var encoderStructInfoCache sync.Map // map[reflect.Type]*encoderStructInfo
 
 func buildStructEncoder(t reflect.Type) encoderFunc {
 	info := getEncoderStructInfo(t)
-	
+
 	// Use fast path for wide structs with primitive fields
 	if info.useFastPath {
 		return func(e *Encoder, v reflect.Value) error {
@@ -56,7 +56,7 @@ func buildStructEncoder(t reflect.Type) encoderFunc {
 			return err
 		}
 	}
-	
+
 	// Normal path for other structs
 	return func(e *Encoder, v reflect.Value) error {
 		_, basePtr, keep := ensureAddressableStruct(v)
@@ -202,7 +202,7 @@ func finalizeEncoderStructInfo(info *encoderStructInfo) {
 		base = max
 	}
 	atomic.StoreUint32(&info.sizeHint, uint32(base))
-	
+
 	// Check if struct qualifies for fast path
 	info.useFastPath = isWideStructSmallValues(info)
 }
@@ -455,9 +455,18 @@ func writeMapHeader(e *Encoder, keyTypeByte byte, size int) error {
 }
 
 func encodeStringKeyMap[T any](e *Encoder, m map[string]T, writeValue func(*Encoder, T) error) error {
-	if err := writeMapHeader(e, 0, len(m)); err != nil {
+	mapSize := len(m)
+	
+	if err := writeMapHeader(e, 0, mapSize); err != nil {
 		return err
 	}
+	
+	// Phase 4.2 optimization: Pre-allocate buffer for large maps
+	if mapSize >= 50 && e.Buf != nil {
+		estimate := mapSize * 20 // 10 bytes per key, 10 bytes per value (estimate)
+		e.Buf.Grow(estimate)
+	}
+	
 	for k, v := range m {
 		if err := e.WriteCompressedUint(uint64(len(k))); err != nil {
 			return err
@@ -473,9 +482,18 @@ func encodeStringKeyMap[T any](e *Encoder, m map[string]T, writeValue func(*Enco
 }
 
 func encodeStringInterfaceMap(e *Encoder, m map[string]interface{}) error {
-	if err := writeMapHeader(e, 0, len(m)); err != nil {
+	mapSize := len(m)
+	
+	if err := writeMapHeader(e, 0, mapSize); err != nil {
 		return err
 	}
+	
+	// Phase 4.2 optimization: Pre-allocate buffer for large maps
+	if mapSize >= 50 && e.Buf != nil {
+		estimate := mapSize * 30 // ~30 bytes per entry for interface{} maps
+		e.Buf.Grow(estimate)
+	}
+	
 	for k, v := range m {
 		if err := e.WriteCompressedUint(uint64(len(k))); err != nil {
 			return err
@@ -699,9 +717,7 @@ func (e *Encoder) encodePrimitiveSlice(v reflect.Value, kind reflect.Kind) error
 // TODO: Move full implementation from reflect_optimize.go
 func (e *Encoder) encodeMapFast(v reflect.Value) error {
 	keyType := v.Type().Key()
-	valueType := v.Type().Elem()
-
-	valueEncoder := getEncoderFunc(valueType)
+	valueEncoder := getEncoderFunc(v.Type().Elem())
 
 	switch keyType.Kind() {
 	case reflect.String:
@@ -716,8 +732,16 @@ func (e *Encoder) encodeMapFast(v reflect.Value) error {
 }
 
 func (e *Encoder) encodeMapStringFast(v reflect.Value, valueEncoder encoderFunc) error {
-	if err := writeMapHeader(e, 0, v.Len()); err != nil {
+	mapSize := v.Len()
+	
+	if err := writeMapHeader(e, 0, mapSize); err != nil {
 		return err
+	}
+
+	// Phase 4.2 optimization: Pre-allocate buffer for large maps
+	if mapSize >= 50 && e.Buf != nil {
+		estimate := mapSize * 20 // ~20 bytes per entry estimate
+		e.Buf.Grow(estimate)
 	}
 
 	iter := v.MapRange()
@@ -737,8 +761,16 @@ func (e *Encoder) encodeMapStringFast(v reflect.Value, valueEncoder encoderFunc)
 }
 
 func (e *Encoder) encodeMapIntFast(v reflect.Value, valueEncoder encoderFunc) error {
-	if err := writeMapHeader(e, 1, v.Len()); err != nil {
+	mapSize := v.Len()
+	
+	if err := writeMapHeader(e, 1, mapSize); err != nil {
 		return err
+	}
+
+	// Phase 4.2 optimization: Pre-allocate buffer for large maps
+	if mapSize >= 50 && e.Buf != nil {
+		estimate := mapSize * 16 // 8 bytes key + ~8 bytes value
+		e.Buf.Grow(estimate)
 	}
 
 	iter := v.MapRange()
@@ -756,8 +788,16 @@ func (e *Encoder) encodeMapIntFast(v reflect.Value, valueEncoder encoderFunc) er
 }
 
 func (e *Encoder) encodeMapUintFast(v reflect.Value, valueEncoder encoderFunc) error {
-	if err := writeMapHeader(e, 2, v.Len()); err != nil {
+	mapSize := v.Len()
+	
+	if err := writeMapHeader(e, 2, mapSize); err != nil {
 		return err
+	}
+
+	// Phase 4.2 optimization: Pre-allocate buffer for large maps
+	if mapSize >= 50 && e.Buf != nil {
+		estimate := mapSize * 16 // 8 bytes key + ~8 bytes value
+		e.Buf.Grow(estimate)
 	}
 
 	iter := v.MapRange()
