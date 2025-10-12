@@ -1,13 +1,13 @@
 # BEVE Benchmark Snapshot
 
-> Generated: 2025-10-11T21:53:11Z
-> Hostname: sat12-bq166-0c068cd5-cd23-4577-a829-38877c50c1b0-CABA16475D91.local
+> Generated: 2025-10-12T14:40:32Z
+> Hostname: Mac-1760277930182.local
 > OS: Darwin
 > Kernel: Darwin 24.6.0 Darwin Kernel Version 24.6.0: Mon Jul 14 11:30:18 PDT 2025; root:xnu-11417.140.69~1/RELEASE_ARM64_VMAPPLE
 > Architecture: arm64
 > CPU: Apple M1 (Virtual)
 > Go: go version go1.25.1 darwin/arm64
-> Git: a8e6011
+> Git: f75d097
 
 Metrics below cover BEVE alongside CBOR, Sonic, MessagePack, and Go's encoding/json implementations.
 
@@ -15,57 +15,57 @@ Metrics below cover BEVE alongside CBOR, Sonic, MessagePack, and Go's encoding/j
 
 | Scenario | Codec | Operation | ns/op | B/op | allocs/op |
 |----------|-------|-----------|-------|------|-----------|
-| Small Struct | BEVE | Marshal | 497.8 | 930 | 3 |
-| Small Struct | BEVE ZeroCopy | Marshal | 917.3 | 289 | 2 |
-| Small Struct | CBOR | Marshal | 1016 | 1425 | 2 |
-| Small Struct | MessagePack | Marshal | 1656 | 4224 | 8 |
-| Small Struct | JSON | Marshal | 1837 | 1296 | 2 |
-| Small Struct | Sonic | Marshal | 2990 | 1967 | 3 |
-| Small Struct | BEVE | Unmarshal | 773.7 | 1336 | 4 |
-| Small Struct | Sonic | Unmarshal | 1513 | 1722 | 6 |
-| Small Struct | MessagePack | Unmarshal | 1538 | 1512 | 34 |
-| Small Struct | CBOR | Unmarshal | 4958 | 4328 | 92 |
-| Small Struct | JSON | Unmarshal | 12117 | 4168 | 67 |
-| Medium Payload | BEVE ZeroCopy | Marshal | 5935 | 141 | 2 |
-| Medium Payload | BEVE | Marshal | 7557 | 14576 | 3 |
-| Medium Payload | CBOR | Marshal | 16317 | 24664 | 2 |
-| Medium Payload | MessagePack | Marshal | 21822 | 65834 | 22 |
-| Medium Payload | JSON | Marshal | 29399 | 20797 | 9 |
-| Medium Payload | Sonic | Marshal | 47340 | 27588 | 4 |
-| Medium Payload | BEVE | Unmarshal | 13445 | 16250 | 59 |
-| Medium Payload | Sonic | Unmarshal | 27490 | 34840 | 33 |
-| Medium Payload | MessagePack | Unmarshal | 39418 | 40670 | 765 |
-| Medium Payload | CBOR | Unmarshal | 53636 | 33721 | 695 |
-| Medium Payload | JSON | Unmarshal | 153905 | 47145 | 643 |
-| Large Payload | BEVE ZeroCopy | Marshal | 61688 | 303 | 2 |
-| Large Payload | BEVE | Marshal | 104991 | 200873 | 3 |
-| Large Payload | CBOR | Marshal | 145670 | 197668 | 2 |
-| Large Payload | MessagePack | Marshal | 187330 | 526834 | 115 |
-| Large Payload | JSON | Marshal | 351637 | 230409 | 9 |
-| Large Payload | Sonic | Marshal | 380269 | 213905 | 4 |
-| Large Payload | BEVE | Unmarshal | 124112 | 156051 | 419 |
-| Large Payload | Sonic | Unmarshal | 234004 | 329671 | 209 |
-| Large Payload | MessagePack | Unmarshal | 361269 | 352778 | 6434 |
-| Large Payload | CBOR | Unmarshal | 416311 | 317641 | 6477 |
-| Large Payload | JSON | Unmarshal | 1496116 | 518393 | 6812 |
+| Small Struct | CBOR | Marshal | 582.8 | 400 | 2 |
+| Small Struct | BEVE ZeroCopy | Marshal | 819.9 | 288 | 2 |
+| Small Struct | BEVE | Marshal | 1068 | 866 | 3 |
+| Small Struct | Sonic | Marshal | 1476 | 590 | 3 |
+| Small Struct | MessagePack | Marshal | 6387 | 8321 | 9 |
+| Small Struct | JSON | Marshal | 7795 | 2192 | 2 |
+| Small Struct | BEVE | Unmarshal | 995.8 | 1336 | 4 |
+| Small Struct | CBOR | Unmarshal | 2968 | 1480 | 34 |
+| Small Struct | Sonic | Unmarshal | 4482 | 4350 | 6 |
+| Small Struct | MessagePack | Unmarshal | 5858 | 4385 | 93 |
+| Small Struct | JSON | Unmarshal | 13701 | 3784 | 55 |
+| Medium Payload | BEVE | Marshal | 12102 | 18652 | 3 |
+| Medium Payload | BEVE ZeroCopy | Marshal | 12115 | 134 | 2 |
+| Medium Payload | CBOR | Marshal | 19153 | 21847 | 2 |
+| Medium Payload | MessagePack | Marshal | 32444 | 33062 | 21 |
+| Medium Payload | JSON | Marshal | 48002 | 20797 | 9 |
+| Medium Payload | Sonic | Marshal | 62442 | 25124 | 4 |
+| Medium Payload | BEVE | Unmarshal | 21989 | 13674 | 59 |
+| Medium Payload | Sonic | Unmarshal | 41982 | 36520 | 33 |
+| Medium Payload | MessagePack | Unmarshal | 65045 | 29037 | 528 |
+| Medium Payload | CBOR | Unmarshal | 75972 | 30633 | 631 |
+| Medium Payload | JSON | Unmarshal | 192421 | 47097 | 596 |
+| Large Payload | BEVE ZeroCopy | Marshal | 87814 | 303 | 2 |
+| Large Payload | BEVE | Marshal | 129777 | 201487 | 3 |
+| Large Payload | CBOR | Marshal | 272266 | 189288 | 2 |
+| Large Payload | MessagePack | Marshal | 331496 | 526822 | 115 |
+| Large Payload | JSON | Marshal | 483981 | 222215 | 9 |
+| Large Payload | Sonic | Marshal | 553298 | 230727 | 4 |
+| Large Payload | BEVE | Unmarshal | 263776 | 154003 | 417 |
+| Large Payload | Sonic | Unmarshal | 329678 | 351097 | 211 |
+| Large Payload | MessagePack | Unmarshal | 503645 | 358269 | 6554 |
+| Large Payload | CBOR | Unmarshal | 567521 | 318460 | 6500 |
+| Large Payload | JSON | Unmarshal | 2114734 | 514038 | 6710 |
 
 ## Commands
 
 | Scenario | Codec | Operation | Command |
 |----------|-------|-----------|---------|
-| Small Struct | BEVE | Marshal | `go test -bench=\^BenchmarkSmallStruct_BEVE_Marshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
-| Small Struct | BEVE ZeroCopy | Marshal | `go test -bench=\^BenchmarkSmallStruct_BEVE_MarshalZeroCopy\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
 | Small Struct | CBOR | Marshal | `go test -bench=\^BenchmarkSmallStruct_CBOR_Marshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
+| Small Struct | BEVE ZeroCopy | Marshal | `go test -bench=\^BenchmarkSmallStruct_BEVE_MarshalZeroCopy\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
+| Small Struct | BEVE | Marshal | `go test -bench=\^BenchmarkSmallStruct_BEVE_Marshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
+| Small Struct | Sonic | Marshal | `go test -bench=\^BenchmarkSmallStruct_Sonic_Marshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
 | Small Struct | MessagePack | Marshal | `go test -bench=\^BenchmarkSmallStruct_MessagePack_Marshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
 | Small Struct | JSON | Marshal | `go test -bench=\^BenchmarkSmallStruct_JSON_Marshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
-| Small Struct | Sonic | Marshal | `go test -bench=\^BenchmarkSmallStruct_Sonic_Marshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
 | Small Struct | BEVE | Unmarshal | `go test -bench=\^BenchmarkSmallStruct_BEVE_Unmarshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
+| Small Struct | CBOR | Unmarshal | `go test -bench=\^BenchmarkSmallStruct_CBOR_Unmarshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
 | Small Struct | Sonic | Unmarshal | `go test -bench=\^BenchmarkSmallStruct_Sonic_Unmarshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
 | Small Struct | MessagePack | Unmarshal | `go test -bench=\^BenchmarkSmallStruct_MessagePack_Unmarshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
-| Small Struct | CBOR | Unmarshal | `go test -bench=\^BenchmarkSmallStruct_CBOR_Unmarshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
 | Small Struct | JSON | Unmarshal | `go test -bench=\^BenchmarkSmallStruct_JSON_Unmarshal\$ -benchmem -benchtime=10000x -run=\^\$ ./...` |
-| Medium Payload | BEVE ZeroCopy | Marshal | `go test -bench=\^BenchmarkMedium_BEVE_MarshalZeroCopy\$ -benchmem -benchtime=5000x -run=\^\$ ./...` |
 | Medium Payload | BEVE | Marshal | `go test -bench=\^BenchmarkMedium_BEVE_Marshal\$ -benchmem -benchtime=5000x -run=\^\$ ./...` |
+| Medium Payload | BEVE ZeroCopy | Marshal | `go test -bench=\^BenchmarkMedium_BEVE_MarshalZeroCopy\$ -benchmem -benchtime=5000x -run=\^\$ ./...` |
 | Medium Payload | CBOR | Marshal | `go test -bench=\^BenchmarkMedium_CBOR_Marshal\$ -benchmem -benchtime=5000x -run=\^\$ ./...` |
 | Medium Payload | MessagePack | Marshal | `go test -bench=\^BenchmarkMedium_MessagePack_Marshal\$ -benchmem -benchtime=5000x -run=\^\$ ./...` |
 | Medium Payload | JSON | Marshal | `go test -bench=\^BenchmarkMedium_JSON_Marshal\$ -benchmem -benchtime=5000x -run=\^\$ ./...` |
