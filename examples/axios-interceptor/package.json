@@ -1,0 +1,35 @@
+{
+  "name": "@beve-org/axios-interceptor",
+  "version": "1.0.0",
+  "description": "Automatic BEVE encoding/decoding for Axios HTTP client",
+  "main": "axios-beve.ts",
+  "types": "axios-beve.ts",
+  "keywords": [
+    "beve",
+    "axios",
+    "interceptor",
+    "binary",
+    "encoding",
+    "serialization",
+    "performance"
+  ],
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "axios": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "axios": "^1.6.0",
+    "typescript": "^5.0.0"
+  },
+  "author": "BEVE Organization",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beve-org/beve-go"
+  }
+}
