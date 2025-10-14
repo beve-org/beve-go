@@ -234,8 +234,8 @@ func (d *Decoder) DecodeGenericArray(v reflect.Value) error {
 		}
 		return nil
 	case reflect.Interface:
-		// Decode as []interface{}
-		slice := make([]interface{}, length)
+		// Decode as []interface{} with 2x capacity growth
+		slice := make([]interface{}, length, length*2)
 		for i := 0; i < length; i++ {
 			var elem interface{}
 			if err := d.Decode(reflect.ValueOf(&elem).Elem()); err != nil {
@@ -1261,7 +1261,9 @@ func (d *Decoder) decodeStringTypedArray(v reflect.Value, length int) error {
 			slice := *slicePtr
 
 			if cap(slice) < length {
-				slice = make([]string, length)
+				// Use 2x growth factor to reduce future reallocations
+				capacity := length * 2
+				slice = make([]string, length, capacity)
 			} else {
 				slice = slice[:length]
 			}
@@ -1332,7 +1334,8 @@ func (d *Decoder) decodeStringTypedArray(v reflect.Value, length int) error {
 		}
 		return nil
 	case reflect.Interface:
-		slice := make([]string, length)
+		// Use 2x growth factor for future-proofing
+		slice := make([]string, length, length*2)
 
 		// Read strings directly (format is interleaved)
 		for i := 0; i < length; i++ {
