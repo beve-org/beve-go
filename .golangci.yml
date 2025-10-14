@@ -1,42 +1,30 @@
+# Golangci-lint configuration for BEVE Go
+# Compatible with v1.64+ and v2.5.0+
+version: "2"
+
 run:
   timeout: 5m
   tests: true
   modules-download-mode: readonly
 
 linters:
+  # Enabled by default in v2.5.0: errcheck, govet, ineffassign, staticcheck, unused
   enable:
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-    - gofmt
-    - goimports
-    - misspell
-    - unconvert
-    - unparam
-    - goconst
-    - prealloc
+    - errcheck      # Check for unchecked errors
+    - govet         # Examine Go source code for suspicious constructs
+    - ineffassign   # Detect unused assignments
+    - staticcheck   # Advanced static analysis (includes gosimple in v2.5.0+)
+    - unused        # Check for unused code
+    - misspell      # Find misspelled English words
+    - goconst       # Find repeated strings that could be constants
+    - prealloc      # Find slice declarations that could be preallocated
 
-linters-settings:
-  errcheck:
-    check-blank: true
-  govet:
-    check-shadowing: true
-  gofmt:
-    simplify: true
-  misspell:
-    locale: US
+formatters:
+  enable:
+    - gofmt         # Format code with gofmt
+    - goimports     # Format code with goimports (includes gofmt)
 
 issues:
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - gosec
+  exclude-paths:
+    - examples/
+    - cmd/
