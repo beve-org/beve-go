@@ -103,14 +103,14 @@ func writeCompressedUintPure(scratch *[5]byte, n uint64) int {
 		scratch[0] = byte(n << 2)
 		return 1
 	}
-	
+
 	// Two byte encoding: n < 16384
 	if n < 16384 {
 		scratch[0] = byte((n>>8)<<2) | 0x01
 		scratch[1] = byte(n)
 		return 2
 	}
-	
+
 	// Three byte encoding: n < 1073741824 (2^30)
 	if n < 1073741824 {
 		scratch[0] = byte((n>>16)<<2) | 0x02
@@ -118,7 +118,7 @@ func writeCompressedUintPure(scratch *[5]byte, n uint64) int {
 		scratch[2] = byte(n)
 		return 3
 	}
-	
+
 	// Four byte encoding: n >= 1073741824
 	scratch[0] = byte((n>>24)<<2) | 0x03
 	scratch[1] = byte(n >> 16)
