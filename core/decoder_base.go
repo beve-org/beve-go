@@ -37,48 +37,6 @@ var decoderPool = sync.Pool{
 	},
 }
 
-// stringSlicePool reuses string slices to reduce allocations in decodeStringTypedArray.
-// Slices are pooled by size buckets: 16, 64, 256, 1024, 4096.
-var stringSlicePools = [5]sync.Pool{
-	{New: func() interface{} { s := make([]string, 0, 16); return &s }},   // 0-16
-	{New: func() interface{} { s := make([]string, 0, 64); return &s }},   // 17-64
-	{New: func() interface{} { s := make([]string, 0, 256); return &s }},  // 65-256
-	{New: func() interface{} { s := make([]string, 0, 1024); return &s }}, // 257-1024
-	{New: func() interface{} { s := make([]string, 0, 4096); return &s }}, // 1025-4096
-}
-
-// getStringSlice returns a string slice from the pool with at least the requested capacity.
-// Only pools slices >= 256 elements to avoid overhead on small arrays.
-func getStringSlice(length int) []string {
-	// OPTIMIZATION: Don't pool small slices - allocation is faster
-	if length < 256 {
-		return make([]string, length)
-	}
-
-	var poolIdx int
-	switch {
-	case length <= 256:
-		poolIdx = 2
-	case length <= 1024:
-		poolIdx = 3
-	case length <= 4096:
-		poolIdx = 4
-	default:
-		// Too large for pooling, allocate directly
-		return make([]string, length)
-	}
-
-	slicePtr := stringSlicePools[poolIdx].Get().(*[]string)
-	slice := *slicePtr
-	if cap(slice) < length {
-		slice = make([]string, length)
-	} else {
-		slice = slice[:length]
-		// No need to clear - will be overwritten during decode
-	}
-	return slice
-}
-
 // NewDecoder creates a new decoder for the given data.
 func NewDecoder(data []byte) *Decoder {
 	dec := decoderPool.Get().(*Decoder)

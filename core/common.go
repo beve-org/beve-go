@@ -193,11 +193,25 @@ func ClearEncoderCache() {
 		encoderFuncCache.Delete(key)
 		return true
 	})
+	typeInfoCache.Range(func(key, value interface{}) bool {
+		typeInfoCache.Delete(key)
+		return true
+	})
+	encoderStructInfoCache.Range(func(key, value interface{}) bool {
+		encoderStructInfoCache.Delete(key)
+		return true
+	})
 }
 
 // ClearDecoderCache clears the decoder cache.
 // This is useful when changing struct tag configuration.
 func ClearDecoderCache() {
-	// Decoder doesn't have a separate cache yet, but we include this
-	// for future-proofing and API consistency.
+	structInfoCache.Range(func(key, value interface{}) bool {
+		structInfoCache.Delete(key)
+		return true
+	})
+	mapValueDecoderCache.Range(func(key, value interface{}) bool {
+		mapValueDecoderCache.Delete(key)
+		return true
+	})
 }

@@ -168,14 +168,8 @@ func (e *Encoder) encodeMapStringBool(mapInterface interface{}, mapLen int) erro
 		if err := e.WriteStringBytes(k); err != nil {
 			return err
 		}
-		if v {
-			if err := e.WriteByte(0x10); err != nil { // true
-				return err
-			}
-		} else {
-			if err := e.WriteByte(0x0C); err != nil { // false
-				return err
-			}
+		if err := e.encodeBool(v); err != nil {
+			return err
 		}
 	}
 	return nil

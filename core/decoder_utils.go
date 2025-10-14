@@ -114,10 +114,14 @@ func EnsureSliceLength(v reflect.Value, length int) error {
 		// Create new slice
 		v.Set(reflect.MakeSlice(v.Type(), length, length))
 	} else if v.Len() < length {
-		// Grow existing slice
-		newSlice := reflect.MakeSlice(v.Type(), length, length)
-		reflect.Copy(newSlice, v)
-		v.Set(newSlice)
+		// Grow existing slice while reusing capacity when possible.
+		if v.Cap() >= length {
+			v.SetLen(length)
+		} else {
+			newSlice := reflect.MakeSlice(v.Type(), length, length)
+			reflect.Copy(newSlice, v)
+			v.Set(newSlice)
+		}
 	} else if v.Len() > length {
 		// Truncate slice
 		v.SetLen(length)

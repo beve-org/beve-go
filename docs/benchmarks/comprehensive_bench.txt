@@ -1,0 +1,28 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go
+cpu: Apple M2 Max
+BenchmarkSmallStruct_BEVE_Marshal-12             	   30000	      1569 ns/op	    2337 B/op	       3 allocs/op
+BenchmarkSmallStruct_BEVE_MarshalZeroCopy-12     	   30000	      1027 ns/op	     289 B/op	       2 allocs/op
+BenchmarkSmallStruct_JSON_Marshal-12             	   30000	      3113 ns/op	    2834 B/op	       2 allocs/op
+BenchmarkSmallStruct_Sonic_Marshal-12            	   30000	       737.6 ns/op	     531 B/op	       3 allocs/op
+BenchmarkSmallStruct_MessagePack_Marshal-12      	   30000	      1360 ns/op	    4226 B/op	       8 allocs/op
+BenchmarkSmallStruct_CBOR_Marshal-12             	   30000	      1177 ns/op	    2193 B/op	       2 allocs/op
+BenchmarkSmallStruct_BEVE_Unmarshal-12           	   30000	       619.8 ns/op	    1080 B/op	       4 allocs/op
+BenchmarkSmallStruct_JSON_Unmarshal-12           	   30000	     16566 ns/op	    7688 B/op	     106 allocs/op
+BenchmarkSmallStruct_Sonic_Unmarshal-12          	   30000	      2309 ns/op	    5341 B/op	       6 allocs/op
+BenchmarkSmallStruct_MessagePack_Unmarshal-12    	   30000	      1647 ns/op	    2049 B/op	      44 allocs/op
+BenchmarkSmallStruct_CBOR_Unmarshal-12           	   30000	      3838 ns/op	    3880 B/op	      82 allocs/op
+BenchmarkMedium_BEVE_Marshal-12                  	   30000	     11493 ns/op	   21922 B/op	       3 allocs/op
+BenchmarkMedium_BEVE_MarshalZeroCopy-12          	   30000	      6283 ns/op	     132 B/op	       2 allocs/op
+BenchmarkMedium_JSON_Marshal-12                  	   30000	     34050 ns/op	   27633 B/op	       9 allocs/op
+BenchmarkMedium_Sonic_Marshal-12                 	   30000	     34236 ns/op	   22272 B/op	       4 allocs/op
+BenchmarkMedium_MessagePack_Marshal-12           	   30000	     19727 ns/op	   65875 B/op	      22 allocs/op
+BenchmarkMedium_BEVE_Unmarshal-12                	   30000	     12126 ns/op	   16740 B/op	      59 allocs/op
+BenchmarkMedium_JSON_Unmarshal-12                	   30000	    143372 ns/op	   58232 B/op	     744 allocs/op
+BenchmarkMedium_Sonic_Unmarshal-12               	   30000	     22801 ns/op	   37770 B/op	      31 allocs/op
+BenchmarkMedium_CBOR_Unmarshal-12                	   30000	     36483 ns/op	   27928 B/op	     578 allocs/op
+BenchmarkMedium_MessagePack_Unmarshal-12         	   30000	     30012 ns/op	   34656 B/op	     636 allocs/op
+BenchmarkMedium_CBOR_Marshal-12                  	   30000	     11754 ns/op	   18597 B/op	       2 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go	12.131s

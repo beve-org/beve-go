@@ -1260,10 +1260,8 @@ func (d *Decoder) decodeStringTypedArray(v reflect.Value, length int) error {
 			slicePtr := (*[]string)(unsafe.Pointer(v.UnsafeAddr()))
 			slice := *slicePtr
 
-			// OPTIMIZATION: Use pooled slice to reduce allocations
-			needsPool := cap(slice) < length
-			if needsPool {
-				slice = getStringSlice(length)
+			if cap(slice) < length {
+				slice = make([]string, length)
 			} else {
 				slice = slice[:length]
 			}
@@ -1334,8 +1332,7 @@ func (d *Decoder) decodeStringTypedArray(v reflect.Value, length int) error {
 		}
 		return nil
 	case reflect.Interface:
-		// OPTIMIZATION: Use pooled slice
-		slice := getStringSlice(length)
+		slice := make([]string, length)
 
 		// Read strings directly (format is interleaved)
 		for i := 0; i < length; i++ {

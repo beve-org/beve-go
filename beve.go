@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/beve-org/beve-go/core"
 )
@@ -38,51 +39,209 @@ func init() {
 type ZeroCopyBytes = core.BufferLease
 
 // Marshal encodes v into BEVE binary format.
-// It follows the same interface as encoding/json.Marshal.
-//
-// Fast paths for common types avoid reflection overhead:
-//   - Primitives: int, string, bool, float64
-//   - Slices: []byte directly encoded
-//   - Everything else: Uses reflection
+// It follows the same interface as encoding/json.Marshal and now covers
+// all primitive scalars and common slice types via zero-reflection fast paths.
 func Marshal(v interface{}) ([]byte, error) {
-	// Fast path: avoid reflect.ValueOf for common types
 	switch val := v.(type) {
 	case int:
 		return marshalInt(val)
+	case int8:
+		return marshalInt64(int64(val))
+	case int16:
+		return marshalInt64(int64(val))
+	case int32:
+		return marshalInt64(int64(val))
+	case int64:
+		return marshalInt64(val)
+	case uint:
+		return marshalUint64(uint64(val))
+	case uint8:
+		return marshalUint64(uint64(val))
+	case uint16:
+		return marshalUint64(uint64(val))
+	case uint32:
+		return marshalUint64(uint64(val))
+	case uint64:
+		return marshalUint64(val)
+	case float32:
+		return marshalFloat32(val)
+	case float64:
+		return marshalFloat64(val)
 	case string:
 		return marshalString(val)
 	case bool:
 		return marshalBool(val)
-	case float64:
-		return marshalFloat64(val)
 	case []byte:
 		return marshalBytes(val)
+	case []int8:
+		return marshalInt8Slice(val)
+	case []int16:
+		return marshalInt16Slice(val)
+	case []int32:
+		return marshalInt32Slice(val)
+	case []int64:
+		return marshalInt64Slice(val)
+	case []int:
+		return marshalIntSlice(val)
+	case []uint16:
+		return marshalUint16Slice(val)
+	case []uint32:
+		return marshalUint32Slice(val)
+	case []uint64:
+		return marshalUint64Slice(val)
+	case []uint:
+		return marshalUintSlice(val)
+	case []float32:
+		return marshalFloat32Slice(val)
+	case []float64:
+		return marshalFloat64Slice(val)
+	case []string:
+		return marshalStringSlice(val)
+	case []bool:
+		return marshalBoolSlice(val)
 	case time.Time:
 		return marshalTime(val)
+	case time.Duration:
+		return marshalInt64(int64(val))
 	}
 
-	// Slow path: use reflection with buffer pooling
+	return marshalGeneric(v)
+}
+
+func marshalGeneric(v interface{}) ([]byte, error) {
 	enc := getEncoderFromPool()
 	if enc.Buf != nil {
 		enc.Buf.Reset()
 	}
 
-	rv := reflect.ValueOf(v)
-	if err := enc.Encode(rv); err != nil {
+	handled, err := encodeFastValue(enc, v)
+	if err != nil {
 		putEncoderToPool(enc)
 		return nil, err
 	}
 
-	// Copy encoded data - make+copy is consistently faster than append for small sizes
+	if !handled {
+		rv := reflect.ValueOf(v)
+		if err := enc.Encode(rv); err != nil {
+			putEncoderToPool(enc)
+			return nil, err
+		}
+	}
+
 	encoded := enc.Buf.Bytes()
-	n := len(encoded)
-	result := make([]byte, n)
+	result := make([]byte, len(encoded))
 	copy(result, encoded)
 
-	// Return encoder to pool (buffer is retained and reset for next use)
 	putEncoderToPool(enc)
-
 	return result, nil
+}
+
+func encodeFastValue(enc *core.Encoder, v interface{}) (bool, error) {
+	switch val := v.(type) {
+	case int:
+		return true, core.EncodeIntFast(enc, int64(val))
+	case int8:
+		return true, core.EncodeIntFast(enc, int64(val))
+	case int16:
+		return true, core.EncodeIntFast(enc, int64(val))
+	case int32:
+		return true, core.EncodeIntFast(enc, int64(val))
+	case int64:
+		return true, core.EncodeIntFast(enc, val)
+	case uint:
+		return true, core.EncodeUintFast(enc, uint64(val))
+	case uint8:
+		return true, core.EncodeUintFast(enc, uint64(val))
+	case uint16:
+		return true, core.EncodeUintFast(enc, uint64(val))
+	case uint32:
+		return true, core.EncodeUintFast(enc, uint64(val))
+	case uint64:
+		return true, core.EncodeUintFast(enc, val)
+	case float32:
+		return true, core.EncodeFloat32Fast(enc, val)
+	case float64:
+		return true, core.EncodeFloat64Fast(enc, val)
+	case string:
+		return true, core.EncodeStringFast(enc, val)
+	case bool:
+		return true, core.EncodeBoolFast(enc, val)
+	case []byte:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeBytesFast(enc, val)
+	case []int8:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeInt8SliceFast(enc, val)
+	case []int16:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeInt16SliceFast(enc, val)
+	case []int32:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeInt32SliceFast(enc, val)
+	case []int64:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeInt64SliceFast(enc, val)
+	case []int:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, encodeIntSliceCompat(enc, val)
+	case []uint16:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeUint16SliceFast(enc, val)
+	case []uint32:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeUint32SliceFast(enc, val)
+	case []uint64:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeUint64SliceFast(enc, val)
+	case []uint:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, encodeUintSliceCompat(enc, val)
+	case []float32:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeFloat32SliceFast(enc, val)
+	case []float64:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeFloat64SliceFast(enc, val)
+	case []string:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeStringSliceFast(enc, val)
+	case []bool:
+		if len(val) == 0 {
+			return false, nil
+		}
+		return true, core.EncodeBoolSliceFast(enc, val)
+	case time.Time:
+		return true, core.EncodeIntFast(enc, val.UnixNano())
+	case time.Duration:
+		return true, core.EncodeIntFast(enc, int64(val))
+	}
+	return false, nil
 }
 
 // MarshalZeroCopy encodes v into BEVE binary format without copying the result.
@@ -96,11 +255,18 @@ func MarshalZeroCopy(v interface{}) (ZeroCopyBytes, error) {
 		enc.Buf.Reset()
 	}
 
-	// Encode the value
-	rv := reflect.ValueOf(v)
-	if err := enc.Encode(rv); err != nil {
+	handled, err := encodeFastValue(enc, v)
+	if err != nil {
 		putEncoderToPool(enc)
 		return ZeroCopyBytes{}, err
+	}
+
+	if !handled {
+		rv := reflect.ValueOf(v)
+		if err := enc.Encode(rv); err != nil {
+			putEncoderToPool(enc)
+			return ZeroCopyBytes{}, err
+		}
 	}
 
 	lease := enc.DetachBytes()
@@ -243,8 +409,7 @@ func marshalInt(v int) ([]byte, error) {
 		enc.Buf.Reset()
 		enc.Buf.Grow(16) // int needs max 10 bytes
 	}
-	rv := reflect.ValueOf(v)
-	if err := enc.Encode(rv); err != nil {
+	if err := core.EncodeIntFast(enc, int64(v)); err != nil {
 		return nil, err
 	}
 	// Copy data - make+copy for consistent small allocations
@@ -279,8 +444,7 @@ func marshalBool(v bool) ([]byte, error) {
 		enc.Buf.Reset()
 		enc.Buf.Grow(4) // bool needs 1 byte
 	}
-	rv := reflect.ValueOf(v)
-	if err := enc.Encode(rv); err != nil {
+	if err := core.EncodeBoolFast(enc, v); err != nil {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
@@ -298,8 +462,7 @@ func marshalFloat64(v float64) ([]byte, error) {
 		enc.Buf.Reset()
 		enc.Buf.Grow(16) // float64 needs 9 bytes
 	}
-	rv := reflect.ValueOf(v)
-	if err := enc.Encode(rv); err != nil {
+	if err := core.EncodeFloat64Fast(enc, v); err != nil {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
@@ -311,14 +474,16 @@ func marshalFloat64(v float64) ([]byte, error) {
 }
 
 func marshalBytes(v []byte) ([]byte, error) {
+	if len(v) == 0 {
+		return marshalGeneric(v)
+	}
 	enc := getEncoderFromPool()
 	defer putEncoderToPool(enc)
 	if enc.Buf != nil {
 		enc.Buf.Reset()
 		enc.Buf.Grow(len(v) + 8) // bytes + length encoding
 	}
-	rv := reflect.ValueOf(v)
-	if err := enc.Encode(rv); err != nil {
+	if err := core.EncodeBytesFast(enc, v); err != nil {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
@@ -347,9 +512,7 @@ func marshalInt64(n int64) ([]byte, error) {
 	if enc.Buf != nil {
 		enc.Buf.Reset()
 	}
-	// Use reflection to encode int64
-	rv := reflect.ValueOf(n)
-	if err := enc.Encode(rv); err != nil {
+	if err := core.EncodeIntFast(enc, n); err != nil {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
@@ -358,6 +521,213 @@ func marshalInt64(n int64) ([]byte, error) {
 	*result = growSlice(result, len(data))
 	copy(*result, data)
 	return *result, nil
+}
+
+func marshalUint64(n uint64) ([]byte, error) {
+	enc := getEncoderFromPool()
+	defer putEncoderToPool(enc)
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+	}
+	if err := core.EncodeUintFast(enc, n); err != nil {
+		return nil, err
+	}
+	data := enc.Buf.Bytes()
+	result := getByteSlice()
+	*result = growSlice(result, len(data))
+	copy(*result, data)
+	return *result, nil
+}
+
+func marshalFloat32(v float32) ([]byte, error) {
+	enc := getEncoderFromPool()
+	defer putEncoderToPool(enc)
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+		enc.Buf.Grow(12)
+	}
+	if err := core.EncodeFloat32Fast(enc, v); err != nil {
+		return nil, err
+	}
+	data := enc.Buf.Bytes()
+	result := getByteSlice()
+	*result = growSlice(result, len(data))
+	copy(*result, data)
+	return *result, nil
+}
+
+func marshalStringSlice(slice []string) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeStringSliceFast(enc, slice)
+	})
+}
+
+func marshalBoolSlice(slice []bool) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeBoolSliceFast(enc, slice)
+	})
+}
+
+func marshalInt8Slice(slice []int8) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeInt8SliceFast(enc, slice)
+	})
+}
+
+func marshalInt16Slice(slice []int16) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeInt16SliceFast(enc, slice)
+	})
+}
+
+func marshalInt32Slice(slice []int32) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeInt32SliceFast(enc, slice)
+	})
+}
+
+func marshalInt64Slice(slice []int64) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeInt64SliceFast(enc, slice)
+	})
+}
+
+func marshalIntSlice(slice []int) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return encodeIntSliceCompat(enc, slice)
+	})
+}
+
+func marshalUint16Slice(slice []uint16) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeUint16SliceFast(enc, slice)
+	})
+}
+
+func marshalUint32Slice(slice []uint32) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeUint32SliceFast(enc, slice)
+	})
+}
+
+func marshalUint64Slice(slice []uint64) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeUint64SliceFast(enc, slice)
+	})
+}
+
+func marshalUintSlice(slice []uint) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return encodeUintSliceCompat(enc, slice)
+	})
+}
+
+func encodeIntSliceCompat(enc *core.Encoder, slice []int) error {
+	if err := enc.WriteByte(0x85); err != nil {
+		return err
+	}
+	if err := enc.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+	for _, v := range slice {
+		if err := core.EncodeIntFast(enc, int64(v)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func encodeUintSliceCompat(enc *core.Encoder, slice []uint) error {
+	if err := enc.WriteByte(0x85); err != nil {
+		return err
+	}
+	if err := enc.WriteCompressedUint(uint64(len(slice))); err != nil {
+		return err
+	}
+	for _, v := range slice {
+		if err := core.EncodeUintFast(enc, uint64(v)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func marshalFloat32Slice(slice []float32) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeFloat32SliceFast(enc, slice)
+	})
+}
+
+func marshalFloat64Slice(slice []float64) ([]byte, error) {
+	if len(slice) == 0 {
+		return marshalGeneric(slice)
+	}
+	return marshalUsingEncoder(0, func(enc *core.Encoder) error {
+		return core.EncodeFloat64SliceFast(enc, slice)
+	})
+}
+
+func marshalUsingEncoder(estimate int, encode func(*core.Encoder) error) ([]byte, error) {
+	enc := getEncoderFromPool()
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+		if estimate > 0 {
+			enc.Buf.Grow(estimate)
+		}
+	}
+	defer putEncoderToPool(enc)
+
+	if err := encode(enc); err != nil {
+		return nil, err
+	}
+
+	data := enc.Buf.Bytes()
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
+}
+
+func reinterpretSlice[S any, D any](src []S) []D {
+	if len(src) == 0 {
+		return nil
+	}
+	return unsafe.Slice((*D)(unsafe.Pointer(&src[0])), len(src))
 }
 
 // Errors

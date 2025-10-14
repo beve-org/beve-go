@@ -7,6 +7,7 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestBasicTypes(t *testing.T) {
@@ -239,6 +240,95 @@ func TestFloat32RoundTrip(t *testing.T) {
 	if math.Abs(float64(float32(f64)-input)) > 1e-6 {
 		t.Fatalf("interface float mismatch: got %v want %v", f64, input)
 	}
+}
+
+func TestMarshalFastPathParity(t *testing.T) {
+	cases := []struct {
+		name  string
+		value interface{}
+	}{
+		{"Int8", int8(-12)},
+		{"Int16", int16(-1024)},
+		{"Int32", int32(123456)},
+		{"Int64", int64(-987654321)},
+		{"Uint", uint(12345)},
+		{"Uint16", uint16(65535)},
+		{"Uint32", uint32(4000000000)},
+		{"Uint64", uint64(1<<62 + 123)},
+		{"Float32", float32(1.75)},
+		{"Duration", time.Second * -42},
+		{"IntSlice", []int{-3, 0, 7, 1024}},
+		{"IntSliceEmpty", []int{}},
+		{"IntSliceNil", []int(nil)},
+		{"UintSlice", []uint{0, 1, 2048}},
+		{"UintSliceEmpty", []uint{}},
+		{"UintSliceNil", []uint(nil)},
+		{"Int8Slice", []int8{-128, -1, 0, 127}},
+		{"Int16Slice", []int16{-32768, 1, 32767}},
+		{"Int32Slice", []int32{-1024, 0, 2048}},
+		{"Int64Slice", []int64{-1 << 60, 0, 1 << 60}},
+		{"Uint16Slice", []uint16{0, 1, 65535}},
+		{"Uint32Slice", []uint32{0, 1, 4000000000}},
+		{"Uint64Slice", []uint64{0, 1, 1 << 62}},
+		{"StringSlice", []string{"", "alpha", "βeta"}},
+		{"StringSliceEmpty", []string{}},
+		{"StringSliceNil", []string(nil)},
+		{"BoolSlice", []bool{true, false, true, true}},
+		{"BoolSliceEmpty", []bool{}},
+		{"BoolSliceNil", []bool(nil)},
+		{"Float32Slice", []float32{0, -1.5, 2.75}},
+		{"Float32SliceEmpty", []float32{}},
+		{"Float64Slice", []float64{math.Pi, -math.E}},
+		{"Float64SliceEmpty", []float64{}},
+		{"ByteSlice", []byte{0, 1, 2, 3}},
+		{"ByteSliceEmpty", []byte{}},
+		{"ByteSliceNil", []byte(nil)},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fast, err := Marshal(tc.value)
+			if err != nil {
+				t.Fatalf("Marshal failed: %v", err)
+			}
+
+			slow, err := encodeViaReflection(tc.value)
+			if err != nil {
+				t.Fatalf("reflection encode failed: %v", err)
+			}
+
+			if !bytes.Equal(fast, slow) {
+				t.Fatalf("fast path mismatch\nfast=%x\nslow=%x", fast, slow)
+			}
+
+			lease, err := MarshalZeroCopy(tc.value)
+			if err != nil {
+				t.Fatalf("MarshalZeroCopy failed: %v", err)
+			}
+			zeroCopy := append([]byte(nil), lease.Bytes()...)
+			lease.Release()
+
+			if !bytes.Equal(zeroCopy, slow) {
+				t.Fatalf("zero-copy mismatch\nzero=%x\nslow=%x", zeroCopy, slow)
+			}
+		})
+	}
+}
+
+func encodeViaReflection(v interface{}) ([]byte, error) {
+	enc := getEncoderFromPool()
+	if enc.Buf != nil {
+		enc.Buf.Reset()
+	}
+	defer putEncoderToPool(enc)
+
+	if err := enc.Encode(reflect.ValueOf(v)); err != nil {
+		return nil, err
+	}
+	data := enc.Buf.Bytes()
+	out := make([]byte, len(data))
+	copy(out, data)
+	return out, nil
 }
 
 func TestMapStringInt(t *testing.T) {

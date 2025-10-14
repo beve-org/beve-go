@@ -23,14 +23,13 @@ func marshal(this js.Value, args []js.Value) interface{} {
 	// Convert JS value to Go interface
 	data := jsToGo(args[0])
 
-	// Debug: print what we're trying to marshal
-	println("[BEVE WASM] Marshal input type:", getTypeName(data))
-	if m, ok := data.(map[string]interface{}); ok {
-		println("[BEVE WASM] Map keys:", len(m))
-		for k, v := range m {
-			println("  -", k, ":", getTypeName(v))
-		}
-	}
+	// // Debug: print what we're trying to marshal
+	// if m, ok := data.(map[string]interface{}); ok {
+	// 	println("[BEVE WASM] Map keys:", len(m))
+	// 	for k, v := range m {
+	// 		println("  -", k, ":", getTypeName(v))
+	// 	}
+	// }
 
 	// Marshal with BEVE
 	encoded, err := beve.Marshal(data)
@@ -40,8 +39,6 @@ func marshal(this js.Value, args []js.Value) interface{} {
 			"error": err.Error(),
 		}
 	}
-
-	println("[BEVE WASM] Marshal SUCCESS: encoded", len(encoded), "bytes")
 
 	// Return as Uint8Array for JavaScript
 	dst := js.Global().Get("Uint8Array").New(len(encoded))
@@ -64,8 +61,6 @@ func unmarshal(this js.Value, args []js.Value) interface{} {
 	src := make([]byte, args[0].Get("length").Int())
 	js.CopyBytesToGo(src, args[0])
 
-	println("[BEVE WASM] Unmarshal: received", len(src), "bytes")
-
 	// Use RawMessage to preserve the original bytes, then decode manually
 	result, err := unmarshalDynamic(src)
 	if err != nil {
@@ -74,8 +69,6 @@ func unmarshal(this js.Value, args []js.Value) interface{} {
 			"error": err.Error(),
 		}
 	}
-
-	println("[BEVE WASM] Unmarshal SUCCESS: type:", getTypeName(result))
 
 	// Convert Go result to JS value
 	jsResult := goToJs(result)

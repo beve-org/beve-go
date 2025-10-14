@@ -1,0 +1,78 @@
+
+================================================================================
+PAYLOAD SIZE ANALYSIS
+================================================================================
+
+1. SMALL STRUCT (4 fields)
+--------------------------------------------------------------------------------
+BEVE:               45 bytes  (baseline: 1.05x)
+JSON:               55 bytes  (baseline: 1.28x)
+Sonic:              55 bytes  (baseline: 1.28x)
+MessagePack:        50 bytes  (baseline: 1.16x)
+CBOR:               43 bytes  (baseline: 1.00x)
+
+BEVE overhead:
+  vs MessagePack: -5 bytes (-10.0% larger)
+  vs CBOR:        +2 bytes (4.7% larger)
+  vs JSON:        -10 bytes (18.2% smaller)
+
+2. MEDIUM STRUCT (8 fields)
+--------------------------------------------------------------------------------
+BEVE:              170 bytes  (baseline: 1.05x)
+JSON:              208 bytes  (baseline: 1.28x)
+Sonic:             208 bytes  (baseline: 1.28x)
+MessagePack:       167 bytes  (baseline: 1.03x)
+CBOR:              162 bytes  (baseline: 1.00x)
+
+BEVE overhead:
+  vs MessagePack: +3 bytes (1.8% larger)
+  vs CBOR:        +8 bytes (4.9% larger)
+  vs JSON:        -38 bytes (18.3% smaller)
+
+3. LARGE STRUCT (15 fields)
+--------------------------------------------------------------------------------
+BEVE:              334 bytes  (baseline: 1.05x)
+JSON:              399 bytes  (baseline: 1.25x)
+Sonic:             399 bytes  (baseline: 1.25x)
+MessagePack:       324 bytes  (baseline: 1.02x)
+CBOR:              319 bytes  (baseline: 1.00x)
+
+BEVE overhead:
+  vs MessagePack: +10 bytes (3.1% larger)
+  vs CBOR:        +15 bytes (4.7% larger)
+  vs JSON:        -65 bytes (16.3% smaller)
+
+4. ARRAY OF 10 SMALL STRUCTS
+--------------------------------------------------------------------------------
+BEVE:              422 bytes  (baseline: 1.05x)
+JSON:              516 bytes  (baseline: 1.29x)
+Sonic:             516 bytes  (baseline: 1.29x)
+MessagePack:       471 bytes  (baseline: 1.17x)
+CBOR:              401 bytes  (baseline: 1.00x)
+
+BEVE overhead:
+  vs MessagePack: -49 bytes (-10.4% larger)
+  vs CBOR:        +21 bytes (5.2% larger)
+  vs JSON:        -94 bytes (18.2% smaller)
+
+================================================================================
+ANALYSIS COMPLETE
+================================================================================
+
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go
+cpu: Apple M2 Max
+BenchmarkSmallStruct_BEVE_Marshal-12             	   10000	      1401 ns/op	    2339 B/op	       3 allocs/op
+BenchmarkSmallStruct_BEVE_MarshalZeroCopy-12     	   10000	       669.9 ns/op	     288 B/op	       2 allocs/op
+BenchmarkSmallStruct_JSON_Marshal-12             	   10000	       774.3 ns/op	     592 B/op	       2 allocs/op
+BenchmarkSmallStruct_Sonic_Marshal-12            	   10000	      1644 ns/op	    1100 B/op	       3 allocs/op
+BenchmarkSmallStruct_MessagePack_Marshal-12      	   10000	      2313 ns/op	    8326 B/op	       9 allocs/op
+BenchmarkSmallStruct_CBOR_Marshal-12             	   10000	      1570 ns/op	    2836 B/op	       2 allocs/op
+BenchmarkSmallStruct_BEVE_Unmarshal-12           	   10000	       543.9 ns/op	     792 B/op	       4 allocs/op
+BenchmarkSmallStruct_JSON_Unmarshal-12           	   10000	      5423 ns/op	    2088 B/op	      37 allocs/op
+BenchmarkSmallStruct_Sonic_Unmarshal-12          	   10000	      2481 ns/op	    5329 B/op	       6 allocs/op
+BenchmarkSmallStruct_MessagePack_Unmarshal-12    	   10000	      3210 ns/op	    4451 B/op	      95 allocs/op
+BenchmarkSmallStruct_CBOR_Unmarshal-12           	   10000	      4042 ns/op	    3920 B/op	      83 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go	0.579s
