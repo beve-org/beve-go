@@ -208,15 +208,23 @@ func (e *Encoder) encodeSIMDUint64Array(data []uint64) error {
 // These are always available and used for small arrays or when SIMD disabled.
 
 // encodeInt32ArrayScalar is the scalar (non-SIMD) implementation for []int32.
+//
+// Phase 11: Updated to use generic typed array format (0x04) for compatibility.
+// Format: header (type=4, group=1 (signed), byte count=4) + varint(length) + [int32 × length]
 func (e *Encoder) encodeInt32ArrayScalar(data []int32) error {
-	// Write TYPE_INT32_ARRAY tag (0x91)
-	if err := e.WriteByte(0x91); err != nil {
+	// Write typed array header: type=4, group=1 (signed), byte count=2 (4 bytes)
+	header := byte(0x04 | (1 << 3) | (2 << 5))
+	if err := e.WriteByte(header); err != nil {
 		return err
 	}
 
 	// Write array length as varint
 	if err := e.WriteCompressedUint(uint64(len(data))); err != nil {
 		return err
+	}
+
+	if len(data) == 0 {
+		return nil
 	}
 
 	// Write each int32 as 4 bytes little-endian
@@ -230,13 +238,22 @@ func (e *Encoder) encodeInt32ArrayScalar(data []int32) error {
 }
 
 // encodeInt64ArrayScalar is the scalar (non-SIMD) implementation for []int64.
+//
+// Phase 11: Updated to use generic typed array format (0x04) for compatibility.
+// Format: header (type=4, group=1 (signed), byte count=8) + varint(length) + [int64 × length]
 func (e *Encoder) encodeInt64ArrayScalar(data []int64) error {
-	if err := e.WriteByte(0x92); err != nil {
+	// Write typed array header: type=4, group=1 (signed), byte count=3 (8 bytes)
+	header := byte(0x04 | (1 << 3) | (3 << 5))
+	if err := e.WriteByte(header); err != nil {
 		return err
 	}
 
 	if err := e.WriteCompressedUint(uint64(len(data))); err != nil {
 		return err
+	}
+
+	if len(data) == 0 {
+		return nil
 	}
 
 	for _, val := range data {
@@ -249,13 +266,22 @@ func (e *Encoder) encodeInt64ArrayScalar(data []int64) error {
 }
 
 // encodeFloat32ArrayScalar is the scalar (non-SIMD) implementation for []float32.
+//
+// Phase 11: Updated to use generic typed array format (0x04) for compatibility.
+// Format: header (type=4, group=0 (float), byte count=4) + varint(length) + [float32 × length]
 func (e *Encoder) encodeFloat32ArrayScalar(data []float32) error {
-	if err := e.WriteByte(0x93); err != nil {
+	// Write typed array header: type=4, group=0 (float), byte count=2 (4 bytes)
+	header := byte(0x04 | (0 << 3) | (2 << 5))
+	if err := e.WriteByte(header); err != nil {
 		return err
 	}
 
 	if err := e.WriteCompressedUint(uint64(len(data))); err != nil {
 		return err
+	}
+
+	if len(data) == 0 {
+		return nil
 	}
 
 	for _, val := range data {
@@ -268,13 +294,22 @@ func (e *Encoder) encodeFloat32ArrayScalar(data []float32) error {
 }
 
 // encodeFloat64ArrayScalar is the scalar (non-SIMD) implementation for []float64.
+//
+// Phase 11: Updated to use generic typed array format (0x04) for compatibility.
+// Format: header (type=4, group=0 (float), byte count=8) + varint(length) + [float64 × length]
 func (e *Encoder) encodeFloat64ArrayScalar(data []float64) error {
-	if err := e.WriteByte(0x94); err != nil {
+	// Write typed array header: type=4, group=0 (float), byte count=3 (8 bytes)
+	header := byte(0x04 | (0 << 3) | (3 << 5))
+	if err := e.WriteByte(header); err != nil {
 		return err
 	}
 
 	if err := e.WriteCompressedUint(uint64(len(data))); err != nil {
 		return err
+	}
+
+	if len(data) == 0 {
+		return nil
 	}
 
 	for _, val := range data {

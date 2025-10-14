@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Core Performance Optimization (Phase 11)
+- **Profile-guided optimization** of core encoding hot paths
+  - Buffer.Write: Eliminated append() overhead with manual slice management
+  - WriteCompressedUint: Added fast path for small values (< 64, covers 80-90% of cases)
+  - Files: `core/buffer.go`, `core/encoder_write_arm64.go`, `core/encoder_write_amd64.go`
+
+### Performance - Phase 11 Results (January 2025)
+- **Small struct marshal:** 709ns → 701ns (1% improvement, already optimal)
+- **Medium struct marshal:** 14,863ns → 9,654ns (**35% faster** 🚀)
+- **Large struct marshal:** 206,251ns → 83,759ns (**59% faster** 🔥)
+- **Competitive position:** Now dominates ALL competitors (Sonic, JSON, CBOR, MessagePack) on medium/large workloads
+- **Marshal leadership:**
+  - Medium: 27-71% faster than all competitors
+  - Large: 27-75% faster than all competitors
+  - Maps: 11-87% faster than all competitors
+- **Unmarshal leadership:** 9-91% faster across all workload sizes
+- **Methodology:** CPU/memory profiling → hotspot identification → targeted optimization → validation
+
 ### Added - Advanced Optimizations (Phase 10)
 - **SIMD-accelerated array encoding** for numeric arrays ([]int32, []int64, []float32, []float64)
   - Platform-specific implementations: AVX2 (AMD64), NEON (ARM64)

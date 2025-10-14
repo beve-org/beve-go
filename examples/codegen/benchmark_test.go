@@ -9,11 +9,11 @@ import (
 // BenchmarkUser_MarshalBEVE_Generated tests the generated MarshalBEVE method
 func BenchmarkUser_MarshalBEVE_Generated(b *testing.B) {
 	user := User{
-		ID:        12345,
-		Username:  "john_doe",
-		Email:     "john@example.com",
-		Age:       30,
-		IsActive:  true,
+		ID:       12345,
+		Username: "john_doe",
+		Email:    "john@example.com",
+		Age:      30,
+		IsActive: true,
 		// CreatedAt omitted - complex type
 	}
 
@@ -31,11 +31,11 @@ func BenchmarkUser_MarshalBEVE_Generated(b *testing.B) {
 // BenchmarkUser_Marshal_Reflection tests the reflection-based Marshal
 func BenchmarkUser_Marshal_Reflection(b *testing.B) {
 	user := User{
-		ID:        12345,
-		Username:  "john_doe",
-		Email:     "john@example.com",
-		Age:       30,
-		IsActive:  true,
+		ID:       12345,
+		Username: "john_doe",
+		Email:    "john@example.com",
+		Age:      30,
+		IsActive: true,
 		// CreatedAt omitted - complex type
 	}
 
@@ -97,11 +97,11 @@ func BenchmarkProduct_Marshal_Reflection(b *testing.B) {
 // TestUser_MarshalBEVE_Correctness verifies generated code produces valid output
 func TestUser_MarshalBEVE_Correctness(b *testing.T) {
 	user := User{
-		ID:        12345,
-		Username:  "john_doe",
-		Email:     "john@example.com",
-		Age:       30,
-		IsActive:  true,
+		ID:       12345,
+		Username: "john_doe",
+		Email:    "john@example.com",
+		Age:      30,
+		IsActive: true,
 		// CreatedAt: time.Time is complex type - skip for now
 	}
 

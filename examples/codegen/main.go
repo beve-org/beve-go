@@ -50,7 +50,7 @@ func main() {
 
 	// Test standard marshaling
 	fmt.Println("=== Standard BEVE Marshaling ===")
-	
+
 	userData, err := beve.Marshal(user)
 	if err != nil {
 		fmt.Printf("Error marshaling user: %v\n", err)
