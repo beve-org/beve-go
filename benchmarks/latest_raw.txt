@@ -1,0 +1,17 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go
+cpu: Apple M2 Max
+BenchmarkSmallStruct_BEVE_Marshal-12             	   10000	      1012 ns/op	    2596 B/op	       3 allocs/op
+BenchmarkSmallStruct_BEVE_MarshalZeroCopy-12     	   10000	       529.9 ns/op	     290 B/op	       2 allocs/op
+BenchmarkSmallStruct_JSON_Marshal-12             	   10000	      1434 ns/op	    1168 B/op	       2 allocs/op
+BenchmarkSmallStruct_Sonic_Marshal-12            	   10000	      3845 ns/op	    2525 B/op	       3 allocs/op
+BenchmarkSmallStruct_MessagePack_Marshal-12      	   10000	      2500 ns/op	    8325 B/op	       9 allocs/op
+BenchmarkSmallStruct_CBOR_Marshal-12             	   10000	      1043 ns/op	    1681 B/op	       2 allocs/op
+BenchmarkSmallStruct_BEVE_Unmarshal-12           	   10000	       719.3 ns/op	    1593 B/op	       4 allocs/op
+BenchmarkSmallStruct_JSON_Unmarshal-12           	   10000	      7092 ns/op	    2408 B/op	      47 allocs/op
+BenchmarkSmallStruct_Sonic_Unmarshal-12          	   10000	      1950 ns/op	    3793 B/op	       6 allocs/op
+BenchmarkSmallStruct_MessagePack_Unmarshal-12    	   10000	      1593 ns/op	    1697 B/op	      38 allocs/op
+BenchmarkSmallStruct_CBOR_Unmarshal-12           	   10000	      3161 ns/op	    2800 B/op	      60 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go	0.487s

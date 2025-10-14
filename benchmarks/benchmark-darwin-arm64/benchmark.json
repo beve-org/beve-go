@@ -1,0 +1,97 @@
+{
+  "timestamp": "2025-10-14T21:12:02Z",
+  "cpu": "Apple M2 Max",
+  "os": "Darwin",
+  "architecture": "arm64",
+  "go_version": "go version go1.25.2 darwin/arm64",
+  "results": [
+    {
+      "scenario": "Small Struct",
+      "codec": "BEVE",
+      "operation": "Marshal",
+      "nsop": 1012.0,
+      "bop": 2596,
+      "allocsop": 3
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "BEVE ZeroCopy",
+      "operation": "Marshal",
+      "nsop": 529.9,
+      "bop": 290,
+      "allocsop": 2
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "JSON",
+      "operation": "Marshal",
+      "nsop": 1434.0,
+      "bop": 1168,
+      "allocsop": 2
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "Sonic",
+      "operation": "Marshal",
+      "nsop": 3845.0,
+      "bop": 2525,
+      "allocsop": 3
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "MessagePack",
+      "operation": "Marshal",
+      "nsop": 2500.0,
+      "bop": 8325,
+      "allocsop": 9
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "CBOR",
+      "operation": "Marshal",
+      "nsop": 1043.0,
+      "bop": 1681,
+      "allocsop": 2
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "BEVE",
+      "operation": "Unmarshal",
+      "nsop": 719.3,
+      "bop": 1593,
+      "allocsop": 4
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "JSON",
+      "operation": "Unmarshal",
+      "nsop": 7092.0,
+      "bop": 2408,
+      "allocsop": 47
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "Sonic",
+      "operation": "Unmarshal",
+      "nsop": 1950.0,
+      "bop": 3793,
+      "allocsop": 6
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "MessagePack",
+      "operation": "Unmarshal",
+      "nsop": 1593.0,
+      "bop": 1697,
+      "allocsop": 38
+    },
+    {
+      "scenario": "Small Struct",
+      "codec": "CBOR",
+      "operation": "Unmarshal",
+      "nsop": 3161.0,
+      "bop": 2800,
+      "allocsop": 60
+    }
+  ]
+}

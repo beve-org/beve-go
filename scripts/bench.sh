@@ -1,386 +1,269 @@
 #!/usr/bin/env bash
-# BEVE Benchmark Runner - Parallel Edition
+# BEVE Benchmark Runner - Simplified Batch Edition
 # 
-# This script runs all BEVE benchmarks in parallel for faster execution.
-# 
-# Environment variables:
-#   BENCH_MAX_JOBS: Maximum parallel jobs (default: 8)
-#
-# Example usage:
-#   ./scripts/bench.sh                    # Run with default 8 parallel jobs
-#   BENCH_MAX_JOBS=4 ./scripts/bench.sh   # Run with 4 parallel jobs
-#   BENCH_MAX_JOBS=16 ./scripts/bench.sh  # Run with 16 parallel jobs (if you have many cores)
+# Runs all benchmarks in one go and generates comprehensive reports.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="${ROOT_DIR}/benchmarks"
-OUT_FILE="${OUT_DIR}/latest.md"
-JSON_OUT_FILE="${OUT_DIR}/latest.json"
 
-# Maximum parallel jobs (adjust based on CPU cores)
-MAX_JOBS="${BENCH_MAX_JOBS:-8}"
-JOB_COUNT=0
+ITERATIONS="${BENCH_ITERATIONS:-10000}"
+TIMEOUT="${BENCH_TIMEOUT:-20m}"
 
-echo "🚀 BEVE Parallel Benchmark Runner" >&2
-echo "📊 Running up to ${MAX_JOBS} benchmarks in parallel" >&2
+echo "🚀 BEVE Benchmark Runner" >&2
+echo "📊 Iterations: ${ITERATIONS}×, Timeout: ${TIMEOUT}" >&2
 echo "" >&2
 
 mkdir -p "${OUT_DIR}"
 
-timestamp="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-host_name="$(hostname)"
-os_name="$(uname -s)"
-kernel="$(uname -srv)"
-arch="$(uname -m)"
-cpu_brand="$( (sysctl -n machdep.cpu.brand_string 2>/dev/null || lscpu | awk -F: '/Model name/ {gsub(/^ +| +$/, "", $2); print $2; exit}' 2>/dev/null || uname -p || echo 'unknown') | tr -s ' ' )"
-goversion="$(go version)"
-git_rev="$(git -C "${ROOT_DIR}" rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
+# Run ALL benchmarks in a single efficient command
+echo "Running benchmarks..." >&2
+benchmark_output=$(cd "${ROOT_DIR}" && go test \
+  -bench="Benchmark(SmallStruct|MediumPayload|LargePayload)_(BEVE|JSON|Sonic|CBOR|MessagePack)_(Marshal|Unmarshal)" \
+  -benchmem \
+  -benchtime="${ITERATIONS}x" \
+  -timeout="${TIMEOUT}" \
+  -run=^$ \
+  . 2>&1 || true)
 
-header_tmp=$(mktemp)
-tmp_files=("${header_tmp}")
+# Save raw output
+raw_file="${OUT_DIR}/latest_raw.txt"
+echo "${benchmark_output}" > "${raw_file}"
 
-# Directory for parallel benchmark results
-results_dir=$(mktemp -d)
-tmp_files+=("${results_dir}")
-
-json_escape() {
-  local str="${1-}"
-  str="${str//\\/\\\\}"
-  str="${str//\"/\\\"}"
-  str="${str//$'\n'/\\n}"
-  str="${str//$'\r'/\\r}"
-  str="${str//$'\t'/\\t}"
-  printf '%s' "${str}"
-}
-
-cleanup() {
-  # Wait for all background jobs
-  wait
-  
-  # Clean up temp files
-  for tmp in "${tmp_files[@]}"; do
-    if [[ -f "${tmp}" ]]; then
-      rm -f "${tmp}"
-    elif [[ -d "${tmp}" ]]; then
-      rm -rf "${tmp}"
-    fi
-  done
-}
-trap cleanup EXIT
-
-host_json="$(json_escape "${host_name}")"
-os_json="$(json_escape "${os_name}")"
-kernel_json="$(json_escape "${kernel}")"
-arch_json="$(json_escape "${arch}")"
-cpu_json="$(json_escape "${cpu_brand}")"
-go_json="$(json_escape "${goversion}")"
-git_json="$(json_escape "${git_rev}")"
-
-cat <<EOF >"${header_tmp}"
-# BEVE Benchmark Snapshot
-
-> Generated: ${timestamp}
-> Hostname: ${host_name}
-> OS: ${os_name}
-> Kernel: ${kernel}
-> Architecture: ${arch}
-> CPU: ${cpu_brand}
-> Go: ${goversion}
-> Git: ${git_rev}
-
-Metrics below cover BEVE alongside CBOR, Sonic, MessagePack, and Go's encoding/json implementations.
-
-EOF
-
-append_tmp_file() {
-  tmp_files+=("$1")
-}
-
-# Job control for parallel execution
-wait_for_job_slot() {
-  while [[ ${JOB_COUNT} -ge ${MAX_JOBS} ]]; do
-    # Wait for any job to finish
-    wait -n 2>/dev/null || true
-    ((JOB_COUNT--)) || true
-  done
-}
-
-format_command() {
-  local formatted=""
-  local part
-  for part in "$@"; do
-    if [[ -z "${formatted}" ]]; then
-      formatted="$(printf '%q' "${part}")"
-    else
-      formatted+=" $(printf '%q' "${part}")"
-    fi
-  done
-  printf '%s' "${formatted}"
-}
-
-run_bench() {
-  local scenario="$1"
-  local codec="$2"
-  local operation="$3"
-  shift 3
-  local command=("$@")
-  
-  # Wait for available job slot
-  wait_for_job_slot
-  
-  # Run benchmark in background
-  {
-    local label="${scenario} · ${operation} · ${codec}"
-    echo "[START] ${label}" >&2
-
-    local tmp_out
-    tmp_out=$(mktemp)
-
-    (cd "${ROOT_DIR}" && "${command[@]}" 2>&1) > "${tmp_out}"
-    local cmd_status=$?
-    
-    if [[ ${cmd_status} -ne 0 ]]; then
-      echo "[FAILED] ${label} (exit code: ${cmd_status})" >&2
-      # Show last few lines of output for debugging
-      echo "[FAILED] Last output:" >&2
-      tail -5 "${tmp_out}" >&2
-      rm -f "${tmp_out}"
-      # Don't return - let the function continue to write a null result
-      # This way we know which benchmarks failed
-      local bench_line=""
-    else
-      local bench_line
-      bench_line="$(grep '^Benchmark' "${tmp_out}" | head -n1 || true)"
-    fi
-
-    local ns="n/a" bytes="n/a" allocs="n/a"
-    if [[ -n "${bench_line}" ]]; then
-      local metrics
-      metrics="$(awk '{
-        for (i = 1; i <= NF; ++i) {
-          if ($(i+1) == "ns/op") ns = $(i);
-          if ($(i+1) == "B/op") bytes = $(i);
-          if ($(i+1) == "allocs/op") allocs = $(i);
-        }
-      }
-      END {
-        if (ns == "") ns = "n/a";
-        if (bytes == "") bytes = "n/a";
-        if (allocs == "") allocs = "n/a";
-        printf "%s %s %s", ns, bytes, allocs;
-      }' <<<"${bench_line}" || true)"
-      if [[ -n "${metrics}" ]]; then
-        set -- ${metrics}
-        ns="$1"
-        bytes="$2"
-        allocs="$3"
-      fi
-    fi
-
-    local ns_json bytes_json allocs_json
-    if [[ "${ns}" == "n/a" ]]; then
-      ns_json="null"
-    else
-      ns_json="${ns}"
-    fi
-    if [[ "${bytes}" == "n/a" ]]; then
-      bytes_json="null"
-    else
-      bytes_json="${bytes}"
-    fi
-    if [[ "${allocs}" == "n/a" ]]; then
-      allocs_json="null"
-    else
-      allocs_json="${allocs}"
-    fi
-
-    local scenario_json codec_json operation_json command_json
-    scenario_json="$(json_escape "${scenario}")"
-    codec_json="$(json_escape "${codec}")"
-    operation_json="$(json_escape "${operation}")"
-    command_json="$(json_escape "$(format_command "${command[@]}")")"
-
-    # Generate unique result file
-    local result_hash=$(echo "${scenario}${codec}${operation}" | md5sum | cut -d' ' -f1 2>/dev/null || md5 -s "${scenario}${codec}${operation}" 2>/dev/null | awk '{print $NF}' || echo "${RANDOM}")
-    local result_file="${results_dir}/result_${result_hash}.json"
-    
-    # Debug: Show where we're writing
-    echo "[DEBUG] Writing to: ${result_file}" >&2
-    
-    printf '{"scenario":"%s","codec":"%s","operation":"%s","ns_per_op":%s,"bytes_per_op":%s,"allocs_per_op":%s,"command":"%s"}' \
-      "${scenario_json}" "${codec_json}" "${operation_json}" \
-      "${ns_json}" "${bytes_json}" "${allocs_json}" "${command_json}" > "${result_file}"
-    
-    # Verify file was written
-    if [[ -f "${result_file}" ]]; then
-      echo "[DEBUG] File created successfully: $(wc -c < "${result_file}") bytes" >&2
-    else
-      echo "[ERROR] Failed to create ${result_file}" >&2
-    fi
-    
-    rm -f "${tmp_out}"
-    echo "[DONE] ${label}" >&2
-  } &
-  
-  ((JOB_COUNT++)) || true
-}
-
-# Small struct benchmarks (marshal + unmarshal)
-run_bench "Small Struct" "BEVE" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Small Struct" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_MarshalZeroCopy$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Small Struct" "CBOR" "Marshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Small Struct" "JSON" "Marshal" go test '-bench=^BenchmarkSmallStruct_JSON_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Small Struct" "Sonic" "Marshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Small Struct" "MessagePack" "Marshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-
-run_bench "Small Struct" "BEVE" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Small Struct" "CBOR" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Small Struct" "JSON" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_JSON_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Small Struct" "Sonic" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Small Struct" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-
-# Medium payload marshal
-run_bench "Medium Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Medium Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_MarshalZeroCopy$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Medium Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkMedium_CBOR_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Medium Payload" "JSON" "Marshal" go test '-bench=^BenchmarkMedium_JSON_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Medium Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkMedium_Sonic_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Medium Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkMedium_MessagePack_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-
-# Medium payload unmarshal
-run_bench "Medium Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkMedium_BEVE_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Medium Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkMedium_JSON_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Medium Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkMedium_Sonic_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Medium Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkMedium_CBOR_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Medium Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkMedium_MessagePack_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-
-# Large payload marshal
-run_bench "Large Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Large Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_MarshalZeroCopy$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Large Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkLarge_CBOR_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Large Payload" "JSON" "Marshal" go test '-bench=^BenchmarkLarge_JSON_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Large Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkLarge_Sonic_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Large Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkLarge_MessagePack_Marshal$' -benchmem -benchtime=50000x -run=^$ .
-
-# Large payload unmarshal
-run_bench "Large Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkLarge_BEVE_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Large Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkLarge_JSON_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Large Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkLarge_Sonic_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Large Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkLarge_CBOR_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-run_bench "Large Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkLarge_MessagePack_Unmarshal$' -benchmem -benchtime=50000x -run=^$ .
-
-# Wait for all parallel jobs to complete
-echo "Waiting for all benchmarks to complete..." >&2
-wait
-
-# Debug: Check results directory
-echo "[DEBUG] Results directory: ${results_dir}" >&2
-echo "[DEBUG] Result files found:" >&2
-ls -lh "${results_dir}"/result_*.json 2>&1 | head -5 >&2 || echo "[DEBUG] No result files found!" >&2
-result_count=$(ls -1 "${results_dir}"/result_*.json 2>/dev/null | wc -l || echo 0)
-echo "[DEBUG] Total result files: ${result_count}" >&2
-
-# Combine all result files into final JSON
-echo "Combining results..." >&2
-{
-  cat <<EOF
-{
-  "generated_at": "${timestamp}",
-  "environment": {
-    "hostname": "${host_json}",
-    "os": "${os_json}",
-    "kernel": "${kernel_json}",
-    "architecture": "${arch_json}",
-    "cpu": "${cpu_json}",
-    "go_version": "${go_json}",
-    "git_revision": "${git_json}"
-  },
-  "results": [
-EOF
-
-  first=1
-  processed=0
-  for result_file in "${results_dir}"/result_*.json; do
-    if [[ -f "${result_file}" ]]; then
-      if [[ ${first} -eq 0 ]]; then
-        printf ',\n'
-      else
-        first=0
-      fi
-      printf '    '
-      cat "${result_file}"
-      ((processed++)) || true
-    fi
-  done
-
-  printf '\n  ]\n}\n'
-} > "${JSON_OUT_FILE}"
-
-echo "[DEBUG] Processed ${processed} result files into JSON" >&2
-
-python - <<'PY' "${header_tmp}" "${JSON_OUT_FILE}" "${OUT_FILE}"
-import json
-import math
+# Process results with Python
+python3 - "${raw_file}" "${OUT_DIR}" <<'PYTHON'
 import sys
-import io
+import re
+import json
+import platform
+import subprocess
+from datetime import datetime
 from pathlib import Path
+from collections import defaultdict
 
-# Fix Windows encoding issues
-if sys.platform == 'win32':
-  sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-  sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+raw_file = Path(sys.argv[1])
+out_dir = Path(sys.argv[2])
 
-header_path = Path(sys.argv[1])
-json_path = Path(sys.argv[2])
-out_path = Path(sys.argv[3])
+# Read benchmark output
+with open(raw_file, 'r') as f:
+    output = f.read()
 
-header = header_path.read_text(encoding='utf-8')
-data = json.loads(json_path.read_text(encoding='utf-8'))
-results = data.get("results", [])
+# Parse benchmarks
+pattern = r'Benchmark(\w+)_(BEVE|JSON|Sonic|CBOR|MessagePack)_(Marshal(?:ZeroCopy)?|Unmarshal)-\d+\s+\d+\s+([\d.]+) ns/op\s+(\d+) B/op\s+(\d+) allocs/op'
+results = []
 
-order = []
-groups = {}
+for match in re.finditer(pattern, output):
+    scenario, codec, operation, nsop, bop, allocsop = match.groups()
+    
+    # Handle ZeroCopy special case
+    if 'ZeroCopy' in operation:
+        codec = f"{codec} ZeroCopy"
+        operation = operation.replace('ZeroCopy', '')
+    
+    # Format scenario name
+    scenario_map = {
+        'SmallStruct': 'Small Struct',
+        'MediumPayload': 'Medium Payload', 
+        'Medium': 'Medium Payload',
+        'LargePayload': 'Large Payload',
+        'Large': 'Large Payload'
+    }
+    scenario_formatted = scenario_map.get(scenario, scenario)
+    
+    results.append({
+        'scenario': scenario_formatted,
+        'codec': codec,
+        'operation': operation,
+        'nsop': float(nsop),
+        'bop': int(bop),
+        'allocsop': int(allocsop)
+    })
 
-for entry in results:
-  scenario = entry.get("scenario", "")
-  operation = entry.get("operation", "")
-  key = (scenario, operation)
-  if key not in groups:
-    groups[key] = []
-    order.append(key)
-  groups[key].append(entry)
+if not results:
+    print("⚠️  No benchmark results found!", file=sys.stderr)
+    sys.exit(1)
 
-def fmt(value):
-  if value is None:
-    return "n/a"
-  if isinstance(value, (int, float)) and math.isfinite(value):
-    if isinstance(value, int) or value.is_integer():
-      return f"{int(value)}"
-    return f"{value:.3f}".rstrip("0").rstrip(".")
-  return str(value)
+# Get system info
+cpu_brand = subprocess.getoutput("sysctl -n machdep.cpu.brand_string 2>/dev/null || lscpu | awk -F: '/Model name/ {gsub(/^ +| +$/, \"\", $2); print $2; exit}' 2>/dev/null || echo 'unknown'")
+os_name = platform.system()
+arch = platform.machine()
+go_version = subprocess.getoutput("go version")
+timestamp = datetime.now().astimezone().strftime('%Y-%m-%dT%H:%M:%SZ')
 
-lines = [header.rstrip(), "", "## Summary", "", "| Scenario | Codec | Operation | ns/op | B/op | allocs/op |", "|----------|-------|-----------|-------|------|-----------|"]
+# Create platform-specific directory
+platform_name = f"{os_name.lower()}-{arch.replace(' ', '-')}"
+platform_dir = out_dir / f"benchmark-{platform_name}"
+platform_dir.mkdir(parents=True, exist_ok=True)
 
-for key in order:
-  scenario, operation = key
-  entries = groups[key]
-  sorted_entries = sorted(entries, key=lambda e: (float("inf") if e.get("ns_per_op") in (None, "n/a") else e["ns_per_op"]))
-  for entry in sorted_entries:
-    lines.append(f"| {scenario} | {entry.get('codec', '')} | {operation} | {fmt(entry.get('ns_per_op'))} | {fmt(entry.get('bytes_per_op'))} | {fmt(entry.get('allocs_per_op'))} |")
+# Generate Markdown report
+md_lines = [
+    f"# {cpu_brand} — {os_name}",
+    "",
+    f"![Benchmark Chart](benchmark-{platform_name}/benchmark.png)",
+    "",
+    "_Performance visualization: lower is better. Chart shows relative performance across different codecs and scenarios._",
+    "",
+    "### Detailed Results",
+    "",
+    "| Scenario | Codec | Operation | ns/op | B/op | allocs/op |",
+    "|----------|-------|-----------|-------|------|-----------|",
+]
 
-lines.extend(["", "## Commands", "", "| Scenario | Codec | Operation | Command |", "|----------|-------|-----------|---------|"])
+# Sort by scenario, operation, then nsop
+results_sorted = sorted(results, key=lambda x: (x['scenario'], x['operation'], x['nsop']))
 
-for key in order:
-  scenario, operation = key
-  entries = groups[key]
-  sorted_entries = sorted(entries, key=lambda e: (float("inf") if e.get("ns_per_op") in (None, "n/a") else e["ns_per_op"]))
-  for entry in sorted_entries:
-    cmd = entry.get("command", "")
-    lines.append(f"| {scenario} | {entry.get('codec', '')} | {operation} | `{cmd}` |")
+for r in results_sorted:
+    md_lines.append(f"| {r['scenario']} | {r['codec']} | {r['operation']} | {r['nsop']:.0f} | {r['bop']} | {r['allocsop']} |")
 
-out_path.write_text("\n".join(lines) + "\n", encoding='utf-8')
-PY
+platform_md = platform_dir / "benchmark.md"
+with open(platform_md, 'w') as f:
+    f.write('\n'.join(md_lines))
 
-printf '\nBenchmark report written to %s\n' "${OUT_FILE}" >&2
-printf 'Benchmark JSON written to %s\n' "${JSON_OUT_FILE}" >&2
+# Generate JSON
+json_data = {
+    'timestamp': timestamp,
+    'cpu': cpu_brand,
+    'os': os_name,
+    'architecture': arch,
+    'go_version': go_version,
+    'results': results
+}
+
+platform_json = platform_dir / "benchmark.json"
+with open(platform_json, 'w') as f:
+    json.dump(json_data, f, indent=2)
+
+# Generate PNG chart
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    # Group by scenario
+    scenarios = {}
+    for r in results:
+        if r['scenario'] not in scenarios:
+            scenarios[r['scenario']] = []
+        scenarios[r['scenario']].append(r)
+    
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6), dpi=100)
+    fig.suptitle(f'BEVE Performance Benchmark\n{cpu_brand} — {os_name}', 
+                 fontsize=14, fontweight='bold')
+    
+    colors = {
+        'BEVE': '#00D084',
+        'BEVE ZeroCopy': '#00A86B', 
+        'JSON': '#FF6B6B',
+        'Sonic': '#4ECDC4',
+        'CBOR': '#95E1D3',
+        'MessagePack': '#F38181'
+    }
+    
+    scenario_names = list(scenarios.keys())
+    
+    # Chart 1: Marshal performance (ns/op) - Log scale
+    ax = axes[0]
+    x = np.arange(len(scenario_names))
+    width = 0.15
+    
+    codecs_marshal = sorted(set(r['codec'] for s in scenarios.values() for r in s if r['operation'] == 'Marshal'))
+    for i, codec in enumerate(codecs_marshal):
+        values = []
+        for scenario_name in scenario_names:
+            scenario_results = [r for r in scenarios[scenario_name] if r['codec'] == codec and r['operation'] == 'Marshal']
+            values.append(scenario_results[0]['nsop'] if scenario_results else 0)
+        
+        ax.bar(x + i * width, values, width, label=codec, color=colors.get(codec, '#999'), alpha=0.85)
+    
+    ax.set_yscale('log')
+    ax.set_ylabel('Time (ns/op)', fontweight='bold')
+    ax.set_title('Marshal Performance (Log Scale)', fontweight='bold')
+    ax.set_xticks(x + width * len(codecs_marshal) / 2)
+    ax.set_xticklabels(scenario_names, fontsize=9)
+    ax.legend(fontsize=8, loc='upper left')
+    ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+    
+    # Chart 2: Unmarshal performance (ns/op) - Log scale
+    ax = axes[1]
+    codecs_unmarshal = sorted(set(r['codec'] for s in scenarios.values() for r in s if r['operation'] == 'Unmarshal'))
+    for i, codec in enumerate(codecs_unmarshal):
+        values = []
+        for scenario_name in scenario_names:
+            scenario_results = [r for r in scenarios[scenario_name] if r['codec'] == codec and r['operation'] == 'Unmarshal']
+            values.append(scenario_results[0]['nsop'] if scenario_results else 0)
+        
+        ax.bar(x + i * width, values, width, label=codec, color=colors.get(codec, '#999'), alpha=0.85)
+    
+    ax.set_yscale('log')
+    ax.set_ylabel('Time (ns/op)', fontweight='bold')
+    ax.set_title('Unmarshal Performance (Log Scale)', fontweight='bold')
+    ax.set_xticks(x + width * len(codecs_unmarshal) / 2)
+    ax.set_xticklabels(scenario_names, fontsize=9)
+    ax.legend(fontsize=8, loc='upper left')
+    ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+    
+    # Chart 3: Memory allocation (B/op)
+    ax = axes[2]
+    all_codecs = sorted(set(r['codec'] for s in scenarios.values() for r in s))
+    for i, codec in enumerate(all_codecs):
+        values = []
+        for scenario_name in scenario_names:
+            scenario_results = [r for r in scenarios[scenario_name] if r['codec'] == codec]
+            avg_bop = np.mean([r['bop'] for r in scenario_results]) if scenario_results else 0
+            values.append(avg_bop)
+        
+        ax.bar(x + i * width, values, width, label=codec, color=colors.get(codec, '#999'), alpha=0.85)
+    
+    ax.set_ylabel('Memory (B/op)', fontweight='bold')
+    ax.set_title('Average Memory Allocation', fontweight='bold')
+    ax.set_xticks(x + width * len(all_codecs) / 2)
+    ax.set_xticklabels(scenario_names, fontsize=9)
+    ax.legend(fontsize=8, loc='upper left')
+    ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+    
+    plt.tight_layout()
+    
+    platform_png = platform_dir / "benchmark.png"
+    plt.savefig(platform_png, bbox_inches='tight', dpi=100)
+    print(f"✅ Chart saved to {platform_png}", file=sys.stderr)
+    
+except ImportError:
+    print("⚠️  matplotlib not installed, skipping chart generation", file=sys.stderr)
+
+# Update MULTI_PLATFORM.md
+multi_platform_md = out_dir / "MULTI_PLATFORM.md"
+md_header = [
+    "# Multi-Platform Benchmark Results",
+    "",
+    "| CPU | OS | Artifacts |",
+    "|-----|----|-----------|",
+]
+
+# Scan all platform directories
+platform_rows = []
+for p_dir in sorted(out_dir.glob("benchmark-*")):
+    if p_dir.is_dir():
+        p_name = p_dir.name.replace('benchmark-', '')
+        p_md = p_dir / "benchmark.md"
+        if p_md.exists():
+            with open(p_md, 'r') as f:
+                first_line = f.readline().strip()
+                cpu_info = first_line.replace('# ', '').replace(' —', ',').split(',')[0].strip()
+                os_info = first_line.split('—')[-1].strip() if '—' in first_line else 'unknown'
+            
+            platform_rows.append(f"| {cpu_info} | {os_info} | [Markdown]({p_name}/benchmark.md) · [JSON]({p_name}/benchmark.json) · [PNG]({p_name}/benchmark.png) |")
+
+# Add current platform's detailed report
+with open(multi_platform_md, 'w') as f:
+    f.write('\n'.join(md_header + platform_rows + [''] + md_lines))
+
+print(f"✅ Benchmarks complete!", file=sys.stderr)
+print(f"📝 Markdown: {platform_md}", file=sys.stderr)
+print(f"📊 JSON: {platform_json}", file=sys.stderr)
+print(f"📄 Multi-platform: {multi_platform_md}", file=sys.stderr)
+PYTHON
+
+echo "" >&2
+echo "✅ Done!" >&2
