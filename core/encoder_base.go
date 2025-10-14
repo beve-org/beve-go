@@ -82,6 +82,8 @@ func PutEncoderToPool(enc *Encoder) {
 
 	// Only pool encoders with reasonable buffer sizes
 	if enc.Buf != nil && cap(enc.Buf.data) <= maxBufferPoolCapacity {
+		// CRITICAL: Reset buffer to avoid stale data contaminating next use
+		enc.Buf.data = enc.Buf.data[:0]
 		encoderPool.Put(enc)
 		return
 	}

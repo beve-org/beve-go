@@ -1,0 +1,45 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go/core
+cpu: Apple M2 Max
+BenchmarkEncodeStructFast-12                    	   10000	       271.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEncodePrimitiveSliceInts-12            	   10000	        90.62 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEncodePrimitiveSliceStrings-12         	   10000	        60.55 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecoderPool/GetAndPut-12               	   10000	         8.933 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecoderPool/NoPool-12                  	   10000	         0.3750 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecodeTypes/Int-12                     	   10000	        48.28 ns/op	       8 B/op	       1 allocs/op
+BenchmarkDecodeTypes/String-12                  	   10000	        51.14 ns/op	      16 B/op	       1 allocs/op
+BenchmarkDecodeTypes/Slice-12                   	   10000	       278.6 ns/op	     128 B/op	       3 allocs/op
+BenchmarkEncodeInterfaceSlice-12                	   10000	       236.2 ns/op	      24 B/op	       1 allocs/op
+BenchmarkEncodeMapStringInterface-12            	   10000	       157.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEncoderPool/GetAndPut-12               	   10000	         9.521 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEncoderPool/NoPool-12                  	   10000	         0.3042 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEncoderTypes/Int-12                    	   10000	        16.59 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEncoderTypes/String-12                 	   10000	        22.91 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEncoderTypes/Slice-12                  	   10000	        62.45 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecodeStringTypedArray_Large-12        	   10000	      9138 ns/op	   32821 B/op	       2 allocs/op
+BenchmarkDecodeStringTypedArray_VeryLarge-12    	   10000	      8814 ns/op	   32817 B/op	       2 allocs/op
+panic: reflect: call of reflect.Value.SetString on int32 Value
+
+goroutine 666 [running]:
+reflect.flag.mustBe(...)
+	/usr/local/go/src/reflect/value.go:218
+reflect.Value.SetString({0x100703fe0?, 0x140000a2000?, 0x1400032ed38?}, {0x14000442004, 0x1d})
+	/usr/local/go/src/reflect/value.go:2290 +0xe4
+github.com/beve-org/beve-go/core.(*Decoder).decodeStringTypedArray(0x14000322020, {0x100701f20?, 0x1400000e030?, 0x100648414?}, 0x3e8)
+	/Users/mapletechnologies/go-workspace/src/github.com/meftunca/beve-go/core/decoder_collections.go:1307 +0x4ec
+github.com/beve-org/beve-go/core.(*Decoder).DecodeTypedArray(0x14000322020, {0x100701f20?, 0x1400000e030?, 0x100701f20?}, 0x3c)
+	/Users/mapletechnologies/go-workspace/src/github.com/meftunca/beve-go/core/decoder_collections.go:1195 +0x204
+github.com/beve-org/beve-go/core.(*Decoder).Decode(0x14000322020, {0x100701f20?, 0x1400000e030?, 0x119fd8c98?})
+	/Users/mapletechnologies/go-workspace/src/github.com/meftunca/beve-go/core/decoder_base.go:138 +0x330
+github.com/beve-org/beve-go/core.BenchmarkDecodeInt32TypedArray(0x14000848588)
+	/Users/mapletechnologies/go-workspace/src/github.com/meftunca/beve-go/core/typed_arrays_complete_test.go:567 +0x1ec
+testing.(*B).runN(0x14000848588, 0x1)
+	/usr/local/go/src/testing/benchmark.go:219 +0x184
+testing.(*B).run1.func1()
+	/usr/local/go/src/testing/benchmark.go:245 +0x4c
+created by testing.(*B).run1 in goroutine 1
+	/usr/local/go/src/testing/benchmark.go:238 +0x88
+exit status 2
+FAIL	github.com/beve-org/beve-go/core	0.663s
+FAIL
