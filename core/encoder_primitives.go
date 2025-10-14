@@ -100,8 +100,8 @@ func (e *Encoder) encodeUint(u uint64) error {
 		byteCountBits = 3
 	}
 
-	// Construct header: type=1 (number) | mod=0 (unsigned) | byteCount
-	header := byte(0x01) | (0 << 3) | (byteCountBits << 5)
+	// Construct header: type=1 (number) | mod=2 (unsigned) | byteCount
+	header := byte(0x01) | (2 << 3) | (byteCountBits << 5)
 
 	// Use scratch buffer to batch the write
 	e.uintScratch[0] = header

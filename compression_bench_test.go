@@ -9,16 +9,16 @@ import (
 
 // Test data: Array of 100 user objects
 type BenchUser struct {
-	ID       string `json:"id" beve:"id"`
-	Name     string `json:"name" beve:"name"`
-	Email    string `json:"email" beve:"email"`
-	Age      int    `json:"age" beve:"age"`
-	Active   bool   `json:"active" beve:"active"`
-	Balance  float64 `json:"balance" beve:"balance"`
-	Address  string `json:"address" beve:"address"`
-	Phone    string `json:"phone" beve:"phone"`
-	Company  string `json:"company" beve:"company"`
-	Country  string `json:"country" beve:"country"`
+	ID      string  `json:"id" beve:"id"`
+	Name    string  `json:"name" beve:"name"`
+	Email   string  `json:"email" beve:"email"`
+	Age     int     `json:"age" beve:"age"`
+	Active  bool    `json:"active" beve:"active"`
+	Balance float64 `json:"balance" beve:"balance"`
+	Address string  `json:"address" beve:"address"`
+	Phone   string  `json:"phone" beve:"phone"`
+	Company string  `json:"company" beve:"company"`
+	Country string  `json:"country" beve:"country"`
 }
 
 func generateBenchUsers(count int) []BenchUser {

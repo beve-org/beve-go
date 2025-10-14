@@ -17,7 +17,7 @@ func BenchmarkFullPipeline(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			// Encode
 			data, _ := Marshal(users)
-			
+
 			// Decode
 			var decoded []BenchUser
 			_ = Unmarshal(data, &decoded)
@@ -31,16 +31,16 @@ func BenchmarkFullPipeline(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			// 1. Encode to BEVE
 			data, _ := Marshal(users)
-			
+
 			// 2. Compress with LZ4
 			compressed := make([]byte, lz4.CompressBlockBound(len(data)))
 			compressedSize, _ := lz4.CompressBlock(data, compressed, nil)
 			compressed = compressed[:compressedSize]
-			
+
 			// 3. Decompress LZ4
 			decompressed := make([]byte, len(data))
 			_, _ = lz4.UncompressBlock(compressed, decompressed)
-			
+
 			// 4. Decode BEVE
 			var decoded []BenchUser
 			_ = Unmarshal(decompressed, &decoded)
@@ -54,16 +54,16 @@ func BenchmarkFullPipeline(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			// 1. Encode to Field-Indexed BEVE (faster! no string keys)
 			data := encodeWithFieldIndex(users)
-			
+
 			// 2. Compress with LZ4 (faster! smaller input: 14KB vs 19KB)
 			compressed := make([]byte, lz4.CompressBlockBound(len(data)))
 			compressedSize, _ := lz4.CompressBlock(data, compressed, nil)
 			compressed = compressed[:compressedSize]
-			
+
 			// 3. Decompress LZ4 (faster! smaller compressed: 662 vs 711 bytes)
 			decompressed := make([]byte, len(data))
 			_, _ = lz4.UncompressBlock(compressed, decompressed)
-			
+
 			// 4. Decode BEVE (faster! direct array access vs hash lookup)
 			// (Would need field-index decoder here, simulating with normal decode)
 			var decoded []BenchUser
@@ -104,7 +104,7 @@ func BenchmarkEncodeOnly(b *testing.B) {
 // BenchmarkCompressOnly - Your point #3: Smaller input = faster compression
 func BenchmarkCompressOnly(b *testing.B) {
 	users := generateBenchUsers(100)
-	
+
 	normalData, _ := Marshal(users)
 	fieldIndexData := encodeWithFieldIndex(users)
 
@@ -134,7 +134,7 @@ func BenchmarkCompressOnly(b *testing.B) {
 // BenchmarkDecompressOnly - Your point #3: Smaller payload = faster decompression
 func BenchmarkDecompressOnly(b *testing.B) {
 	users := generateBenchUsers(100)
-	
+
 	normalData, _ := Marshal(users)
 	fieldIndexData := encodeWithFieldIndex(users)
 
@@ -198,25 +198,25 @@ func TestFullPipelineLatency(t *testing.T) {
 	t.Logf("================================================================================")
 	t.Logf("EXPECTED PERFORMANCE GAINS (from smaller intermediate size)")
 	t.Logf("================================================================================")
-	
+
 	inputSizeReduction := float64(len(normalData)-len(fieldIndexData)) / float64(len(normalData)) * 100
 	t.Logf("1. Encode: Field names → indexes = no string allocation")
 	t.Logf("   Expected gain: ~10-15%% faster")
-	
+
 	t.Logf("")
 	t.Logf("2. Compress: %.1f%% smaller input (19KB → 14KB)", inputSizeReduction)
 	t.Logf("   LZ4 throughput: ~2 GB/s → Less data = proportionally faster")
 	t.Logf("   Expected gain: %.1f%% faster compression", inputSizeReduction)
-	
+
 	t.Logf("")
 	outputSizeReduction := float64(normalCompressedSize-fieldIndexCompressedSize) / float64(normalCompressedSize) * 100
 	t.Logf("3. Decompress: %.1f%% smaller compressed (711 → 662 bytes)", outputSizeReduction)
 	t.Logf("   Expected gain: %.1f%% faster decompression", outputSizeReduction)
-	
+
 	t.Logf("")
 	t.Logf("4. Decode: Array index vs hash table lookup")
 	t.Logf("   Expected gain: ~20-30%% faster (10x faster per field × 100 objects)")
-	
+
 	t.Logf("")
 	t.Logf("TOTAL EXPECTED SPEEDUP: ~20-30%% faster end-to-end! 🚀")
 }

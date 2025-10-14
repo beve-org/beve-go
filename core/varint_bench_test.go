@@ -38,7 +38,7 @@ func TestWriteCompressedUintAsm(t *testing.T) {
 				t.Fatal("encoded data is empty")
 			}
 
-			t.Logf("Value %d encoded to %d bytes: %x", tt.value, len(result), result)
+			// t.Logf("Value %d encoded to %d bytes: %x", tt.value, len(result), result)
 		})
 	}
 }

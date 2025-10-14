@@ -32,7 +32,7 @@ func encodeWithFieldIndex(users []BenchUser) []byte {
 
 	for _, user := range users {
 		// Object with field indexes
-		buf.WriteByte(0x13) // Object with field index (0b00'10'011)
+		buf.WriteByte(0x13)                  // Object with field index (0b00'10'011)
 		writeCompressedUintToBuffer(buf, 10) // 10 fields
 
 		// Field 0: ID (index instead of "id" string)
@@ -140,7 +140,7 @@ func TestFieldIndexCompressionComparison(t *testing.T) {
 	lz4FieldIndexSize, _ := lz4.CompressBlock(fieldIndexBEVE, lz4FieldIndex, nil)
 	lz4FieldIndexSaving := float64(len(normalBEVE)-lz4FieldIndexSize) / float64(len(normalBEVE)) * 100
 	extraSaving := float64(lz4NormalSize-lz4FieldIndexSize) / float64(lz4NormalSize) * 100
-	t.Logf("4. Field Index BEVE + LZ4:       %6d bytes (%.1f%% smaller, %.1f%% vs LZ4-only) 🔬", 
+	t.Logf("4. Field Index BEVE + LZ4:       %6d bytes (%.1f%% smaller, %.1f%% vs LZ4-only) 🔬",
 		lz4FieldIndexSize, lz4FieldIndexSaving, extraSaving)
 
 	// 5. For comparison: Zstd variants
@@ -148,17 +148,17 @@ func TestFieldIndexCompressionComparison(t *testing.T) {
 	t.Logf("")
 	t.Logf("For reference from previous tests:")
 	t.Logf("5. Normal BEVE + Zstd:             426 bytes (97.8%% smaller)")
-	
+
 	// Analysis
 	t.Logf("")
 	t.Logf("================================================================================")
 	t.Logf("ANALYSIS: Is Field Index + Compression worth it?")
 	t.Logf("================================================================================")
-	
+
 	additionalSavingBytes := lz4NormalSize - lz4FieldIndexSize
 	t.Logf("Additional saving from field index: %d bytes (%.1f%% improvement over LZ4-only)",
 		additionalSavingBytes, extraSaving)
-	
+
 	if extraSaving < 5 {
 		t.Logf("❌ VERDICT: NOT worth it (<5%% improvement)")
 		t.Logf("   Reason: LZ4 already compresses repeated field names very well")
@@ -175,7 +175,7 @@ func TestFieldIndexCompressionComparison(t *testing.T) {
 // BenchmarkFieldIndexWithCompression measures performance
 func BenchmarkFieldIndexWithCompression(b *testing.B) {
 	users := generateBenchUsers(100)
-	
+
 	normalBEVE, _ := Marshal(users)
 	fieldIndexBEVE := encodeWithFieldIndex(users)
 
@@ -259,7 +259,7 @@ func TestCompressionEfficiency(t *testing.T) {
 // TestWorstCaseScenario tests when field index is WORST
 func TestWorstCaseScenario(t *testing.T) {
 	t.Log("Testing worst-case scenario: Unique field values, no repetition")
-	
+
 	// Generate users with unique data (no compression benefit)
 	users := make([]BenchUser, 100)
 	for i := 0; i < 100; i++ {
