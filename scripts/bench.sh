@@ -227,48 +227,48 @@ run_bench() {
 }
 
 # Small struct benchmarks (marshal + unmarshal)
-run_bench "Small Struct" "BEVE" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Marshal$' -benchmem -benchtime=30000x -run=^$ .
-run_bench "Small Struct" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_MarshalZeroCopy$' -benchmem -benchtime=30000x -run=^$ .
-run_bench "Small Struct" "CBOR" "Marshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Marshal$' -benchmem -benchtime=30000x -run=^$ .
-run_bench "Small Struct" "JSON" "Marshal" go test '-bench=^BenchmarkSmallStruct_JSON_Marshal$' -benchmem -benchtime=30000x -run=^$ .
-run_bench "Small Struct" "Sonic" "Marshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Marshal$' -benchmem -benchtime=30000x -run=^$ .
-run_bench "Small Struct" "MessagePack" "Marshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Marshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "BEVE" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Marshal$' -benchmem -benchtime=300000x -run=^$ .
+run_bench "Small Struct" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_MarshalZeroCopy$' -benchmem -benchtime=300000x -run=^$ .
+run_bench "Small Struct" "CBOR" "Marshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Marshal$' -benchmem -benchtime=300000x -run=^$ .
+run_bench "Small Struct" "JSON" "Marshal" go test '-bench=^BenchmarkSmallStruct_JSON_Marshal$' -benchmem -benchtime=300000x -run=^$ .
+run_bench "Small Struct" "Sonic" "Marshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Marshal$' -benchmem -benchtime=300000x -run=^$ .
+run_bench "Small Struct" "MessagePack" "Marshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Marshal$' -benchmem -benchtime=300000x -run=^$ .
 
-run_bench "Small Struct" "BEVE" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
-run_bench "Small Struct" "CBOR" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
-run_bench "Small Struct" "JSON" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_JSON_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
-run_bench "Small Struct" "Sonic" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
-run_bench "Small Struct" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "BEVE" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Unmarshal$' -benchmem -benchtime=300000x -run=^$ .
+run_bench "Small Struct" "CBOR" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Unmarshal$' -benchmem -benchtime=300000x -run=^$ .
+run_bench "Small Struct" "JSON" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_JSON_Unmarshal$' -benchmem -benchtime=300000x -run=^$ .
+run_bench "Small Struct" "Sonic" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Unmarshal$' -benchmem -benchtime=300000x -run=^$ .
+run_bench "Small Struct" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Unmarshal$' -benchmem -benchtime=300000x -run=^$ .
 
 # Medium payload marshal
-run_bench "Medium Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_Marshal$' -benchmem -benchtime=20000x -run=^$ .
-run_bench "Medium Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_MarshalZeroCopy$' -benchmem -benchtime=20000x -run=^$ .
-run_bench "Medium Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkMedium_CBOR_Marshal$' -benchmem -benchtime=20000x -run=^$ .
-run_bench "Medium Payload" "JSON" "Marshal" go test '-bench=^BenchmarkMedium_JSON_Marshal$' -benchmem -benchtime=20000x -run=^$ .
-run_bench "Medium Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkMedium_Sonic_Marshal$' -benchmem -benchtime=20000x -run=^$ .
-run_bench "Medium Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkMedium_MessagePack_Marshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_Marshal$' -benchmem -benchtime=200000x -run=^$ .
+run_bench "Medium Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_MarshalZeroCopy$' -benchmem -benchtime=200000x -run=^$ .
+run_bench "Medium Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkMedium_CBOR_Marshal$' -benchmem -benchtime=200000x -run=^$ .
+run_bench "Medium Payload" "JSON" "Marshal" go test '-bench=^BenchmarkMedium_JSON_Marshal$' -benchmem -benchtime=200000x -run=^$ .
+run_bench "Medium Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkMedium_Sonic_Marshal$' -benchmem -benchtime=200000x -run=^$ .
+run_bench "Medium Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkMedium_MessagePack_Marshal$' -benchmem -benchtime=200000x -run=^$ .
 
 # Medium payload unmarshal
-run_bench "Medium Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkMedium_BEVE_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
-run_bench "Medium Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkMedium_JSON_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
-run_bench "Medium Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkMedium_Sonic_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
-run_bench "Medium Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkMedium_CBOR_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
-run_bench "Medium Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkMedium_MessagePack_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkMedium_BEVE_Unmarshal$' -benchmem -benchtime=200000x -run=^$ .
+run_bench "Medium Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkMedium_JSON_Unmarshal$' -benchmem -benchtime=200000x -run=^$ .
+run_bench "Medium Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkMedium_Sonic_Unmarshal$' -benchmem -benchtime=200000x -run=^$ .
+run_bench "Medium Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkMedium_CBOR_Unmarshal$' -benchmem -benchtime=200000x -run=^$ .
+run_bench "Medium Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkMedium_MessagePack_Unmarshal$' -benchmem -benchtime=200000x -run=^$ .
 
 # Large payload marshal
-run_bench "Large Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_Marshal$' -benchmem -benchtime=10000x -run=^$ .
-run_bench "Large Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_MarshalZeroCopy$' -benchmem -benchtime=10000x -run=^$ .
-run_bench "Large Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkLarge_CBOR_Marshal$' -benchmem -benchtime=10000x -run=^$ .
-run_bench "Large Payload" "JSON" "Marshal" go test '-bench=^BenchmarkLarge_JSON_Marshal$' -benchmem -benchtime=10000x -run=^$ .
-run_bench "Large Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkLarge_Sonic_Marshal$' -benchmem -benchtime=10000x -run=^$ .
-run_bench "Large Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkLarge_MessagePack_Marshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_Marshal$' -benchmem -benchtime=100000x -run=^$ .
+run_bench "Large Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_MarshalZeroCopy$' -benchmem -benchtime=100000x -run=^$ .
+run_bench "Large Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkLarge_CBOR_Marshal$' -benchmem -benchtime=100000x -run=^$ .
+run_bench "Large Payload" "JSON" "Marshal" go test '-bench=^BenchmarkLarge_JSON_Marshal$' -benchmem -benchtime=100000x -run=^$ .
+run_bench "Large Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkLarge_Sonic_Marshal$' -benchmem -benchtime=100000x -run=^$ .
+run_bench "Large Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkLarge_MessagePack_Marshal$' -benchmem -benchtime=100000x -run=^$ .
 
 # Large payload unmarshal
-run_bench "Large Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkLarge_BEVE_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
-run_bench "Large Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkLarge_JSON_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
-run_bench "Large Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkLarge_Sonic_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
-run_bench "Large Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkLarge_CBOR_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
-run_bench "Large Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkLarge_MessagePack_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkLarge_BEVE_Unmarshal$' -benchmem -benchtime=100000x -run=^$ .
+run_bench "Large Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkLarge_JSON_Unmarshal$' -benchmem -benchtime=100000x -run=^$ .
+run_bench "Large Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkLarge_Sonic_Unmarshal$' -benchmem -benchtime=100000x -run=^$ .
+run_bench "Large Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkLarge_CBOR_Unmarshal$' -benchmem -benchtime=100000x -run=^$ .
+run_bench "Large Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkLarge_MessagePack_Unmarshal$' -benchmem -benchtime=100000x -run=^$ .
 
 # Wait for all parallel jobs to complete
 echo "Waiting for all benchmarks to complete..." >&2
