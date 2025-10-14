@@ -141,13 +141,18 @@ run_bench() {
     local cmd_status=$?
     
     if [[ ${cmd_status} -ne 0 ]]; then
-      echo "[FAILED] ${label}" >&2
+      echo "[FAILED] ${label} (exit code: ${cmd_status})" >&2
+      # Show last few lines of output for debugging
+      echo "[FAILED] Last output:" >&2
+      tail -5 "${tmp_out}" >&2
       rm -f "${tmp_out}"
-      return 1
+      # Don't return - let the function continue to write a null result
+      # This way we know which benchmarks failed
+      local bench_line=""
+    else
+      local bench_line
+      bench_line="$(grep '^Benchmark' "${tmp_out}" | head -n1 || true)"
     fi
-
-    local bench_line
-    bench_line="$(grep '^Benchmark' "${tmp_out}" | head -n1 || true)"
 
     local ns="n/a" bytes="n/a" allocs="n/a"
     if [[ -n "${bench_line}" ]]; then
@@ -197,12 +202,22 @@ run_bench() {
     command_json="$(json_escape "$(format_command "${command[@]}")")"
 
     # Generate unique result file
-    local result_hash=$(echo "${scenario}${codec}${operation}" | md5sum | cut -d' ' -f1 2>/dev/null || md5 -q -s "${scenario}${codec}${operation}" 2>/dev/null || echo "${RANDOM}")
+    local result_hash=$(echo "${scenario}${codec}${operation}" | md5sum | cut -d' ' -f1 2>/dev/null || md5 -s "${scenario}${codec}${operation}" 2>/dev/null | awk '{print $NF}' || echo "${RANDOM}")
     local result_file="${results_dir}/result_${result_hash}.json"
+    
+    # Debug: Show where we're writing
+    echo "[DEBUG] Writing to: ${result_file}" >&2
     
     printf '{"scenario":"%s","codec":"%s","operation":"%s","ns_per_op":%s,"bytes_per_op":%s,"allocs_per_op":%s,"command":"%s"}' \
       "${scenario_json}" "${codec_json}" "${operation_json}" \
       "${ns_json}" "${bytes_json}" "${allocs_json}" "${command_json}" > "${result_file}"
+    
+    # Verify file was written
+    if [[ -f "${result_file}" ]]; then
+      echo "[DEBUG] File created successfully: $(wc -c < "${result_file}") bytes" >&2
+    else
+      echo "[ERROR] Failed to create ${result_file}" >&2
+    fi
     
     rm -f "${tmp_out}"
     echo "[DONE] ${label}" >&2
@@ -212,52 +227,59 @@ run_bench() {
 }
 
 # Small struct benchmarks (marshal + unmarshal)
-run_bench "Small Struct" "BEVE" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Marshal$' -benchmem -benchtime=30000x -run=^$ ./...
-run_bench "Small Struct" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_MarshalZeroCopy$' -benchmem -benchtime=30000x -run=^$ ./...
-run_bench "Small Struct" "CBOR" "Marshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Marshal$' -benchmem -benchtime=30000x -run=^$ ./...
-run_bench "Small Struct" "JSON" "Marshal" go test '-bench=^BenchmarkSmallStruct_JSON_Marshal$' -benchmem -benchtime=30000x -run=^$ ./...
-run_bench "Small Struct" "Sonic" "Marshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Marshal$' -benchmem -benchtime=30000x -run=^$ ./...
-run_bench "Small Struct" "MessagePack" "Marshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Marshal$' -benchmem -benchtime=30000x -run=^$ ./...
+run_bench "Small Struct" "BEVE" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Marshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkSmallStruct_BEVE_MarshalZeroCopy$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "CBOR" "Marshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Marshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "JSON" "Marshal" go test '-bench=^BenchmarkSmallStruct_JSON_Marshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "Sonic" "Marshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Marshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "MessagePack" "Marshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Marshal$' -benchmem -benchtime=30000x -run=^$ .
 
-run_bench "Small Struct" "BEVE" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Unmarshal$' -benchmem -benchtime=30000x -run=^$ ./...
-run_bench "Small Struct" "CBOR" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Unmarshal$' -benchmem -benchtime=30000x -run=^$ ./...
-run_bench "Small Struct" "JSON" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_JSON_Unmarshal$' -benchmem -benchtime=30000x -run=^$ ./...
-run_bench "Small Struct" "Sonic" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Unmarshal$' -benchmem -benchtime=30000x -run=^$ ./...
-run_bench "Small Struct" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Unmarshal$' -benchmem -benchtime=30000x -run=^$ ./...
+run_bench "Small Struct" "BEVE" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_BEVE_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "CBOR" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_CBOR_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "JSON" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_JSON_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "Sonic" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_Sonic_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
+run_bench "Small Struct" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkSmallStruct_MessagePack_Unmarshal$' -benchmem -benchtime=30000x -run=^$ .
 
 # Medium payload marshal
-run_bench "Medium Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_Marshal$' -benchmem -benchtime=20000x -run=^$ ./...
-run_bench "Medium Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_MarshalZeroCopy$' -benchmem -benchtime=20000x -run=^$ ./...
-run_bench "Medium Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkMedium_CBOR_Marshal$' -benchmem -benchtime=20000x -run=^$ ./...
-run_bench "Medium Payload" "JSON" "Marshal" go test '-bench=^BenchmarkMedium_JSON_Marshal$' -benchmem -benchtime=20000x -run=^$ ./...
-run_bench "Medium Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkMedium_Sonic_Marshal$' -benchmem -benchtime=20000x -run=^$ ./...
-run_bench "Medium Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkMedium_MessagePack_Marshal$' -benchmem -benchtime=20000x -run=^$ ./...
+run_bench "Medium Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_Marshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkMedium_BEVE_MarshalZeroCopy$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkMedium_CBOR_Marshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "JSON" "Marshal" go test '-bench=^BenchmarkMedium_JSON_Marshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkMedium_Sonic_Marshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkMedium_MessagePack_Marshal$' -benchmem -benchtime=20000x -run=^$ .
 
 # Medium payload unmarshal
-run_bench "Medium Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkMedium_BEVE_Unmarshal$' -benchmem -benchtime=20000x -run=^$ ./...
-run_bench "Medium Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkMedium_JSON_Unmarshal$' -benchmem -benchtime=20000x -run=^$ ./...
-run_bench "Medium Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkMedium_Sonic_Unmarshal$' -benchmem -benchtime=20000x -run=^$ ./...
-run_bench "Medium Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkMedium_CBOR_Unmarshal$' -benchmem -benchtime=20000x -run=^$ ./...
-run_bench "Medium Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkMedium_MessagePack_Unmarshal$' -benchmem -benchtime=20000x -run=^$ ./...
+run_bench "Medium Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkMedium_BEVE_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkMedium_JSON_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkMedium_Sonic_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkMedium_CBOR_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
+run_bench "Medium Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkMedium_MessagePack_Unmarshal$' -benchmem -benchtime=20000x -run=^$ .
 
 # Large payload marshal
-run_bench "Large Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_Marshal$' -benchmem -benchtime=10000x -run=^$ ./...
-run_bench "Large Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_MarshalZeroCopy$' -benchmem -benchtime=10000x -run=^$ ./...
-run_bench "Large Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkLarge_CBOR_Marshal$' -benchmem -benchtime=10000x -run=^$ ./...
-run_bench "Large Payload" "JSON" "Marshal" go test '-bench=^BenchmarkLarge_JSON_Marshal$' -benchmem -benchtime=10000x -run=^$ ./...
-run_bench "Large Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkLarge_Sonic_Marshal$' -benchmem -benchtime=10000x -run=^$ ./...
-run_bench "Large Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkLarge_MessagePack_Marshal$' -benchmem -benchtime=10000x -run=^$ ./...
+run_bench "Large Payload" "BEVE" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_Marshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "BEVE ZeroCopy" "Marshal" go test '-bench=^BenchmarkLarge_BEVE_MarshalZeroCopy$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "CBOR" "Marshal" go test '-bench=^BenchmarkLarge_CBOR_Marshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "JSON" "Marshal" go test '-bench=^BenchmarkLarge_JSON_Marshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "Sonic" "Marshal" go test '-bench=^BenchmarkLarge_Sonic_Marshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "MessagePack" "Marshal" go test '-bench=^BenchmarkLarge_MessagePack_Marshal$' -benchmem -benchtime=10000x -run=^$ .
 
 # Large payload unmarshal
-run_bench "Large Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkLarge_BEVE_Unmarshal$' -benchmem -benchtime=10000x -run=^$ ./...
-run_bench "Large Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkLarge_JSON_Unmarshal$' -benchmem -benchtime=10000x -run=^$ ./...
-run_bench "Large Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkLarge_Sonic_Unmarshal$' -benchmem -benchtime=10000x -run=^$ ./...
-run_bench "Large Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkLarge_CBOR_Unmarshal$' -benchmem -benchtime=10000x -run=^$ ./...
-run_bench "Large Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkLarge_MessagePack_Unmarshal$' -benchmem -benchtime=10000x -run=^$ ./...
+run_bench "Large Payload" "BEVE" "Unmarshal" go test '-bench=^BenchmarkLarge_BEVE_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "JSON" "Unmarshal" go test '-bench=^BenchmarkLarge_JSON_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "Sonic" "Unmarshal" go test '-bench=^BenchmarkLarge_Sonic_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "CBOR" "Unmarshal" go test '-bench=^BenchmarkLarge_CBOR_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
+run_bench "Large Payload" "MessagePack" "Unmarshal" go test '-bench=^BenchmarkLarge_MessagePack_Unmarshal$' -benchmem -benchtime=10000x -run=^$ .
 
 # Wait for all parallel jobs to complete
 echo "Waiting for all benchmarks to complete..." >&2
 wait
+
+# Debug: Check results directory
+echo "[DEBUG] Results directory: ${results_dir}" >&2
+echo "[DEBUG] Result files found:" >&2
+ls -lh "${results_dir}"/result_*.json 2>&1 | head -5 >&2 || echo "[DEBUG] No result files found!" >&2
+result_count=$(ls -1 "${results_dir}"/result_*.json 2>/dev/null | wc -l || echo 0)
+echo "[DEBUG] Total result files: ${result_count}" >&2
 
 # Combine all result files into final JSON
 echo "Combining results..." >&2
@@ -278,6 +300,7 @@ echo "Combining results..." >&2
 EOF
 
   first=1
+  processed=0
   for result_file in "${results_dir}"/result_*.json; do
     if [[ -f "${result_file}" ]]; then
       if [[ ${first} -eq 0 ]]; then
@@ -287,11 +310,14 @@ EOF
       fi
       printf '    '
       cat "${result_file}"
+      ((processed++)) || true
     fi
   done
 
   printf '\n  ]\n}\n'
 } > "${JSON_OUT_FILE}"
+
+echo "[DEBUG] Processed ${processed} result files into JSON" >&2
 
 python - <<'PY' "${header_tmp}" "${JSON_OUT_FILE}" "${OUT_FILE}"
 import json
