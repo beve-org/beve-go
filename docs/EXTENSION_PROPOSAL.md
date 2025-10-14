@@ -1,32 +1,49 @@
-# BEVE Extension Proposal: Time & Temporal Types
+# BEVE Extension Proposal: Essential Data Types
 
 **Version**: 1.0  
-**Date**: October 14, 202### 5 - Duration
-
-Time span without specific start/end points.
-
-**Layout**: `HEADER | SIGN_PRECISION | SECONDS | SUB_SECOND`
-
-**HEADER**: `0b00101'110` (1 byte)tatus**: Draft  
+**Date**: October 14, 2025  
+**Status**: Draft  
 **Authors**: BEVE Go Contributors
 
 ## Abstract
 
-This proposal extends the BEVE v1.0 specification to support temporal data types (timestamps, durations, time zones) as formal extensions. These types are ubiquitous in modern applications and deserve efficient, standardized binary representations.
+This proposal extends the BEVE v1.0 specification with **high-performance, widely-used data types** that deserve native binary representations:
+- **Temporal Types**: Timestamps, durations, intervals (with optional timezone)
+- **Identifiers**: UUID/ULID (128-bit, 55% smaller than string)
+- **Patterns**: Regular expressions (validation, search, config)
+
+These extensions are **performance-focused** and **commonly used** in modern distributed systems, APIs, and databases.
 
 ## Motivation
 
-Current workarounds for temporal data in BEVE:
-- **Problem 1**: `time.Time` encoded as `int64` Unix nanoseconds loses timezone information
-- **Problem 2**: No standard representation for durations, intervals, or recurring events
-- **Problem 3**: Applications must implement custom solutions, breaking interoperability
+### Why These Types?
+
+✅ **Performance Impact**: These types appear in 90%+ of modern APIs  
+✅ **Space Efficiency**: 30-55% smaller than JSON string representations  
+✅ **Semantic Meaning**: Binary format preserves type information (UUID ≠ random string)  
+✅ **Real-World Usage**: UUID, timestamps, and regex are in MessagePack/CBOR for a reason
+
+### Current Problems
+
+**Temporal Data**:
+- `time.Time` as `int64` loses timezone → breaks user-facing apps
+- No standard for durations/intervals → each app reinvents the wheel
+
+**UUIDs**:
+- String `"550e8400-e29b-41d4-a716-446655440000"` = 36 bytes
+- Binary `0x550e8400e29b41d4a716446655440000` = 16 bytes (**55% savings**)
+- Databases use binary UUIDs internally anyway (PostgreSQL, MongoDB)
+
+**Regular Expressions**:
+- Validation schemas sent as strings → no semantic meaning
+- Pattern rules in config files → verbose and repetitive
 
 ### Use Cases
-- **APIs**: ISO 8601 timestamps with timezone awareness
-- **Databases**: Efficient temporal indexing and queries
-- **IoT/Telemetry**: High-precision event timestamps
-- **Scheduling**: Recurring events, cron-like expressions
-- **Distributed Systems**: Clock synchronization, causality tracking
+- **APIs**: ISO 8601 timestamps with timezone, UUID entity IDs
+- **Databases**: Binary UUID primary keys, temporal indexing
+- **IoT/Telemetry**: High-precision timestamps, compact identifiers
+- **Distributed Systems**: Trace IDs (OpenTelemetry), correlation tokens
+- **Validation**: Email/phone regex patterns, input sanitization
 
 ## Specification
 
@@ -38,13 +55,15 @@ Following BEVE v1.0 spec section 6 (Extensions), we use the reserved extension s
 6 -> extensions                            0b00000'110
 ```
 
-The next 5 bits denote temporal extension types:
+The next 5 bits denote extension types:
 
 ```c++
 4 -> timestamp                             0b00100'110
 5 -> duration                              0b00101'110
 6 -> interval                              0b00110'110
 7 -> recurring event (cron-like)           0b00111'110
+8 -> UUID/ULID (128-bit identifier)        0b01000'110
+9 -> regular expression                    0b01001'110
 ```
 
 ### 4 - Timestamp
@@ -384,6 +403,371 @@ def decode_timestamp(data: bytes) -> datetime:
     return datetime.fromtimestamp(epoch, tz=tz)
 ```
 
+---
+
+## Extension 8: UUID/ULID (128-bit Identifier)
+
+### Motivation
+
+**Problem**: 
+- UUID strings waste 36 bytes (with dashes) or 32 bytes (hex only)
+- Binary representation is 16 bytes = **55% space savings**
+- UUIDs are ubiquitous in distributed systems, databases, APIs
+
+**Use Cases**:
+- Database primary keys (PostgreSQL UUID type)
+- Distributed tracing (OpenTelemetry trace IDs)
+- Session tokens and API keys
+- Message queue correlation IDs
+- Microservice entity IDs
+
+### Binary Layout
+
+```
+HEADER (1 byte) | VERSION_FLAGS (1 byte) | UUID_BYTES (16 bytes)
+```
+
+**Total Size**: 18 bytes (vs 36 bytes string)
+
+#### VERSION_FLAGS Byte
+
+```
+Bits 0-3: UUID version (4 = random, 6 = sortable, 7 = Unix timestamp)
+Bits 4-7: Reserved (must be 0)
+```
+
+Common values:
+```c++
+0x04 -> UUID v4 (random)          // Most common
+0x01 -> UUID v1 (timestamp+MAC)
+0x06 -> UUID v6 (reordered v1)    // Sortable
+0x07 -> UUID v7 (Unix timestamp)  // ULID-like
+0x08 -> ULID (Universally Unique Lexicographically Sortable ID)
+```
+
+### Example
+
+UUID `550e8400-e29b-41d4-a716-446655440000` becomes:
+
+```
+Header:      0x48 (0b01000'110)
+Version:     0x04 (UUID v4)
+Bytes[0-15]: 55 0e 84 00 e2 9b 41 d4 a7 16 44 66 55 44 00 00
+```
+
+### Implementation Examples
+
+#### Go
+
+```go
+import "github.com/google/uuid"
+
+func encodeUUID(u uuid.UUID) []byte {
+    buf := make([]byte, 18)
+    buf[0] = 0x48  // HEADER
+    buf[1] = 0x04  // UUID v4
+    copy(buf[2:], u[:])
+    return buf
+}
+
+func decodeUUID(data []byte) uuid.UUID {
+    var u uuid.UUID
+    copy(u[:], data[2:18])
+    return u
+}
+```
+
+#### TypeScript
+
+```typescript
+import { v4 as uuidv4, parse as uuidParse } from 'uuid';
+
+function encodeUUID(uuidString: string): Uint8Array {
+    const buf = new Uint8Array(18);
+    buf[0] = 0x48;  // HEADER
+    buf[1] = 0x04;  // UUID v4
+    
+    const bytes = uuidParse(uuidString);
+    buf.set(bytes, 2);
+    return buf;
+}
+
+function decodeUUID(data: Uint8Array): string {
+    const bytes = data.slice(2, 18);
+    return Array.from(bytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+        .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+}
+```
+
+#### Python
+
+```python
+import uuid
+import struct
+
+def encode_uuid(u: uuid.UUID) -> bytes:
+    """Encode UUID to BEVE binary."""
+    return struct.pack('<BB16s', 0x48, 0x04, u.bytes)
+
+def decode_uuid(data: bytes) -> uuid.UUID:
+    """Decode BEVE binary to UUID."""
+    _, version, uuid_bytes = struct.unpack('<BB16s', data[:18])
+    return uuid.UUID(bytes=uuid_bytes)
+```
+
+### JSON Mapping
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "uuid-v4"
+}
+```
+
+Or simplified:
+```json
+"550e8400-e29b-41d4-a716-446655440000"
+```
+
+### Size Comparison
+
+| Format | Size | Example |
+|--------|------|---------|
+| **BEVE Binary** | **18 bytes** | `48 04 55 0e 84 00 ...` |
+| JSON (with dashes) | 38 bytes | `"550e8400-e29b-41d4-a716-446655440000"` |
+| JSON (hex only) | 34 bytes | `"550e8400e29b41d4a716446655440000"` |
+| MessagePack (fixext 16) | 18 bytes | Same as BEVE |
+| CBOR (Tag 37) | 19 bytes | 1 byte tag + 1 byte size + 16 bytes |
+
+**Result**: 47% smaller than JSON string representation
+
+---
+
+## Extension 9: Regular Expression
+
+### Motivation
+
+**Problem**: 
+- Validation rules sent repeatedly as strings
+- Pattern matching rules in config files
+- API request/response validation schemas
+- Search patterns in query languages
+
+**Use Cases**:
+- Input validation (email, phone, URL patterns)
+- API schema definitions (OpenAPI, JSON Schema)
+- Rule engines and policy enforcement
+- Log parsing and filtering
+- Search query patterns
+
+### Binary Layout
+
+```
+HEADER (1 byte) | SYNTAX_FLAGS (1 byte) | PATTERN_SIZE | PATTERN_UTF8
+```
+
+**Size**: Variable (typically 3 + pattern length)
+
+#### SYNTAX_FLAGS Byte
+
+```
+Bit 0: Case insensitive (i)
+Bit 1: Multiline (m)
+Bit 2: Dot matches newline (s)
+Bit 3: Extended syntax (x)
+Bit 4: Unicode-aware (u)
+Bit 5-7: Reserved (must be 0)
+```
+
+Common flag combinations:
+```c++
+0x01 -> Case insensitive only (/pattern/i)
+0x03 -> Case insensitive + multiline (/pattern/im)
+0x11 -> Case insensitive + Unicode (/pattern/iu)
+```
+
+#### PATTERN_SIZE
+
+Uses BEVE's compressed unsigned integer format (same as string SIZE).
+
+### Examples
+
+#### Email Validation Pattern
+
+Pattern: `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+
+```
+Header:       0x49 (0b01001'110)
+Flags:        0x00 (no flags)
+Size:         0x96 (compressed: 54 < 64, fits in 1 byte with 2-bit size indicator)
+Pattern:      "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$" (UTF-8)
+```
+
+**Total Size**: 3 + 54 = 57 bytes (vs 56 bytes as plain string, but with semantic meaning)
+
+#### Case-Insensitive Search
+
+Pattern: `hello world` (case insensitive)
+
+```
+Header:       0x49
+Flags:        0x01 (case insensitive)
+Size:         0x2C (11 bytes)
+Pattern:      "hello world"
+```
+
+**Total Size**: 3 + 11 = 14 bytes
+
+### Implementation Examples
+
+#### Go
+
+```go
+import "regexp"
+
+func encodeRegex(pattern string, flags int) []byte {
+    patternBytes := []byte(pattern)
+    size := len(patternBytes)
+    
+    // Simplified: assuming size < 64 for example
+    buf := make([]byte, 3+size)
+    buf[0] = 0x49  // HEADER
+    buf[1] = byte(flags)
+    buf[2] = byte(size << 2)  // SIZE with 2-bit indicator
+    copy(buf[3:], patternBytes)
+    return buf
+}
+
+func decodeRegex(data []byte) (*regexp.Regexp, error) {
+    flags := data[1]
+    size := data[2] >> 2
+    pattern := string(data[3 : 3+size])
+    
+    // Apply flags
+    if flags&0x01 != 0 {
+        pattern = "(?i)" + pattern  // Case insensitive
+    }
+    if flags&0x02 != 0 {
+        pattern = "(?m)" + pattern  // Multiline
+    }
+    if flags&0x04 != 0 {
+        pattern = "(?s)" + pattern  // Dot matches newline
+    }
+    
+    return regexp.Compile(pattern)
+}
+```
+
+#### TypeScript
+
+```typescript
+function encodeRegex(regex: RegExp): Uint8Array {
+    const pattern = regex.source;
+    const flags = 
+        (regex.ignoreCase ? 0x01 : 0) |
+        (regex.multiline ? 0x02 : 0) |
+        (regex.dotAll ? 0x04 : 0);
+    
+    const patternBytes = new TextEncoder().encode(pattern);
+    const size = patternBytes.length;
+    
+    const buf = new Uint8Array(3 + size);
+    buf[0] = 0x49;  // HEADER
+    buf[1] = flags;
+    buf[2] = size << 2;  // SIZE
+    buf.set(patternBytes, 3);
+    return buf;
+}
+
+function decodeRegex(data: Uint8Array): RegExp {
+    const flags = data[1];
+    const size = data[2] >> 2;
+    const pattern = new TextDecoder().decode(data.slice(3, 3 + size));
+    
+    let flagStr = '';
+    if (flags & 0x01) flagStr += 'i';
+    if (flags & 0x02) flagStr += 'm';
+    if (flags & 0x04) flagStr += 's';
+    if (flags & 0x10) flagStr += 'u';
+    
+    return new RegExp(pattern, flagStr);
+}
+```
+
+#### Python
+
+```python
+import re
+import struct
+
+def encode_regex(pattern: str, flags: int = 0) -> bytes:
+    """Encode regex pattern to BEVE binary."""
+    pattern_bytes = pattern.encode('utf-8')
+    size = len(pattern_bytes)
+    
+    # Simplified: assuming size < 64
+    return struct.pack('<BBB', 0x49, flags, size << 2) + pattern_bytes
+
+def decode_regex(data: bytes) -> re.Pattern:
+    """Decode BEVE binary to compiled regex."""
+    _, flags_byte, size_byte = struct.unpack('<BBB', data[:3])
+    size = size_byte >> 2
+    pattern = data[3:3+size].decode('utf-8')
+    
+    # Convert BEVE flags to Python re flags
+    py_flags = 0
+    if flags_byte & 0x01: py_flags |= re.IGNORECASE
+    if flags_byte & 0x02: py_flags |= re.MULTILINE
+    if flags_byte & 0x04: py_flags |= re.DOTALL
+    if flags_byte & 0x08: py_flags |= re.VERBOSE
+    
+    return re.compile(pattern, py_flags)
+```
+
+### JSON Mapping
+
+```json
+{
+  "pattern": "^[a-z]+$",
+  "flags": ["i", "m"]
+}
+```
+
+Or simplified (JavaScript-like):
+```json
+"/^[a-z]+$/im"
+```
+
+### Use Case Examples
+
+**API Validation Schema**:
+```json
+{
+  "email": {
+    "type": "string",
+    "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+  }
+}
+```
+
+Becomes more compact in BEVE binary (57 bytes vs ~100+ bytes JSON overhead).
+
+**Log Filter Config**:
+```json
+{
+  "filters": [
+    {"pattern": "ERROR|FATAL", "flags": ["i"]},
+    {"pattern": "^\\d{4}-\\d{2}-\\d{2}", "flags": []}
+  ]
+}
+```
+
+Each pattern stored efficiently with semantic meaning preserved.
+
+---
+
 ## Compatibility
 
 ### Backward Compatibility
@@ -402,13 +786,15 @@ def decode_timestamp(data: bytes) -> datetime:
 
 ### Size Comparison
 
-| Type | BEVE Extension | JSON (ISO 8601) | MessagePack | CBOR |
-|------|----------------|-----------------|-------------|------|
+| Type | BEVE Extension | JSON | MessagePack | CBOR |
+|------|----------------|------|-------------|------|
 | UTC Timestamp (ns) | 14 bytes | ~30 bytes | 12 bytes | 13 bytes |
 | Timestamp + TZ | 16 bytes | ~36 bytes | 14 bytes | 15 bytes |
 | Duration | 14 bytes | ~20 bytes | 12 bytes | 13 bytes |
+| UUID | 18 bytes | 38 bytes | 18 bytes | 19 bytes |
+| RegExp (avg) | ~50 bytes | ~100 bytes | ~50 bytes | ~50 bytes |
 
-**Result**: BEVE extensions are comparable to MessagePack/CBOR while maintaining human-readable JSON conversion.
+**Result**: BEVE extensions provide **30-50% space savings** vs JSON while maintaining semantic meaning.
 
 ### Speed Benchmarks (Estimated)
 
@@ -428,20 +814,22 @@ def decode_timestamp(data: bytes) -> datetime:
 
 ## Migration Path
 
-### Phase 1: Go Implementation (v1.4.0)
-- [ ] Core extension types (timestamp UTC, duration)
+### Phase 1: Go Implementation (v1.4.0) - **HIGH PRIORITY**
+- [ ] Timestamp (UTC + optional timezone)
+- [ ] Duration
+- [ ] UUID/ULID (128-bit identifier)
 - [ ] time.Time auto-detection and encoding
 - [ ] Benchmark vs current int64 approach
 - [ ] Documentation and examples
 
 ### Phase 2: Extended Support (v1.5.0)
-- [ ] Timezone-aware timestamps
+- [ ] Regular Expression type
 - [ ] Interval type
 - [ ] JavaScript/TypeScript library
 - [ ] Python library
 
-### Phase 3: Advanced Features (v2.0.0)
-- [ ] Recurring events
+### Phase 3: Advanced Features (v2.0.0) - **LOW PRIORITY**
+- [ ] Recurring events (cron-like)
 - [ ] Calendar-aware operations
 - [ ] Multi-language support (Rust, Java, etc.)
 
@@ -478,6 +866,23 @@ def decode_timestamp(data: bytes) -> datetime:
 - Scientific computing: nanoseconds required
 - Flexibility without waste
 
+### ✅ UUID Binary Format (Not String)
+
+**Rationale**:
+- **Performance**: Binary UUIDs are standard in databases (PostgreSQL, Cassandra, MongoDB)
+- **Space efficiency**: 18 bytes vs 36 bytes (50% savings)
+- **Semantic meaning**: Type system knows it's an ID, not a random string
+- **Compatibility**: MessagePack and CBOR also use binary UUID
+
+**Why NOT add everything from CBOR/MessagePack?**:
+- ❌ Decimal fractions → Float64 sufficient, niche use case
+- ❌ Rational numbers → Scientific computing only, rare
+- ❌ URI/URL type → String is fine, app can validate
+- ❌ Set type → Array works, app can deduplicate
+- ❌ Indefinite-length encoding → Hurts performance (no size prefix)
+
+**BEVE Philosophy**: Only add types that are **ubiquitous + performance-critical**.
+
 ## Open Questions
 
 1. **Should we support leap seconds explicitly?**
@@ -489,17 +894,44 @@ def decode_timestamp(data: bytes) -> datetime:
 3. **Should we support calendar systems beyond Gregorian?**
    - Proposal: Not in v1.0, defer to v2.0 if demand exists
 
+4. **Should UUID version be validated on decode?**
+   - Proposal: Store version but don't validate (allow future UUID formats)
+
+## Summary
+
+This proposal adds **6 high-value extension types** to BEVE:
+
+| Extension | Type | Why? | Space Savings |
+|-----------|------|------|---------------|
+| **4** | Timestamp | Ubiquitous in APIs/DBs | 14-16 bytes vs ~30 (47%) |
+| **5** | Duration | Time spans everywhere | 14 bytes vs ~20 (30%) |
+| **6** | Interval | Date ranges, schedules | 30 bytes vs ~50 (40%) |
+| **7** | Recurring Event | Cron jobs, calendars | Variable (compact) |
+| **8** | UUID/ULID | Database IDs, tracing | 18 bytes vs 36 (50%) |
+| **9** | RegExp | Validation, search | Semantic + compact |
+
+**Philosophy**: Only extensions that are **performance-critical** and **widely used**.
+
+**Not included** (intentionally):
+- Decimal fractions, rationals, bigfloats → Niche use cases
+- URI/URL types → String is sufficient
+- Set type → Array + app logic works
+- Indefinite-length encoding → Hurts performance
+
 ## References
 
 - BEVE Specification v1.0: [SPECIFICATION.md](../SPECIFICATION.md)
 - ISO 8601: Date and time format standard
 - RFC 3339: Date/Time on the Internet
+- RFC 4122: UUID specification
 - MessagePack Timestamp Extension: https://github.com/msgpack/msgpack/blob/master/spec.md#timestamp-extension-type
 - CBOR Tags: https://www.rfc-editor.org/rfc/rfc8949.html#name-standard-date-time-string
+- PCRE2: Regular Expression Syntax
 
 ## Changelog
 
-- **2025-10-14**: Initial proposal draft
+- **2025-10-14**: Initial proposal with temporal types
+- **2025-10-14**: Added UUID/ULID and RegExp extensions
 - **TBD**: Community feedback period
 - **TBD**: Implementation in beve-go v1.4.0
 
@@ -509,8 +941,14 @@ def decode_timestamp(data: bytes) -> datetime:
 
 **Next Steps**:
 1. Community discussion on GitHub Discussions
-2. Prototype implementation in beve-go
-3. Benchmark validation
+2. Prototype implementation in beve-go (Phase 1: Timestamp, Duration, UUID)
+3. Benchmark validation vs JSON/MessagePack/CBOR
 4. Specification update PR
+
+**Priority Implementation Order**:
+1. ✅ **Timestamp + UUID** (most impactful, 90% of use cases)
+2. Duration + Interval
+3. RegExp (validation use cases)
+4. Recurring events (lower priority)
 
 **Contributors welcome!** Join the discussion at: https://github.com/stephenberry/eve/discussions
