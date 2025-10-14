@@ -59,6 +59,15 @@ jobs:
         run: |
           chmod +x scripts/bench.sh
           ./scripts/bench.sh
+          
+          # Verify benchmark output was created
+          if [ ! -f "benchmarks/latest.json" ]; then
+            echo "Error: Benchmark script did not create benchmarks/latest.json"
+            ls -la benchmarks/ || echo "benchmarks/ directory not found"
+            exit 1
+          fi
+          
+          echo "✓ Benchmark suite completed successfully"
 
       - name: Install plotting dependencies
         shell: bash
@@ -69,6 +78,32 @@ jobs:
       - name: Render benchmark chart
         shell: bash
         run: |
+          # Verify JSON exists and is valid before plotting
+          if [ ! -f "benchmarks/latest.json" ]; then
+            echo "Error: benchmarks/latest.json not found"
+            exit 1
+          fi
+          
+          # Check if JSON is valid and has results
+          python <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          
+          json_path = Path("benchmarks/latest.json")
+          try:
+              data = json.loads(json_path.read_text(encoding="utf-8"))
+              results = data.get("results", [])
+              if not results:
+                  print("Error: No results found in benchmarks/latest.json", file=sys.stderr)
+                  sys.exit(1)
+              print(f"✓ Found {len(results)} benchmark results")
+          except Exception as e:
+              print(f"Error validating JSON: {e}", file=sys.stderr)
+              sys.exit(1)
+          PY
+          
+          # Now generate the chart
           python scripts/plot_benchmarks.py benchmarks/latest.json benchmarks/latest.png
 
       - name: Organize outputs by CPU
@@ -173,12 +208,28 @@ jobs:
           python <<'PY'
           import json
           import shutil
+          import sys
           from pathlib import Path
 
           artifacts_root = Path("artifacts")
           dist_root = Path("dist")
           bench_root = dist_root / "benchmarks"
           bench_root.mkdir(parents=True, exist_ok=True)
+
+          # Check if artifacts directory exists and has content
+          if not artifacts_root.exists():
+              print(f"Error: Artifacts directory not found at {artifacts_root}", file=sys.stderr)
+              sys.exit(1)
+
+          benchmark_jsons = sorted(artifacts_root.glob("**/benchmark.json"))
+          if not benchmark_jsons:
+              print("Error: No benchmark.json files found in artifacts directory", file=sys.stderr)
+              print(f"Contents of {artifacts_root}:", file=sys.stderr)
+              for item in artifacts_root.rglob("*"):
+                  print(f"  - {item.relative_to(artifacts_root)}", file=sys.stderr)
+              sys.exit(1)
+
+          print(f"✓ Found {len(benchmark_jsons)} platform benchmark results", file=sys.stderr)
 
           summary_lines = ["# Multi-Platform Benchmark Results", "", "| CPU | OS | Artifacts |", "|-----|----|-----------|"]
           detail_lines = []
@@ -192,7 +243,7 @@ jobs:
                   return "n/a"
               return str(value)
 
-          for json_path in sorted(artifacts_root.glob("**/benchmark.json")):
+          for json_path in benchmark_jsons:
               cpu_dir = json_path.parent
               slug = cpu_dir.name
               data = json.loads(json_path.read_text(encoding="utf-8"))

@@ -66,13 +66,17 @@ def select_unit(metric: str, unit_option: str, values: list[float]) -> tuple[str
 def build_groups(results: list[dict], metric: str) -> list[tuple[tuple[str, str], list[dict]]]:
     order = []
     grouped: dict[tuple[str, str], list[dict]] = {}
+    skipped = 0
+    
     for entry in results:
         value = entry.get(metric)
         if value is None:
+            skipped += 1
             continue
         try:
             numeric = float(value)
         except (TypeError, ValueError):
+            skipped += 1
             continue
 
         scenario = entry.get("scenario", "Unknown")
@@ -83,6 +87,9 @@ def build_groups(results: list[dict], metric: str) -> list[tuple[tuple[str, str]
             order.append(key)
         grouped[key].append({"codec": entry.get("codec", "?"), metric: numeric})
 
+    if skipped > 0:
+        print(f"Note: Skipped {skipped} entries with missing or invalid '{metric}' values", file=sys.stderr)
+    
     return [(key, grouped[key]) for key in order]
 
 
@@ -108,9 +115,22 @@ def pick_colors(codecs: list[str]) -> list[str]:
 
 def render_chart(data: dict, output_path: Path, metric: str, unit_option: str) -> None:
     results = data.get("results", [])
+    
+    if not results:
+        raise SystemExit(
+            f"error: No results found in JSON input. "
+            f"Expected 'results' array with benchmark data."
+        )
+    
+    print(f"Processing {len(results)} benchmark results for metric '{metric}'", file=sys.stderr)
     groups = build_groups(results, metric)
+    
     if not groups:
-        raise SystemExit("no benchmark groups found in JSON input")
+        raise SystemExit(
+            f"error: No benchmark groups found in JSON input after filtering. "
+            f"All {len(results)} results had missing or invalid '{metric}' values. "
+            f"Check that benchmark output contains numeric values for {metric}."
+        )
 
     # Collect all metric values for unit selection
     all_values = [item[metric] for _, entries in groups for item in entries]
