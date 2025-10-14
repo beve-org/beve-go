@@ -48,6 +48,11 @@
 
 - [ ] **Streaming API Improvements**
   - [ ] Chunked encoding/decoding for large datasets
+  
+- [ ] **Advanced Optimizations** (Experimental)
+  - [ ] Field Index Mode (49% faster end-to-end) - [See Proposal](docs/proposals/FIELD_INDEX.md)
+  - [ ] Compression integration (LZ4/Zstd)
+  - [ ] Adaptive encoding strategies
   - [ ] Incremental parsing support
   - [ ] Memory-efficient streaming for embedded systems
   - [ ] Async I/O integration
