@@ -1366,33 +1366,38 @@ func (d *Decoder) decodeSignedTypedArray(v reflect.Value, length, byteCount int)
 		if err := EnsureSliceLength(v, length); err != nil {
 			return err
 		}
-		
+
 		// FAST PATH: Type-specific decoders bypass reflection
 		// Use unsafe pointer for direct memory access (10-50× faster)
 		if v.CanAddr() {
 			elemKind := v.Type().Elem().Kind()
-			
+
+			// Int (platform-dependent) fast path
+			if elemKind == reflect.Int {
+				return d.decodeIntSliceFast(v, length, byteCount)
+			}
+
 			// Int32 fast path (most common)
 			if elemKind == reflect.Int32 && byteCount == 4 {
 				return d.decodeInt32SliceFast(v, length)
 			}
-			
+
 			// Int64 fast path
 			if elemKind == reflect.Int64 && byteCount == 8 {
 				return d.decodeInt64SliceFast(v, length)
 			}
-			
+
 			// Int16 fast path
 			if elemKind == reflect.Int16 && byteCount == 2 {
 				return d.decodeInt16SliceFast(v, length)
 			}
-			
+
 			// Int8 fast path
 			if elemKind == reflect.Int8 && byteCount == 1 {
 				return d.decodeInt8SliceFast(v, length)
 			}
 		}
-		
+
 		// SLOW PATH: Reflection-based (fallback for uncommon types)
 		for i := 0; i < length; i++ {
 			data, err := d.ReadBytes(byteCount)
@@ -1510,32 +1515,37 @@ func (d *Decoder) decodeUnsignedTypedArray(v reflect.Value, length, byteCount in
 		if err := EnsureSliceLength(v, length); err != nil {
 			return err
 		}
-		
+
 		// FAST PATH: Type-specific decoders bypass reflection
 		if v.CanAddr() {
 			elemKind := v.Type().Elem().Kind()
-			
+
+			// Uint (platform-dependent) fast path
+			if elemKind == reflect.Uint {
+				return d.decodeUintSliceFast(v, length, byteCount)
+			}
+
 			// Uint32 fast path (most common)
 			if elemKind == reflect.Uint32 && byteCount == 4 {
 				return d.decodeUint32SliceFast(v, length)
 			}
-			
+
 			// Uint64 fast path
 			if elemKind == reflect.Uint64 && byteCount == 8 {
 				return d.decodeUint64SliceFast(v, length)
 			}
-			
+
 			// Uint16 fast path
 			if elemKind == reflect.Uint16 && byteCount == 2 {
 				return d.decodeUint16SliceFast(v, length)
 			}
-			
+
 			// Uint8/byte fast path (most efficient - direct copy)
 			if elemKind == reflect.Uint8 && byteCount == 1 {
 				return d.decodeUint8SliceFast(v, length)
 			}
 		}
-		
+
 		// SLOW PATH: Reflection-based fallback
 		for i := 0; i < length; i++ {
 			data, err := d.ReadBytes(byteCount)
