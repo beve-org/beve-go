@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """Render benchmark summaries as charts.
 
 This script consumes the JSON output produced by scripts/bench.sh and
@@ -8,9 +9,15 @@ ns/op metric across codecs for each benchmark scenario.
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import sys
 from pathlib import Path
+
+# Fix Windows encoding issues for stdout/stderr
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 import matplotlib
 
@@ -155,9 +162,9 @@ def render_chart(data: dict, output_path: Path, metric: str, unit_option: str) -
         bars = ax.barh(y_positions, values, color=colors, alpha=0.85)
         ax.set_yticks(y_positions)
         
-        # Add ranking medals to y-labels
-        medals = ["🥇", "🥈", "🥉"] + [""] * (len(codecs) - 3)
-        yticklabels = [f"{medal} {codec}" for medal, codec in zip(medals, codecs)]
+        # Add ranking indicators to y-labels (ASCII-safe for Windows)
+        medals = ["#1", "#2", "#3"] + [""] * (len(codecs) - 3)
+        yticklabels = [f"{medal} {codec}" if medal else codec for medal, codec in zip(medals, codecs)]
         ax.set_yticklabels(yticklabels, fontsize=9)
         
         ax.invert_yaxis()  # Best performer at the top
@@ -214,16 +221,16 @@ def render_chart(data: dict, output_path: Path, metric: str, unit_option: str) -
     
     subtitle = " · ".join(meta_lines) if meta_lines else None
 
-    # Main title with compact subtitle
-    title = "🏆 BEVE Benchmark Comparison"
+    # Main title with compact subtitle (ASCII-safe for Windows)
+    title = "BEVE Benchmark Comparison"
     if subtitle:
         fig.text(0.5, 0.99, title, ha="center", va="top", fontsize=14, fontweight='bold')
         fig.text(0.5, 0.97, subtitle, ha="center", va="top", fontsize=8, style='italic', color='#666')
     else:
         fig.suptitle(title, fontsize=14, fontweight='bold')
 
-    # Add legend for percentages at bottom
-    legend_text = "📊 Values show performance metrics. +X% indicates how much slower than the fastest."
+    # Add legend for percentages at bottom (ASCII-safe for Windows)
+    legend_text = "[INFO] Values show performance metrics. +X% indicates how much slower than the fastest."
     fig.text(0.5, 0.01, legend_text, ha="center", va="bottom", fontsize=7, style='italic', color='#666')
 
     fig.tight_layout(rect=[0, 0.025, 1, 0.96])

@@ -323,14 +323,20 @@ python - <<'PY' "${header_tmp}" "${JSON_OUT_FILE}" "${OUT_FILE}"
 import json
 import math
 import sys
+import io
 from pathlib import Path
+
+# Fix Windows encoding issues
+if sys.platform == 'win32':
+  sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+  sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 header_path = Path(sys.argv[1])
 json_path = Path(sys.argv[2])
 out_path = Path(sys.argv[3])
 
-header = header_path.read_text()
-data = json.loads(json_path.read_text())
+header = header_path.read_text(encoding='utf-8')
+data = json.loads(json_path.read_text(encoding='utf-8'))
 results = data.get("results", [])
 
 order = []
@@ -373,7 +379,7 @@ for key in order:
     cmd = entry.get("command", "")
     lines.append(f"| {scenario} | {entry.get('codec', '')} | {operation} | `{cmd}` |")
 
-out_path.write_text("\n".join(lines) + "\n")
+out_path.write_text("\n".join(lines) + "\n", encoding='utf-8')
 PY
 
 printf '\nBenchmark report written to %s\n' "${OUT_FILE}" >&2

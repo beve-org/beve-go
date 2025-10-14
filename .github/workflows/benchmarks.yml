@@ -88,7 +88,13 @@ jobs:
           python <<'PY'
           import json
           import sys
+          import io
           from pathlib import Path
+          
+          # Fix Windows encoding issues
+          if sys.platform == 'win32':
+              sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+              sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
           
           json_path = Path("benchmarks/latest.json")
           try:
@@ -97,7 +103,7 @@ jobs:
               if not results:
                   print("Error: No results found in benchmarks/latest.json", file=sys.stderr)
                   sys.exit(1)
-              print(f"✓ Found {len(results)} benchmark results")
+              print(f"[OK] Found {len(results)} benchmark results")
           except Exception as e:
               print(f"Error validating JSON: {e}", file=sys.stderr)
               sys.exit(1)
@@ -114,7 +120,14 @@ jobs:
           import json
           import re
           import shutil
+          import sys
+          import io
           from pathlib import Path
+
+          # Fix Windows encoding issues
+          if sys.platform == 'win32':
+              sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+              sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
           json_path = Path("benchmarks/latest.json")
           if not json_path.exists():
@@ -209,7 +222,13 @@ jobs:
           import json
           import shutil
           import sys
+          import io
           from pathlib import Path
+
+          # Fix Windows encoding issues
+          if sys.platform == 'win32':
+              sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+              sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
           artifacts_root = Path("artifacts")
           dist_root = Path("dist")
@@ -229,7 +248,7 @@ jobs:
                   print(f"  - {item.relative_to(artifacts_root)}", file=sys.stderr)
               sys.exit(1)
 
-          print(f"✓ Found {len(benchmark_jsons)} platform benchmark results", file=sys.stderr)
+          print(f"[OK] Found {len(benchmark_jsons)} platform benchmark results", file=sys.stderr)
 
           summary_lines = ["# Multi-Platform Benchmark Results", "", "| CPU | OS | Artifacts |", "|-----|----|-----------|"]
           detail_lines = []
