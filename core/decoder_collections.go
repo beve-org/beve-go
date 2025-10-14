@@ -234,8 +234,9 @@ func (d *Decoder) DecodeGenericArray(v reflect.Value) error {
 		}
 		return nil
 	case reflect.Interface:
-		// Decode as []interface{} with 2x capacity growth
-		slice := make([]interface{}, length, length*2)
+		// Adaptive capacity: balance memory vs reallocation frequency
+		capacity := calculateAdaptiveCapacity(length)
+		slice := make([]interface{}, length, capacity)
 		for i := 0; i < length; i++ {
 			var elem interface{}
 			if err := d.Decode(reflect.ValueOf(&elem).Elem()); err != nil {
@@ -1257,18 +1258,16 @@ func (d *Decoder) decodeStringTypedArray(v reflect.Value, length int) error {
 	switch v.Kind() {
 	case reflect.Slice:
 		if v.Type().Elem().Kind() == reflect.String && v.CanAddr() {
-			slicePtr := (*[]string)(unsafe.Pointer(v.UnsafeAddr()))
-			slice := *slicePtr
+		slicePtr := (*[]string)(unsafe.Pointer(v.UnsafeAddr()))
+		slice := *slicePtr
 
-			if cap(slice) < length {
-				// Use 2x growth factor to reduce future reallocations
-				capacity := length * 2
-				slice = make([]string, length, capacity)
-			} else {
-				slice = slice[:length]
-			}
-
-			// OPTIMIZATION: Direct loop without intermediate allocation
+		if cap(slice) < length {
+			// Adaptive capacity: balance memory vs reallocation frequency
+			capacity := calculateAdaptiveCapacity(length)
+			slice = make([]string, length, capacity)
+		} else {
+			slice = slice[:length]
+		}			// OPTIMIZATION: Direct loop without intermediate allocation
 			// Format is interleaved: [len1, bytes1, len2, bytes2, ...]
 			// ReadBytes already returns zero-copy slice from d.Data
 			for i := 0; i < length; i++ {
@@ -1334,10 +1333,9 @@ func (d *Decoder) decodeStringTypedArray(v reflect.Value, length int) error {
 		}
 		return nil
 	case reflect.Interface:
-		// Use 2x growth factor for future-proofing
-		slice := make([]string, length, length*2)
-
-		// Read strings directly (format is interleaved)
+	// Adaptive capacity: balance memory vs reallocation frequency
+	capacity := calculateAdaptiveCapacity(length)
+	slice := make([]string, length, capacity)		// Read strings directly (format is interleaved)
 		for i := 0; i < length; i++ {
 			size, err := d.ReadCompressedUint()
 			if err != nil {

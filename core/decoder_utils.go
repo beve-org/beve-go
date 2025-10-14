@@ -7,6 +7,28 @@ import (
 
 // decoder_utils.go - Utility functions for decoder
 
+// calculateAdaptiveCapacity returns an optimal capacity for a slice based on size.
+//
+// Strategy:
+//   - Small slices (<1024): 2x growth - fast growth, low memory overhead
+//   - Medium slices (1024-8192): 1.5x growth - balanced approach
+//   - Large slices (>8192): 1.25x growth - memory efficient
+//
+// This adaptive approach reduces both memory usage and reallocation frequency.
+func calculateAdaptiveCapacity(length int) int {
+	switch {
+	case length < 1024:
+		// Small: 2x growth (favor speed)
+		return length * 2
+	case length < 8192:
+		// Medium: 1.5x growth (balanced)
+		return length + length/2
+	default:
+		// Large: 1.25x growth (favor memory efficiency)
+		return length + length/4
+	}
+}
+
 // setIntValue writes a signed integer into the destination reflect.Value.
 func setIntValue(v reflect.Value, value int64) error {
 	// Special case: time.Time (stored as int64 Unix nanos)
@@ -111,16 +133,19 @@ func EnsureSliceLength(v reflect.Value, length int) error {
 	}
 
 	if v.IsNil() {
-		// Create new slice
-		v.Set(reflect.MakeSlice(v.Type(), length, length))
+		// Create new slice with adaptive capacity
+		capacity := calculateAdaptiveCapacity(length)
+		v.Set(reflect.MakeSlice(v.Type(), length, capacity))
 	} else if v.Len() < length {
 		// Grow existing slice while reusing capacity when possible.
 		if v.Cap() >= length {
 			v.SetLen(length)
 		} else {
-			// Use 2x growth factor to reduce future reallocations
-			// (changed from 1x to 2x for ~15GB memory allocation reduction)
-			capacity := length * 2
+			// Adaptive growth: balance memory vs reallocation frequency
+			// Small slices: 2x growth (fast, low memory cost)
+			// Medium slices: 1.5x growth (balanced)
+			// Large slices: 1.25x growth (memory efficient)
+			capacity := calculateAdaptiveCapacity(length)
 			newSlice := reflect.MakeSlice(v.Type(), length, capacity)
 			reflect.Copy(newSlice, v)
 			v.Set(newSlice)
