@@ -84,15 +84,15 @@ func BenchmarkVarintThroughput(b *testing.B) {
 
 		for i := 0; i < b.N; i++ {
 			enc := GetEncoderFromPool()
-			
+
 			// Encode 1000 array length values (typical use case)
 			for j := 0; j < arraySize; j++ {
 				enc.WriteCompressedUint(uint64(j))
 			}
-			
+
 			PutEncoderToPool(enc)
 		}
-		
+
 		// Report operations per second
 		b.ReportMetric(float64(b.N*arraySize)/b.Elapsed().Seconds(), "ops/s")
 	})
@@ -108,13 +108,13 @@ func BenchmarkVarintVsReflection(b *testing.B) {
 
 		for i := 0; i < b.N; i++ {
 			enc := GetEncoderFromPool()
-			
+
 			// Encode array with length prefix (uses varint)
 			enc.WriteCompressedUint(uint64(len(data)))
 			for _, val := range data {
 				enc.WriteCompressedUint(uint64(val))
 			}
-			
+
 			PutEncoderToPool(enc)
 		}
 	})
@@ -131,7 +131,7 @@ func TestVarintCorrectness(t *testing.T) {
 		// Encode with current implementation (fresh encoder each time)
 		enc := GetEncoderFromPool()
 		enc.Buf.Reset() // Clear any existing data
-		
+
 		if err := enc.WriteCompressedUint(val); err != nil {
 			t.Fatalf("WriteCompressedUint(%d) failed: %v", val, err)
 		}
@@ -152,7 +152,7 @@ func TestVarintCorrectness(t *testing.T) {
 		}
 
 		if resultLen != expectedLen {
-			t.Errorf("Value %d: expected %d bytes, got %d bytes: %x", 
+			t.Errorf("Value %d: expected %d bytes, got %d bytes: %x",
 				val, expectedLen, resultLen, result)
 		} else {
 			t.Logf("✓ Value %d correctly encoded to %d bytes", val, resultLen)
@@ -179,11 +179,11 @@ func BenchmarkVarintSizes(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 				enc := GetEncoderFromPool()
-				
+
 				for _, val := range size.values {
 					enc.WriteCompressedUint(val)
 				}
-				
+
 				PutEncoderToPool(enc)
 			}
 		})

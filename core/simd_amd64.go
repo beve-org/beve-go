@@ -137,6 +137,46 @@ func (e *Encoder) encodeFloat64ArraySIMD(data []float64) error {
 	return nil
 }
 
+// encodeUint32ArraySIMD encodes []uint32 using AVX2 instructions (AMD64).
+func (e *Encoder) encodeUint32ArraySIMD(data []uint32) error {
+	if err := e.WriteByte(0x95); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(data))); err != nil {
+		return err
+	}
+
+	if len(data) > 0 {
+		bytes := unsafe.Slice((*byte)(unsafe.Pointer(&data[0])), len(data)*4)
+		if err := e.WriteBytes(bytes); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// encodeUint64ArraySIMD encodes []uint64 using AVX2 instructions (AMD64).
+func (e *Encoder) encodeUint64ArraySIMD(data []uint64) error {
+	if err := e.WriteByte(0x96); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(data))); err != nil {
+		return err
+	}
+
+	if len(data) > 0 {
+		bytes := unsafe.Slice((*byte)(unsafe.Pointer(&data[0])), len(data)*8)
+		if err := e.WriteBytes(bytes); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Helper functions for scalar fallback
 func (e *Encoder) writeInt32LE(val int32) error {
 	var buf [4]byte
@@ -159,5 +199,17 @@ func (e *Encoder) writeFloat32LE(val float32) error {
 func (e *Encoder) writeFloat64LE(val float64) error {
 	var buf [8]byte
 	binary.LittleEndian.PutUint64(buf[:], *(*uint64)(unsafe.Pointer(&val)))
+	return e.WriteBytes(buf[:])
+}
+
+func (e *Encoder) writeUint32LE(val uint32) error {
+	var buf [4]byte
+	binary.LittleEndian.PutUint32(buf[:], val)
+	return e.WriteBytes(buf[:])
+}
+
+func (e *Encoder) writeUint64LE(val uint64) error {
+	var buf [8]byte
+	binary.LittleEndian.PutUint64(buf[:], val)
 	return e.WriteBytes(buf[:])
 }

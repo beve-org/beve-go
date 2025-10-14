@@ -32,6 +32,18 @@ func (e *Encoder) encodeFloat64ArraySIMD(data []float64) error {
 	return e.encodeFloat64ArrayScalar(data)
 }
 
+// encodeUint32ArraySIMD is a fallback for platforms without SIMD support.
+// Delegates to scalar implementation.
+func (e *Encoder) encodeUint32ArraySIMD(data []uint32) error {
+	return e.encodeUint32ArrayScalar(data)
+}
+
+// encodeUint64ArraySIMD is a fallback for platforms without SIMD support.
+// Delegates to scalar implementation.
+func (e *Encoder) encodeUint64ArraySIMD(data []uint64) error {
+	return e.encodeUint64ArrayScalar(data)
+}
+
 // Helper functions for scalar operations
 func (e *Encoder) writeInt32LE(val int32) error {
 	var buf [4]byte
@@ -54,5 +66,17 @@ func (e *Encoder) writeFloat32LE(val float32) error {
 func (e *Encoder) writeFloat64LE(val float64) error {
 	var buf [8]byte
 	binary.LittleEndian.PutUint64(buf[:], *(*uint64)(unsafe.Pointer(&val)))
+	return e.WriteBytes(buf[:])
+}
+
+func (e *Encoder) writeUint32LE(val uint32) error {
+	var buf [4]byte
+	binary.LittleEndian.PutUint32(buf[:], val)
+	return e.WriteBytes(buf[:])
+}
+
+func (e *Encoder) writeUint64LE(val uint64) error {
+	var buf [8]byte
+	binary.LittleEndian.PutUint64(buf[:], val)
 	return e.WriteBytes(buf[:])
 }

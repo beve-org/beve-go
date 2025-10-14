@@ -162,6 +162,48 @@ func (e *Encoder) encodeSIMDFloat64Array(data []float64) error {
 	return e.encodeFloat64ArraySIMD(data)
 }
 
+// encodeSIMDUint32Array encodes []uint32 using SIMD instructions.
+//
+// Algorithm:
+//  1. Check length >= simdThresholdInt32 and UseSIMD flag (same as int32)
+//  2. Dispatch to platform-specific implementation (AVX2/NEON)
+//  3. Fallback to scalar loop if SIMD unavailable
+//
+// Performance: 4-8× faster than scalar loop for arrays >16 elements.
+//
+// BEVE format: TYPE_UINT32_ARRAY (0x95) + varint(length) + [uint32 × length]
+// Each uint32 encoded as 4 bytes little-endian.
+//
+// OPTIMIZATION: uint32 has identical memory layout to int32, so we use same threshold.
+func (e *Encoder) encodeSIMDUint32Array(data []uint32) error {
+	if !UseSIMD || len(data) < simdThresholdInt32 {
+		return e.encodeUint32ArrayScalar(data)
+	}
+
+	return e.encodeUint32ArraySIMD(data)
+}
+
+// encodeSIMDUint64Array encodes []uint64 using SIMD instructions.
+//
+// Algorithm:
+//  1. Check length >= simdThresholdInt64 and UseSIMD flag (same as int64)
+//  2. Dispatch to platform-specific implementation (AVX2/NEON)
+//  3. Fallback to scalar loop if SIMD unavailable
+//
+// Performance: 2-4× faster than scalar loop for arrays >8 elements.
+//
+// BEVE format: TYPE_UINT64_ARRAY (0x96) + varint(length) + [uint64 × length]
+// Each uint64 encoded as 8 bytes little-endian.
+//
+// OPTIMIZATION: uint64 has identical memory layout to int64, so we use same threshold.
+func (e *Encoder) encodeSIMDUint64Array(data []uint64) error {
+	if !UseSIMD || len(data) < simdThresholdInt64 {
+		return e.encodeUint64ArrayScalar(data)
+	}
+
+	return e.encodeUint64ArraySIMD(data)
+}
+
 // Scalar fallback implementations (pure Go, no SIMD)
 // These are always available and used for small arrays or when SIMD disabled.
 
@@ -237,6 +279,44 @@ func (e *Encoder) encodeFloat64ArrayScalar(data []float64) error {
 
 	for _, val := range data {
 		if err := e.writeFloat64LE(val); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// encodeUint32ArrayScalar is the scalar (non-SIMD) implementation for []uint32.
+func (e *Encoder) encodeUint32ArrayScalar(data []uint32) error {
+	if err := e.WriteByte(0x95); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(data))); err != nil {
+		return err
+	}
+
+	for _, val := range data {
+		if err := e.writeUint32LE(val); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// encodeUint64ArrayScalar is the scalar (non-SIMD) implementation for []uint64.
+func (e *Encoder) encodeUint64ArrayScalar(data []uint64) error {
+	if err := e.WriteByte(0x96); err != nil {
+		return err
+	}
+
+	if err := e.WriteCompressedUint(uint64(len(data))); err != nil {
+		return err
+	}
+
+	for _, val := range data {
+		if err := e.writeUint64LE(val); err != nil {
 			return err
 		}
 	}

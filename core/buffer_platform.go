@@ -8,11 +8,23 @@ var (
 )
 
 func init() {
-	// Compute once at startup to avoid runtime checks
+	// OPTIMIZATION: Increased from 512 to 1024 bytes for all platforms
+	// to reduce allocation count in string-heavy and medium-sized workloads.
+	//
+	// Benchmark analysis showed CBOR achieving fewer allocations by using
+	// larger initial buffers. This 2× increase reduces reallocation overhead
+	// for typical payloads (User struct ~200 bytes, string arrays ~400 bytes).
+	//
+	// Memory trade-off: +512 bytes per pooled buffer, but pooling limits max
+	// memory impact to ~10MB (1024 bytes × ~10k concurrent encoders).
+	//
+	// Performance targets:
+	//   - Reduce allocations from 2-3 to 1-2 for medium structs
+	//   - Match CBOR's allocation efficiency (currently 1 alloc for medium writes)
 	if runtime.GOOS == "windows" {
-		optimalBufferCapacity = 1024 // Windows needs larger initial buffer
+		optimalBufferCapacity = 1024 // Windows already at optimal
 	} else {
-		optimalBufferCapacity = 512 // Unix systems optimal
+		optimalBufferCapacity = 1024 // Increased from 512 (was too conservative)
 	}
 }
 

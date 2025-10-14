@@ -1417,6 +1417,11 @@ func (e *Encoder) encodeStringSliceDirect(slice []string) error {
 		return err
 	}
 
+	// Encode strings directly (buffer auto-grows as needed)
+	// Note: Pre-growth optimization tested but found to be slower due to
+	// unnecessary allocation when buffer already has sufficient capacity.
+	// Current approach relies on Buffer's exponential growth strategy which
+	// is already well-optimized for incremental writes.
 	for _, s := range slice {
 		if err := e.WriteCompressedUint(uint64(len(s))); err != nil {
 			return err
