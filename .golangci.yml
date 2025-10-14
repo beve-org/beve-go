@@ -6,7 +6,9 @@ run:
   timeout: 5m
   tests: true
   modules-download-mode: readonly
-
+  skip-dirs:
+    - examples
+    - cmd
 linters:
   # Enabled by default in v2.5.0: errcheck, govet, ineffassign, staticcheck, unused
   enable:
@@ -18,13 +20,29 @@ linters:
     - misspell      # Find misspelled English words
     - goconst       # Find repeated strings that could be constants
     - prealloc      # Find slice declarations that could be preallocated
+  exclusions:
+    paths:
+      - vendor/
+      - mocks/
+      - generated/
+      - pb/
+      - examples
+      - cmd/
+      - api/
+
 
 formatters:
   enable:
     - gofmt         # Format code with gofmt
     - goimports     # Format code with goimports (includes gofmt)
+  exclusions:
+    paths:
+      - vendor/
+      - mocks/
+      - generated/
+      - pb/
+      - examples
+      - cmd/
+      - api/    
 
-issues:
-  exclude-paths:
-    - examples/
-    - cmd/
+
