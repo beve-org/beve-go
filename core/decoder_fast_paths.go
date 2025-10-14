@@ -11,9 +11,10 @@ import (
 // 10-50× speedup over reflection-based decoding for common types.
 //
 // Supported types:
-//   - []int8, []int16, []int32, []int64
-//   - []uint8, []uint16, []uint32, []uint64
-//   - []string (future)
+//   - []int, []int8, []int16, []int32, []int64
+//   - []uint, []uint8, []uint16, []uint32, []uint64
+//   - []float32, []float64
+//   - []string
 //
 // Safety: Uses unsafe.Pointer but with bounds checking and type validation.
 

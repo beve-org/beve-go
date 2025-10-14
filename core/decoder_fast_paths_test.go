@@ -130,3 +130,133 @@ func BenchmarkFastPathSizes(b *testing.B) {
 		})
 	}
 }
+
+// BenchmarkFastPathInt tests []int fast path
+func BenchmarkFastPathInt(b *testing.B) {
+	data := make([]int, 100)
+	for i := range data {
+		data[i] = i * 100
+	}
+
+	enc := GetEncoderFromPool()
+	enc.Encode(reflect.ValueOf(data))
+	encoded := enc.Buf.Bytes()
+	PutEncoderToPool(enc)
+
+	b.Run("FastPath", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			dec := NewDecoder(encoded)
+			result := make([]int, 0, 100)
+			resultVal := reflect.ValueOf(&result).Elem()
+			_ = dec.Decode(resultVal)
+			PutDecoderToPool(dec)
+		}
+	})
+}
+
+// BenchmarkFastPathUint tests []uint fast path
+func BenchmarkFastPathUint(b *testing.B) {
+	data := make([]uint, 100)
+	for i := range data {
+		data[i] = uint(i * 100)
+	}
+
+	enc := GetEncoderFromPool()
+	enc.Encode(reflect.ValueOf(data))
+	encoded := enc.Buf.Bytes()
+	PutEncoderToPool(enc)
+
+	b.Run("FastPath", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			dec := NewDecoder(encoded)
+			result := make([]uint, 0, 100)
+			resultVal := reflect.ValueOf(&result).Elem()
+			_ = dec.Decode(resultVal)
+			PutDecoderToPool(dec)
+		}
+	})
+}
+
+// BenchmarkFastPathFloat32 tests []float32 fast path
+func BenchmarkFastPathFloat32(b *testing.B) {
+	data := make([]float32, 100)
+	for i := range data {
+		data[i] = float32(i) * 3.14
+	}
+
+	enc := GetEncoderFromPool()
+	enc.Encode(reflect.ValueOf(data))
+	encoded := enc.Buf.Bytes()
+	PutEncoderToPool(enc)
+
+	b.Run("FastPath", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			dec := NewDecoder(encoded)
+			result := make([]float32, 0, 100)
+			resultVal := reflect.ValueOf(&result).Elem()
+			_ = dec.Decode(resultVal)
+			PutDecoderToPool(dec)
+		}
+	})
+}
+
+// BenchmarkFastPathFloat64 tests []float64 fast path
+func BenchmarkFastPathFloat64(b *testing.B) {
+	data := make([]float64, 100)
+	for i := range data {
+		data[i] = float64(i) * 3.14159
+	}
+
+	enc := GetEncoderFromPool()
+	enc.Encode(reflect.ValueOf(data))
+	encoded := enc.Buf.Bytes()
+	PutEncoderToPool(enc)
+
+	b.Run("FastPath", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			dec := NewDecoder(encoded)
+			result := make([]float64, 0, 100)
+			resultVal := reflect.ValueOf(&result).Elem()
+			_ = dec.Decode(resultVal)
+			PutDecoderToPool(dec)
+		}
+	})
+}
+
+// BenchmarkFastPathString tests []string fast path
+func BenchmarkFastPathString(b *testing.B) {
+	data := make([]string, 100)
+	for i := range data {
+		data[i] = "test string number " + string(rune('0'+i))
+	}
+
+	enc := GetEncoderFromPool()
+	enc.Encode(reflect.ValueOf(data))
+	encoded := enc.Buf.Bytes()
+	PutEncoderToPool(enc)
+
+	b.Run("FastPath", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			dec := NewDecoder(encoded)
+			result := make([]string, 0, 100)
+			resultVal := reflect.ValueOf(&result).Elem()
+			_ = dec.Decode(resultVal)
+			PutDecoderToPool(dec)
+		}
+	})
+}

@@ -1648,6 +1648,23 @@ func (d *Decoder) decodeFloatTypedArray(v reflect.Value, length, byteCount int) 
 		if err := EnsureSliceLength(v, length); err != nil {
 			return err
 		}
+
+		// FAST PATH: Type-specific float decoders
+		if v.CanAddr() {
+			elemKind := v.Type().Elem().Kind()
+
+			// Float32 fast path
+			if elemKind == reflect.Float32 && byteCount == 4 {
+				return d.decodeFloat32SliceFast(v, length)
+			}
+
+			// Float64 fast path
+			if elemKind == reflect.Float64 && byteCount == 8 {
+				return d.decodeFloat64SliceFast(v, length)
+			}
+		}
+
+		// SLOW PATH: Reflection-based fallback
 		for i := 0; i < length; i++ {
 			var val float64
 			switch byteCount {
