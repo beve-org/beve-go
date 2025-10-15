@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 BEVE Benchmark Parser and Reporter
 Parses Go benchmark output and generates JSON, MD, and PNG reports
@@ -11,6 +12,12 @@ import platform
 import subprocess
 from datetime import datetime
 from pathlib import Path
+
+# Force UTF-8 encoding on Windows
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 def parse_benchmarks(output_text):
     """Parse Go benchmark output"""
@@ -117,7 +124,7 @@ def generate_markdown(results, system_info, output_path):
         )
     
     output_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    print(f"✅ Generated Markdown: {output_path}")
+    print(f"[SUCCESS] Generated Markdown: {output_path}")
 
 
 def generate_json(results, system_info, output_path):
@@ -134,7 +141,7 @@ def generate_json(results, system_info, output_path):
     }
     
     output_path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
-    print(f"✅ Generated JSON: {output_path}")
+    print(f"[SUCCESS] Generated JSON: {output_path}")
 
 
 def generate_chart(results, system_info, output_path):
@@ -145,7 +152,7 @@ def generate_chart(results, system_info, output_path):
         import matplotlib.pyplot as plt
         import numpy as np
     except ImportError:
-        print("⚠️  matplotlib not available, skipping chart generation", file=sys.stderr)
+        print("[WARNING] matplotlib not available, skipping chart generation", file=sys.stderr)
         return
     
     # Group by scenario
@@ -156,7 +163,7 @@ def generate_chart(results, system_info, output_path):
         scenarios[r['scenario']].append(r)
     
     if not scenarios:
-        print("⚠️  No scenarios to chart", file=sys.stderr)
+        print("[WARNING] No scenarios to chart", file=sys.stderr)
         return
     
     # Create figure
@@ -229,7 +236,7 @@ def generate_chart(results, system_info, output_path):
     plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
     plt.close()
     
-    print(f"✅ Generated Chart: {output_path}")
+    print(f"[SUCCESS] Generated Chart: {output_path}")
 
 
 def main():
@@ -241,7 +248,7 @@ def main():
     out_dir = Path(sys.argv[2])
     
     if not raw_file.exists():
-        print(f"❌ Error: Raw file not found: {raw_file}", file=sys.stderr)
+        print(f"[ERROR] Raw file not found: {raw_file}", file=sys.stderr)
         sys.exit(1)
     
     # Read benchmark output
@@ -251,14 +258,14 @@ def main():
     results = parse_benchmarks(output_text)
     
     if not results:
-        print("❌ Error: No benchmark results found in output!", file=sys.stderr)
+        print("[ERROR] No benchmark results found in output!", file=sys.stderr)
         print("\nSearching for benchmark lines in output:", file=sys.stderr)
         for line in output_text.split('\n'):
             if 'Benchmark' in line and 'ns/op' in line:
                 print(f"  Found: {line[:100]}", file=sys.stderr)
         sys.exit(1)
     
-    print(f"✅ Parsed {len(results)} benchmark results")
+    print(f"[SUCCESS] Parsed {len(results)} benchmark results")
     
     # Get system info
     system_info = get_system_info()
@@ -268,8 +275,8 @@ def main():
     generate_markdown(results, system_info, out_dir / "latest.md")
     generate_chart(results, system_info, out_dir / "latest.png")
     
-    print(f"\n🎉 Benchmark reports generated successfully!")
-    print(f"📁 Output directory: {out_dir}")
+    print(f"\n[DONE] Benchmark reports generated successfully!")
+    print(f"[INFO] Output directory: {out_dir}")
 
 
 if __name__ == "__main__":
