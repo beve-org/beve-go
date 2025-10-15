@@ -85,6 +85,7 @@ func (b *Buffer) Bytes() []byte {
 //  1. Pre-check capacity to avoid Grow() call overhead (~60% reduction)
 //  2. Manual slice extension + copy to eliminate append's bounds check
 //  3. Inlining hints for hot path
+//  4. Special fast path for small writes (1-8 bytes) - common for varints
 //
 // Benchmark impact: Reduces Write overhead by ~25-30%.
 //
@@ -95,10 +96,37 @@ func (b *Buffer) Write(p []byte) (int, error) {
 		return 0, nil
 	}
 
-	// Fast path: Sufficient capacity available
 	dataLen := len(b.data)
 	needed := dataLen + pLen
 
+	// Ultra-fast path: Small writes with available capacity
+	// Common case: varint writes (1-4 bytes), header bytes (1 byte)
+	if pLen <= 8 && needed <= cap(b.data) {
+		b.data = b.data[:needed]
+		// Unrolled copy for small sizes (compiler optimizes to direct stores)
+		dst := b.data[dataLen:]
+		switch pLen {
+		case 1:
+			dst[0] = p[0]
+		case 2:
+			dst[0] = p[0]
+			dst[1] = p[1]
+		case 3:
+			dst[0] = p[0]
+			dst[1] = p[1]
+			dst[2] = p[2]
+		case 4:
+			dst[0] = p[0]
+			dst[1] = p[1]
+			dst[2] = p[2]
+			dst[3] = p[3]
+		default:
+			copy(dst, p)
+		}
+		return pLen, nil
+	}
+
+	// Fast path: Sufficient capacity available for larger writes
 	if needed <= cap(b.data) {
 		// Extend slice manually (avoids append's overhead)
 		b.data = b.data[:needed]
