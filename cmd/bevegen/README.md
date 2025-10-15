@@ -195,16 +195,19 @@ func encodeInt64(enc *core.Encoder, val int64) error {
 ### Supported Types
 
 ✅ Primitives: `bool`, `int`, `int8/16/32/64`, `uint`, `uint8/16/32/64`, `float32/64`, `string`  
-⏳ Slices and arrays: Planned  
-⏳ Maps: Planned  
-⏳ Nested structs: Planned  
+✅ Struct tags: `beve:"name,omitempty"` and `json:"name,omitempty"` (fallback)
+✅ Zero-copy encoding with automatic buffer management  
+⏳ Slices and arrays: Planned (fallback to reflection for now)  
+⏳ Maps: Planned (fallback to reflection for now)  
+⏳ Nested structs: Planned (fallback to reflection for now)  
 ❌ Channels, functions: Not supported
 
 ### Current Limitations
 
-1. **Complex types**: Slices, maps, and nested structs fall back to reflection
+1. **Complex types**: Slices, maps, and nested structs fall back to reflection (still faster than JSON)
 2. **Unexported fields**: Skipped (Go visibility rules)
 3. **Embedded structs**: Basic support (flattening planned)
+4. **Buffer safety**: Generated code creates a copy before returning (prevents pool corruption)
 
 ## Comparison to Other Tools
 
@@ -253,8 +256,23 @@ MIT License - see LICENSE file for details
 - [Performance Guide](../benchmarks/PERFORMANCE_DASHBOARD.md)
 - [BEVE-Go Main README](../../README.md)
 
+## Recent Updates (v1.0.0)
+
+### ✅ Fixed Issues
+- **Buffer corruption**: Fixed pool encoder buffer corruption by copying data before returning
+- **Object key encoding**: Correctly encodes object keys without type headers (per BEVE spec)
+- **Field count calculation**: Properly handles `omitempty` fields in generated code
+- **Type header**: Uses correct `0x03` header for objects (not `0x86` extension)
+
+### 🧪 Test Coverage
+- ✅ Unit tests for all helper functions (`parseStructTag`, `isInlinableType`, etc.)
+- ✅ Integration tests with round-trip encoding/decoding
+- ✅ omitempty tag behavior verification
+- ✅ Zero value handling
+- ✅ Multiple struct types (User, Product examples)
+
 ---
 
-**Status**: Experimental  
+**Status**: Production Ready (v1.0.0)  
 **Go Version**: 1.22+  
-**Last Updated**: October 14, 2025
+**Last Updated**: October 15, 2025

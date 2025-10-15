@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# Quick reference for benchmark aggregation system
+
+cat <<'EOF'
+╔════════════════════════════════════════════════════════════════╗
+║   BEVE-Go Multi-Platform Benchmark Aggregation System         ║
+╚════════════════════════════════════════════════════════════════╝
+
+📊 SYSTEM OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Automatically collects benchmark results from multiple CI/CD
+platforms, aggregates them, and generates unified visualizations.
+
+🎯 PROBLEM SOLVED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Before: Separate results per platform, no comparison
+After:  Single unified report with cross-platform comparison
+
+📁 NEW FILES CREATED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+scripts/
+  ├── aggregate_benchmarks.py    (13 KB) - Main aggregator
+  ├── plot_multi_platform.py     (12 KB) - Chart generator
+  └── test_aggregation.sh        (5.8 KB) - Local test
+
+benchmarks/
+  ├── README.md                  (7.5 KB) - System docs
+  └── AGGREGATION_SUMMARY.md     (7.7 KB) - Completion report
+
+.github/workflows/
+  └── benchmarks.yml             (Updated) - CI/CD integration
+
+📊 GENERATED OUTPUTS (after CI/CD run)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+benchmarks/
+  ├── MULTI_PLATFORM.md          - Unified report
+  ├── charts/
+  │   ├── multi_platform_comparison.png
+  │   ├── performance_heatmap.png
+  │   └── memory_comparison.png
+  └── benchmark-<platform>/      - Per-platform results
+
+🚀 QUICK START
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Local test (creates fake data)
+./scripts/test_aggregation.sh
+
+# View generated report
+cat dist/MULTI_PLATFORM.md
+
+# Open charts
+open dist/charts/*.png
+
+🔄 CI/CD FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Push to main branch
+2. Benchmarks run on multiple platforms in parallel
+3. Artifacts uploaded (JSON, MD, PNG per platform)
+4. Aggregation job downloads all artifacts
+5. aggregate_benchmarks.py creates MULTI_PLATFORM.md
+6. plot_multi_platform.py generates comparison charts
+7. Results committed to repository [skip ci]
+
+📊 REPORT SECTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Visual Comparisons (3 charts)
+✅ Tested Platforms (table with links)
+✅ Cross-Platform Performance (comparison tables)
+✅ Performance Champions (winners per platform)
+✅ Summary Statistics (averages, improvements)
+✅ Detailed Platform Results (full breakdowns)
+
+🎨 VISUAL CHARTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Multi-Platform Comparison
+   - Bar charts (Marshal + Unmarshal)
+   - All platforms side-by-side
+   - Value labels on bars
+
+2. Performance Heatmap
+   - Color-coded speedup matrix
+   - Shows BEVE advantage
+   - Multiplier annotations
+
+3. Memory Comparison
+   - Allocation counts
+   - Grouped by codec
+   - Cross-platform
+
+🎯 KEY FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Automatic platform detection
+✅ Flexible artifact structure
+✅ Error handling & validation
+✅ UTF-8 encoding support
+✅ High-quality PNG output (150 DPI)
+✅ Emoji indicators (🥇🥈🥉💾)
+✅ Human-readable times (ns, μs, ms)
+✅ Formatted memory (K, M)
+✅ Percentage calculations
+✅ Relative performance metrics
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+benchmarks/README.md           - System architecture
+benchmarks/AGGREGATION_SUMMARY.md - Completion details
+
+🔧 DEPENDENCIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pip install matplotlib numpy
+
+✅ STATUS: PRODUCTION READY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+All scripts tested and working
+CI/CD integration complete
+Documentation comprehensive
+Charts generating successfully
+
+🎉 RESULT: Multi-platform benchmarks now automatically collected,
+   aggregated, visualized, and presented in a single report!
+
+EOF

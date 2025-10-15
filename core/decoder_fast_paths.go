@@ -368,4 +368,3 @@ func (d *Decoder) decodeStringSliceFast(v reflect.Value, length int) error {
 
 	return nil
 }
-

@@ -134,3 +134,18 @@ func EncodeFloat32SliceFast(enc *Encoder, slice []float32) error {
 func EncodeFloat64SliceFast(enc *Encoder, slice []float64) error {
 	return enc.encodeFloat64SliceDirect(slice)
 }
+
+// EncodeObjectKeyFast encodes a string as an object key without type header.
+//
+// According to BEVE specification, object keys are encoded as:
+// SIZE | DATA (without the 0x02 string type header)
+//
+//go:inline
+func EncodeObjectKeyFast(enc *Encoder, key string) error {
+	// Write size as compressed unsigned integer
+	size := uint64(len(key))
+	if err := enc.WriteCompressedUint(size); err != nil {
+		return err
+	}
+	return enc.WriteStringBytes(key)
+}

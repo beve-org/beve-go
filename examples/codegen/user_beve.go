@@ -16,8 +16,8 @@ func (s *User) MarshalBEVE() ([]byte, error) {
 	enc := core.GetEncoderFromPool()
 	defer core.PutEncoderToPool(enc)
 
-	// Write struct header (TYPE_OBJECT)
-	if err := enc.WriteByte(0x86); err != nil {
+	// Write struct header (TYPE_OBJECT = 0x03)
+	if err := enc.WriteByte(0x03); err != nil {
 		return nil, err
 	}
 
@@ -34,14 +34,14 @@ func (s *User) MarshalBEVE() ([]byte, error) {
 
 	// Encode fields
 	// Field: id
-	if err := core.EncodeStringFast(enc, "id"); err != nil {
+	if err := core.EncodeObjectKeyFast(enc, "id"); err != nil {
 		return nil, err
 	}
 	if err := core.EncodeIntFast(enc, int64(s.ID)); err != nil {
 		return nil, err
 	}
 	// Field: username
-	if err := core.EncodeStringFast(enc, "username"); err != nil {
+	if err := core.EncodeObjectKeyFast(enc, "username"); err != nil {
 		return nil, err
 	}
 	if err := core.EncodeStringFast(enc, s.Username); err != nil {
@@ -49,7 +49,7 @@ func (s *User) MarshalBEVE() ([]byte, error) {
 	}
 	if s.Email != "" {
 		// Field: email
-		if err := core.EncodeStringFast(enc, "email"); err != nil {
+		if err := core.EncodeObjectKeyFast(enc, "email"); err != nil {
 			return nil, err
 		}
 		if err := core.EncodeStringFast(enc, s.Email); err != nil {
@@ -57,21 +57,24 @@ func (s *User) MarshalBEVE() ([]byte, error) {
 		}
 	}
 	// Field: age
-	if err := core.EncodeStringFast(enc, "age"); err != nil {
+	if err := core.EncodeObjectKeyFast(enc, "age"); err != nil {
 		return nil, err
 	}
 	if err := core.EncodeIntFast(enc, int64(s.Age)); err != nil {
 		return nil, err
 	}
 	// Field: active
-	if err := core.EncodeStringFast(enc, "active"); err != nil {
+	if err := core.EncodeObjectKeyFast(enc, "active"); err != nil {
 		return nil, err
 	}
 	if err := core.EncodeBoolFast(enc, s.IsActive); err != nil {
 		return nil, err
 	}
 
-	return enc.Buf.Bytes(), nil
+	// Copy buffer before returning to pool (CRITICAL: prevents data corruption)
+	result := make([]byte, enc.Buf.Len())
+	copy(result, enc.Buf.Bytes())
+	return result, nil
 }
 
 // NOTE: UnmarshalBEVE is not generated to avoid infinite recursion with beve.Unmarshal.

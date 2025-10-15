@@ -7,6 +7,7 @@ import (
 	"syscall/js"
 
 	beve "github.com/beve-org/beve-go"
+	"github.com/beve-org/beve-go/translator"
 )
 
 // BEVE WASM API
@@ -78,9 +79,181 @@ func unmarshal(this js.Value, args []js.Value) interface{} {
 	}
 }
 
+// fromJson converts JSON string/bytes to BEVE binary format
+func fromJson(this js.Value, args []js.Value) interface{} {
+	if len(args) != 1 {
+		return map[string]interface{}{
+			"error": "fromJson requires exactly 1 argument (JSON string or Uint8Array)",
+		}
+	}
+
+	var jsonData []byte
+
+	// Handle both string and Uint8Array inputs
+	if args[0].Type() == js.TypeString {
+		jsonData = []byte(args[0].String())
+	} else if args[0].Type() == js.TypeObject {
+		// Assume it's a Uint8Array
+		jsonData = make([]byte, args[0].Get("length").Int())
+		js.CopyBytesToGo(jsonData, args[0])
+	} else {
+		return map[string]interface{}{
+			"error": "fromJson expects a string or Uint8Array",
+		}
+	}
+
+	// Convert JSON to BEVE using translator
+	beveData, err := translator.FromJSON(jsonData)
+	if err != nil {
+		println("[BEVE WASM] fromJson ERROR:", err.Error())
+		return map[string]interface{}{
+			"error": err.Error(),
+		}
+	}
+
+	// Return as Uint8Array for JavaScript
+	dst := js.Global().Get("Uint8Array").New(len(beveData))
+	js.CopyBytesToJS(dst, beveData)
+
+	return map[string]interface{}{
+		"data": dst,
+		"size": len(beveData),
+	}
+}
+
+// toJson converts BEVE binary format to JSON string
+func toJson(this js.Value, args []js.Value) interface{} {
+	if len(args) < 1 {
+		return map[string]interface{}{
+			"error": "toJson requires at least 1 argument (BEVE Uint8Array)",
+		}
+	}
+
+	// Get BEVE byte array from JavaScript
+	beveData := make([]byte, args[0].Get("length").Int())
+	js.CopyBytesToGo(beveData, args[0])
+
+	// Check for pretty print option (second argument)
+	prettyPrint := false
+	if len(args) > 1 && args[1].Type() == js.TypeBoolean {
+		prettyPrint = args[1].Bool()
+	}
+
+	// Convert BEVE to JSON using translator
+	var jsonStr string
+	var err error
+
+	if prettyPrint {
+		jsonStr, err = translator.ToJSONIndent(beveData, "", "  ")
+	} else {
+		jsonStr, err = translator.ToJSONString(beveData)
+	}
+
+	if err != nil {
+		println("[BEVE WASM] toJson ERROR:", err.Error())
+		return map[string]interface{}{
+			"error": err.Error(),
+		}
+	}
+
+	return map[string]interface{}{
+		"data": jsonStr,
+		"size": len(jsonStr),
+	}
+}
+
+// fromJsonWithStats converts JSON to BEVE and returns conversion statistics
+func fromJsonWithStats(this js.Value, args []js.Value) interface{} {
+	if len(args) != 1 {
+		return map[string]interface{}{
+			"error": "fromJsonWithStats requires exactly 1 argument (JSON string or Uint8Array)",
+		}
+	}
+
+	var jsonData []byte
+
+	// Handle both string and Uint8Array inputs
+	if args[0].Type() == js.TypeString {
+		jsonData = []byte(args[0].String())
+	} else if args[0].Type() == js.TypeObject {
+		jsonData = make([]byte, args[0].Get("length").Int())
+		js.CopyBytesToGo(jsonData, args[0])
+	} else {
+		return map[string]interface{}{
+			"error": "fromJsonWithStats expects a string or Uint8Array",
+		}
+	}
+
+	// Convert with statistics
+	beveData, stats, err := translator.FromJSONWithStats(jsonData)
+	if err != nil {
+		println("[BEVE WASM] fromJsonWithStats ERROR:", err.Error())
+		return map[string]interface{}{
+			"error": err.Error(),
+		}
+	}
+
+	// Return as Uint8Array
+	dst := js.Global().Get("Uint8Array").New(len(beveData))
+	js.CopyBytesToJS(dst, beveData)
+
+	return map[string]interface{}{
+		"data": dst,
+		"stats": map[string]interface{}{
+			"originalSize":  stats.OriginalSize,
+			"convertedSize": stats.ConvertedSize,
+			"ratio":         stats.Ratio,
+			"savings":       stats.Savings,
+		},
+	}
+}
+
+// validateJson validates JSON syntax
+func validateJson(this js.Value, args []js.Value) interface{} {
+	if len(args) != 1 {
+		return map[string]interface{}{
+			"error": "validateJson requires exactly 1 argument",
+		}
+	}
+
+	var jsonData []byte
+	if args[0].Type() == js.TypeString {
+		jsonData = []byte(args[0].String())
+	} else if args[0].Type() == js.TypeObject {
+		jsonData = make([]byte, args[0].Get("length").Int())
+		js.CopyBytesToGo(jsonData, args[0])
+	} else {
+		return map[string]interface{}{
+			"error": "validateJson expects a string or Uint8Array",
+		}
+	}
+
+	isValid := translator.ValidateJSON(jsonData)
+	return map[string]interface{}{
+		"valid": isValid,
+	}
+}
+
+// validateBeve validates BEVE binary format
+func validateBeve(this js.Value, args []js.Value) interface{} {
+	if len(args) != 1 {
+		return map[string]interface{}{
+			"error": "validateBeve requires exactly 1 argument",
+		}
+	}
+
+	beveData := make([]byte, args[0].Get("length").Int())
+	js.CopyBytesToGo(beveData, args[0])
+
+	isValid := translator.ValidateBEVE(beveData)
+	return map[string]interface{}{
+		"valid": isValid,
+	}
+}
+
 // version returns BEVE library version
 func version(this js.Value, args []js.Value) interface{} {
-	return "1.2.0-wasm"
+	return "1.3.0-wasm"
 }
 
 // benchmark runs a simple marshal/unmarshal benchmark
@@ -306,14 +479,29 @@ func goToJs(val interface{}) js.Value {
 func main() {
 	// Register BEVE functions in JavaScript global scope
 	js.Global().Set("beveWasm", map[string]interface{}{
+		// Core serialization
 		"marshal":   js.FuncOf(marshal),
 		"unmarshal": js.FuncOf(unmarshal),
+
+		// JSON translation (NEW)
+		"fromJson":          js.FuncOf(fromJson),
+		"toJson":            js.FuncOf(toJson),
+		"fromJsonWithStats": js.FuncOf(fromJsonWithStats),
+
+		// Validation (NEW)
+		"validateJson": js.FuncOf(validateJson),
+		"validateBeve": js.FuncOf(validateBeve),
+
+		// Utilities
 		"version":   js.FuncOf(version),
 		"benchmark": js.FuncOf(benchmark),
 	})
 
-	println("🎉 BEVE-Go WASM loaded successfully!")
-	println("Available functions: beveWasm.{marshal, unmarshal, version, benchmark}")
+	println("🎉 BEVE-Go WASM v1.3.0 loaded successfully!")
+	println("Core: beveWasm.{marshal, unmarshal}")
+	println("JSON: beveWasm.{fromJson, toJson, fromJsonWithStats}")
+	println("Validation: beveWasm.{validateJson, validateBeve}")
+	println("Utils: beveWasm.{version, benchmark}")
 
 	// Keep the program running
 	select {}

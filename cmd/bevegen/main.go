@@ -366,8 +366,8 @@ func (s *{{.Name}}) MarshalBEVE() ([]byte, error) {
 	enc := core.GetEncoderFromPool()
 	defer core.PutEncoderToPool(enc)
 
-	// Write struct header (TYPE_OBJECT)
-	if err := enc.WriteByte(0x86); err != nil {
+	// Write struct header (TYPE_OBJECT = 0x03)
+	if err := enc.WriteByte(0x03); err != nil {
 		return nil, err
 	}
 
@@ -392,7 +392,7 @@ func (s *{{.Name}}) MarshalBEVE() ([]byte, error) {
 	if s.{{.Name}} != {{zeroValue .Type}} {
 {{- end}}
 		// Field: {{.BEVEName}}
-		if err := core.EncodeStringFast(enc, "{{.BEVEName}}"); err != nil {
+		if err := core.EncodeObjectKeyFast(enc, "{{.BEVEName}}"); err != nil {
 			return nil, err
 		}
 {{- if eq .Type "bool"}}
@@ -430,7 +430,10 @@ func (s *{{.Name}}) MarshalBEVE() ([]byte, error) {
 {{- end}}
 {{- end}}
 
-	return enc.Buf.Bytes(), nil
+	// Copy buffer before returning to pool (CRITICAL: prevents data corruption)
+	result := make([]byte, enc.Buf.Len())
+	copy(result, enc.Buf.Bytes())
+	return result, nil
 }
 
 // NOTE: UnmarshalBEVE is not generated to avoid infinite recursion with beve.Unmarshal.

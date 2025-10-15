@@ -1,0 +1,32 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go/translator
+cpu: Apple M2 Max
+BenchmarkFromJSON_Small-12                 	 1555756	       705.6 ns/op	  53.86 MB/s	     600 B/op	      13 allocs/op
+BenchmarkFromJSON_Medium-12                	  302342	      3832 ns/op	  99.96 MB/s	    2394 B/op	      62 allocs/op
+BenchmarkToJSON_Small-12                   	 1000000	      1007 ns/op	  32.77 MB/s	     784 B/op	      21 allocs/op
+BenchmarkToJSON_Medium-12                  	  241730	      4716 ns/op	  53.86 MB/s	    3828 B/op	     102 allocs/op
+BenchmarkFromJSONString-12                 	 1622430	       708.6 ns/op	     648 B/op	      14 allocs/op
+BenchmarkToJSONString-12                   	 1264164	       963.1 ns/op	     832 B/op	      22 allocs/op
+BenchmarkRoundTrip_JSONtoBEVEtoJSON-12     	  140071	      8550 ns/op	    6231 B/op	     164 allocs/op
+BenchmarkValidateJSON-12                   	  373644	      3333 ns/op	    2136 B/op	      61 allocs/op
+BenchmarkValidateBEVE-12                   	  500624	      2385 ns/op	    2337 B/op	      65 allocs/op
+BenchmarkFromJSONWithStats-12              	  320611	      3812 ns/op	    2426 B/op	      63 allocs/op
+BenchmarkStdlib_JSONUnmarshalMarshal-12    	  222559	      5396 ns/op	    3626 B/op	      98 allocs/op
+BenchmarkStdlib_BEVEUnmarshalMarshal-12    	  398464	      3023 ns/op	    2596 B/op	      66 allocs/op
+BenchmarkTranslator_vs_Stdlib/Translator_FromJSON-12         	  313398	      3795 ns/op	    2395 B/op	      62 allocs/op
+BenchmarkTranslator_vs_Stdlib/Stdlib_Unmarshal+Marshal-12    	  313976	      3862 ns/op	    2394 B/op	      62 allocs/op
+BenchmarkArrayConversion/A-12                                	  801921	      1471 ns/op	     882 B/op	      29 allocs/op
+BenchmarkArrayConversion/B-12                                	  880615	      1309 ns/op	     946 B/op	      29 allocs/op
+BenchmarkArrayConversion/C-12                                	 1000000	      1104 ns/op	     777 B/op	      19 allocs/op
+BenchmarkArrayConversion/D-12                                	  863586	      1355 ns/op	     866 B/op	      27 allocs/op
+BenchmarkObjectConversion/A-12                               	 2697084	       454.1 ns/op	     336 B/op	      10 allocs/op
+BenchmarkObjectConversion/B-12                               	 1000000	      1039 ns/op	    1050 B/op	      19 allocs/op
+BenchmarkObjectConversion/C-12                               	  715294	      1838 ns/op	    1339 B/op	      31 allocs/op
+BenchmarkObjectConversion/D-12                               	  465517	      2216 ns/op	    2782 B/op	      45 allocs/op
+BenchmarkLargePayload/FromJSON-12                            	   52216	     22135 ns/op	 114.93 MB/s	   17174 B/op	     298 allocs/op
+BenchmarkLargePayload/ToJSON-12                              	   40204	     30244 ns/op	  79.16 MB/s	   26059 B/op	     610 allocs/op
+BenchmarkMemoryEfficiency/Small_Allocations-12               	  720442	      1721 ns/op	    1387 B/op	      34 allocs/op
+BenchmarkMemoryEfficiency/Medium_Allocations-12              	  125208	      8884 ns/op	    6231 B/op	     164 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go/translator	35.865s

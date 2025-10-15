@@ -16,8 +16,8 @@ func (s *Product) MarshalBEVE() ([]byte, error) {
 	enc := core.GetEncoderFromPool()
 	defer core.PutEncoderToPool(enc)
 
-	// Write struct header (TYPE_OBJECT)
-	if err := enc.WriteByte(0x86); err != nil {
+	// Write struct header (TYPE_OBJECT = 0x03)
+	if err := enc.WriteByte(0x03); err != nil {
 		return nil, err
 	}
 
@@ -34,14 +34,14 @@ func (s *Product) MarshalBEVE() ([]byte, error) {
 
 	// Encode fields
 	// Field: id
-	if err := core.EncodeStringFast(enc, "id"); err != nil {
+	if err := core.EncodeObjectKeyFast(enc, "id"); err != nil {
 		return nil, err
 	}
 	if err := core.EncodeIntFast(enc, int64(s.ID)); err != nil {
 		return nil, err
 	}
 	// Field: name
-	if err := core.EncodeStringFast(enc, "name"); err != nil {
+	if err := core.EncodeObjectKeyFast(enc, "name"); err != nil {
 		return nil, err
 	}
 	if err := core.EncodeStringFast(enc, s.Name); err != nil {
@@ -49,7 +49,7 @@ func (s *Product) MarshalBEVE() ([]byte, error) {
 	}
 	if s.Description != "" {
 		// Field: description
-		if err := core.EncodeStringFast(enc, "description"); err != nil {
+		if err := core.EncodeObjectKeyFast(enc, "description"); err != nil {
 			return nil, err
 		}
 		if err := core.EncodeStringFast(enc, s.Description); err != nil {
@@ -57,28 +57,31 @@ func (s *Product) MarshalBEVE() ([]byte, error) {
 		}
 	}
 	// Field: price
-	if err := core.EncodeStringFast(enc, "price"); err != nil {
+	if err := core.EncodeObjectKeyFast(enc, "price"); err != nil {
 		return nil, err
 	}
 	if err := core.EncodeFloat64Fast(enc, s.Price); err != nil {
 		return nil, err
 	}
 	// Field: in_stock
-	if err := core.EncodeStringFast(enc, "in_stock"); err != nil {
+	if err := core.EncodeObjectKeyFast(enc, "in_stock"); err != nil {
 		return nil, err
 	}
 	if err := core.EncodeBoolFast(enc, s.InStock); err != nil {
 		return nil, err
 	}
 	// Field: quantity
-	if err := core.EncodeStringFast(enc, "quantity"); err != nil {
+	if err := core.EncodeObjectKeyFast(enc, "quantity"); err != nil {
 		return nil, err
 	}
 	if err := core.EncodeIntFast(enc, int64(s.Quantity)); err != nil {
 		return nil, err
 	}
 
-	return enc.Buf.Bytes(), nil
+	// Copy buffer before returning to pool (CRITICAL: prevents data corruption)
+	result := make([]byte, enc.Buf.Len())
+	copy(result, enc.Buf.Bytes())
+	return result, nil
 }
 
 // NOTE: UnmarshalBEVE is not generated to avoid infinite recursion with beve.Unmarshal.

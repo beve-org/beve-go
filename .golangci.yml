@@ -24,8 +24,8 @@ linters:
       - mocks/
       - generated/
       - pb/
-      - 'examples/**/*.go$'
-      - 'cmd/**/*.go$'
+      - 'examples/'
+      - 'cmd/'
       - api/
 
 

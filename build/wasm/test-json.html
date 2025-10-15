@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEVE-Go WASM - JSON Translation Tests</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border-left: 4px solid #3498db;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .loading {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎉 BEVE-Go WASM - JSON Translation Tests</h1>
+    <div class="test-section">
+        <p class="loading">Loading WASM module...</p>
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    <script>
+        const go = new Go();
+        
+        WebAssembly.instantiateStreaming(fetch("beve.wasm"), go.importObject)
+            .then((result) => {
+                go.run(result.instance);
+                initTests();
+            })
+            .catch((err) => {
+                document.querySelector('.loading').textContent = '❌ Failed to load WASM: ' + err;
+                document.querySelector('.loading').className = 'error';
+            });
+
+        function initTests() {
+            document.querySelector('.loading').remove();
+            
+            const container = document.querySelector('.test-section');
+            
+            // Test 1: fromJson - Simple Object
+            addTest(container, 'Test 1: fromJson - Simple Object', () => {
+                const json = JSON.stringify({ name: "Alice", age: 30, active: true });
+                const result = beveWasm.fromJson(json);
+                
+                if (result.error) throw new Error(result.error);
+                
+                return {
+                    input: json,
+                    output: `Uint8Array[${result.data.length}]`,
+                    size: result.size,
+                    savings: ((json.length - result.size) / json.length * 100).toFixed(1) + '%'
+                };
+            });
+
+            // Test 2: toJson - BEVE to JSON
+            addTest(container, 'Test 2: toJson - Round Trip', () => {
+                const json = JSON.stringify({ name: "Bob", scores: [95, 87, 92] });
+                const beveResult = beveWasm.fromJson(json);
+                
+                if (beveResult.error) throw new Error(beveResult.error);
+                
+                const jsonResult = beveWasm.toJson(beveResult.data, false);
+                
+                if (jsonResult.error) throw new Error(jsonResult.error);
+                
+                return {
+                    original: json,
+                    converted: jsonResult.data,
+                    match: json === jsonResult.data ? '✅ Identical' : '❌ Different'
+                };
+            });
+
+            // Test 3: toJson with Pretty Print
+            addTest(container, 'Test 3: toJson - Pretty Print', () => {
+                const json = JSON.stringify({ user: { name: "Charlie", tags: ["admin", "user"] } });
+                const beveResult = beveWasm.fromJson(json);
+                
+                if (beveResult.error) throw new Error(beveResult.error);
+                
+                const prettyResult = beveWasm.toJson(beveResult.data, true);
+                
+                if (prettyResult.error) throw new Error(prettyResult.error);
+                
+                return {
+                    compact: json,
+                    pretty: prettyResult.data
+                };
+            });
+
+            // Test 4: fromJsonWithStats
+            addTest(container, 'Test 4: fromJsonWithStats - Conversion Statistics', () => {
+                const json = JSON.stringify({
+                    products: [
+                        { id: 1, name: "Widget", price: 29.99 },
+                        { id: 2, name: "Gadget", price: 49.99 },
+                        { id: 3, name: "Doohickey", price: 19.99 }
+                    ]
+                });
+                
+                const result = beveWasm.fromJsonWithStats(json);
+                
+                if (result.error) throw new Error(result.error);
+                
+                return {
+                    input: json,
+                    stats: result.stats,
+                    savingsPercent: (result.stats.savings * 100).toFixed(1) + '%'
+                };
+            });
+
+            // Test 5: validateJson
+            addTest(container, 'Test 5: validateJson - Valid and Invalid', () => {
+                const validJson = '{"valid": true}';
+                const invalidJson = '{invalid json}';
+                
+                const validResult = beveWasm.validateJson(validJson);
+                const invalidResult = beveWasm.validateJson(invalidJson);
+                
+                return {
+                    valid: validJson + ' → ' + (validResult.valid ? '✅ Valid' : '❌ Invalid'),
+                    invalid: invalidJson + ' → ' + (invalidResult.valid ? '✅ Valid' : '❌ Invalid')
+                };
+            });
+
+            // Test 6: validateBeve
+            addTest(container, 'Test 6: validateBeve - BEVE Format Validation', () => {
+                const json = '{"test": "data"}';
+                const beveResult = beveWasm.fromJson(json);
+                
+                if (beveResult.error) throw new Error(beveResult.error);
+                
+                const validation = beveWasm.validateBeve(beveResult.data);
+                
+                // Test with corrupted data
+                const corrupted = new Uint8Array([0xFF, 0xFF, 0xFF]);
+                const corruptedValidation = beveWasm.validateBeve(corrupted);
+                
+                return {
+                    valid: '✅ Valid BEVE: ' + validation.valid,
+                    corrupted: '❌ Corrupted: ' + corruptedValidation.valid
+                };
+            });
+
+            // Test 7: Large Array Performance
+            addTest(container, 'Test 7: Large Array Performance', () => {
+                const largeArray = Array.from({ length: 1000 }, (_, i) => ({
+                    id: i,
+                    value: Math.random() * 1000,
+                    active: i % 2 === 0
+                }));
+                
+                const json = JSON.stringify(largeArray);
+                
+                const start = performance.now();
+                const result = beveWasm.fromJsonWithStats(json);
+                const duration = performance.now() - start;
+                
+                if (result.error) throw new Error(result.error);
+                
+                return {
+                    elements: largeArray.length,
+                    jsonSize: result.stats.originalSize,
+                    beveSize: result.stats.convertedSize,
+                    savings: (result.stats.savings * 100).toFixed(1) + '%',
+                    timeMs: duration.toFixed(2) + 'ms'
+                };
+            });
+
+            // Test 8: Complex Nested Structure
+            addTest(container, 'Test 8: Complex Nested Structure', () => {
+                const complex = {
+                    users: [
+                        {
+                            id: 1,
+                            profile: {
+                                name: "Alice",
+                                settings: {
+                                    theme: "dark",
+                                    notifications: true,
+                                    languages: ["en", "tr", "de"]
+                                }
+                            },
+                            posts: [
+                                { id: 101, title: "Hello World", likes: 42 },
+                                { id: 102, title: "BEVE Rocks", likes: 128 }
+                            ]
+                        }
+                    ]
+                };
+                
+                const json = JSON.stringify(complex);
+                const result = beveWasm.fromJsonWithStats(json);
+                
+                if (result.error) throw new Error(result.error);
+                
+                // Round trip
+                const backToJson = beveWasm.toJson(result.data, false);
+                const parsed = JSON.parse(backToJson.data);
+                
+                return {
+                    originalSize: result.stats.originalSize,
+                    beveSize: result.stats.convertedSize,
+                    savings: (result.stats.savings * 100).toFixed(1) + '%',
+                    roundTrip: JSON.stringify(complex) === backToJson.data ? '✅ Success' : '❌ Failed'
+                };
+            });
+
+            // Add version info
+            const versionDiv = document.createElement('div');
+            versionDiv.className = 'info test-result';
+            versionDiv.textContent = '📦 BEVE Version: ' + beveWasm.version();
+            container.insertBefore(versionDiv, container.firstChild);
+        }
+
+        function addTest(container, title, testFn) {
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            
+            const heading = document.createElement('h2');
+            heading.textContent = title;
+            section.appendChild(heading);
+            
+            try {
+                const result = testFn();
+                
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'test-result success';
+                resultDiv.innerHTML = '<strong>✅ PASSED</strong>';
+                section.appendChild(resultDiv);
+                
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(result, null, 2);
+                section.appendChild(pre);
+                
+                // Add stats cards if stats available
+                if (result.stats) {
+                    const statsDiv = document.createElement('div');
+                    statsDiv.className = 'stats';
+                    
+                    statsDiv.innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-value">${result.stats.originalSize}</div>
+                            <div class="stat-label">Original Size (bytes)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${result.stats.convertedSize}</div>
+                            <div class="stat-label">BEVE Size (bytes)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${result.stats.ratio.toFixed(3)}</div>
+                            <div class="stat-label">Compression Ratio</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${(result.stats.savings * 100).toFixed(1)}%</div>
+                            <div class="stat-label">Space Savings</div>
+                        </div>
+                    `;
+                    
+                    section.appendChild(statsDiv);
+                }
+                
+            } catch (err) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'test-result error';
+                errorDiv.innerHTML = '<strong>❌ FAILED:</strong> ' + err.message;
+                section.appendChild(errorDiv);
+                
+                console.error(title, err);
+            }
+            
+            container.appendChild(section);
+        }
+    </script>
+</body>
+</html>

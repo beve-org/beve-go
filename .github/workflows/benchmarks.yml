@@ -215,131 +215,30 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Install Python dependencies for aggregation
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          # No additional deps needed for aggregation script
+
       - name: Compose multi-platform summary
         shell: bash
         run: |
-          python <<'PY'
-          import json
-          import shutil
-          import sys
-          import io
-          from pathlib import Path
+          # Use the dedicated aggregation script for better maintainability
+          python scripts/aggregate_benchmarks.py
 
-          # Fix Windows encoding issues
-          if sys.platform == 'win32':
-              sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-              sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-
-          artifacts_root = Path("artifacts")
-          dist_root = Path("dist")
-          bench_root = dist_root / "benchmarks"
-          bench_root.mkdir(parents=True, exist_ok=True)
-
-          # Check if artifacts directory exists and has content
-          if not artifacts_root.exists():
-              print(f"Error: Artifacts directory not found at {artifacts_root}", file=sys.stderr)
-              sys.exit(1)
-
-          benchmark_jsons = sorted(artifacts_root.glob("**/benchmark.json"))
-          if not benchmark_jsons:
-              print("Error: No benchmark.json files found in artifacts directory", file=sys.stderr)
-              print(f"Contents of {artifacts_root}:", file=sys.stderr)
-              for item in artifacts_root.rglob("*"):
-                  print(f"  - {item.relative_to(artifacts_root)}", file=sys.stderr)
-              sys.exit(1)
-
-          print(f"[OK] Found {len(benchmark_jsons)} platform benchmark results", file=sys.stderr)
-
-          summary_lines = ["# Multi-Platform Benchmark Results", "", "| CPU | OS | Artifacts |", "|-----|----|-----------|"]
-          detail_lines = []
-
-          def format_value(value):
-              if isinstance(value, (int, float)):
-                  if isinstance(value, float):
-                      return f"{value:.2f}"
-                  return str(value)
-              if value in (None, ""):
-                  return "n/a"
-              return str(value)
-
-          for json_path in benchmark_jsons:
-              cpu_dir = json_path.parent
-              slug = cpu_dir.name
-              data = json.loads(json_path.read_text(encoding="utf-8"))
-              env = data.get("environment", {})
-              cpu_name = env.get("cpu", slug)
-              os_name = env.get("os", "unknown")
-
-              dest_dir = bench_root / slug
-              if dest_dir.exists():
-                  shutil.rmtree(dest_dir)
-              dest_dir.mkdir(parents=True, exist_ok=True)
-
-              for artifact_file in cpu_dir.glob("benchmark.*"):
-                  shutil.copy2(artifact_file, dest_dir / artifact_file.name)
-
-              summary_lines.append(
-                  f"| {cpu_name} | {os_name} | [Markdown](benchmarks/{slug}/benchmark.md) · [JSON](benchmarks/{slug}/benchmark.json) · [PNG](benchmarks/{slug}/benchmark.png) |"
-              )
-
-              grouped = {}
-              order = []
-              for entry in data.get("results", []):
-                  key = (entry.get("scenario", ""), entry.get("operation", ""))
-                  if key not in grouped:
-                      grouped[key] = []
-                      order.append(key)
-                  grouped[key].append(entry)
-
-              # Add header
-              detail_lines.extend([f"## {cpu_name} — {os_name}", ""])
-              
-              # Add chart image first (visual representation)
-              chart_path = f"{slug}/benchmark.png"
-              detail_lines.extend([
-                  f"![Benchmark Chart]({chart_path})",
-                  "",
-                  "_Performance visualization: lower is better. Chart shows relative performance across different codecs and scenarios._",
-                  ""
-              ])
-              
-              # Then add detailed table
-              detail_lines.extend([
-                  "### Detailed Results",
-                  "",
-                  "| Scenario | Codec | Operation | ns/op | B/op | allocs/op |",
-                  "|----------|-------|-----------|-------|------|-----------|"
-              ])
-              
-              for key in order:
-                  scenario, operation = key
-                  entries = sorted(
-                      grouped[key],
-                      key=lambda e: (float("inf") if e.get("ns_per_op") in (None, "n/a") else e["ns_per_op"])  # type: ignore[arg-type]
-                  )
-                  for entry in entries:
-                      detail_lines.append(
-                          "| {scenario} | {codec} | {operation} | {ns} | {bytes} | {allocs} |".format(
-                              scenario=scenario,
-                              codec=entry.get("codec", ""),
-                              operation=operation,
-                              ns=format_value(entry.get("ns_per_op")),
-                              bytes=format_value(entry.get("bytes_per_op")),
-                              allocs=format_value(entry.get("allocs_per_op")),
-                          )
-                      )
-
-              detail_lines.append("")
-
-          if not detail_lines:
-              detail_lines.append("No benchmark results were found.")
-
-          summary_lines.append("")
-          summary_lines.extend(detail_lines)
-
-          summary_path = dist_root / "results.md"
-          summary_path.write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
-          PY
+      - name: Generate multi-platform charts
+        shell: bash
+        run: |
+          # Generate unified comparison charts
+          python scripts/plot_multi_platform.py dist/charts
+          
+          # Verify charts were created
+          if [ -f "dist/charts/multi_platform_comparison.png" ]; then
+            echo "✅ Multi-platform comparison chart created"
+          else
+            echo "⚠️  Warning: Multi-platform chart not created"
+          fi
 
       - name: Upload consolidated report
         uses: actions/upload-artifact@v4
@@ -351,10 +250,23 @@ jobs:
         shell: bash
         run: |
           mkdir -p benchmarks
-          cp -r dist/benchmarks/* benchmarks/ || true
-          if [ -f dist/results.md ]; then
-            cp dist/results.md benchmarks/MULTI_PLATFORM.md
+          
+          # Copy all platform-specific benchmark directories
+          if [ -d "dist/benchmarks" ]; then
+            cp -r dist/benchmarks/* benchmarks/ 2>/dev/null || true
           fi
+          
+          # Copy the consolidated multi-platform report
+          if [ -f "dist/MULTI_PLATFORM.md" ]; then
+            cp dist/MULTI_PLATFORM.md benchmarks/MULTI_PLATFORM.md
+            echo "✅ Copied multi-platform summary"
+          else
+            echo "⚠️  Warning: dist/MULTI_PLATFORM.md not found"
+          fi
+          
+          # List what we have
+          echo "📁 Benchmark directory contents:"
+          ls -la benchmarks/
 
       - name: Commit and push results
         shell: bash

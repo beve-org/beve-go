@@ -137,28 +137,5 @@ func writeCompressedUintPure(scratch *[5]byte, n uint64) int {
 //   - 3 bytes: 16384-1B    → [vv vv vv vv vv vv 10] [vvvvvvvv] [vvvvvvvv]
 //   - 4 bytes: 1B+         → [vv vv vv vv vv vv 11] [vvvvvvvv] [vvvvvvvv] [vvvvvvvv]
 //
-// Optimization: Fast path for n<64 covers 80-90% of cases (string lengths,
-// array sizes, field counts). Remaining cases use pure Go implementation
-// which is 6.2% faster than assembly in end-to-end benchmarks.
-//
-//go:inline
-func (e *Encoder) WriteCompressedUint(n uint64) error {
-	// Ultra-fast path: Small numbers (<64) - most common case
-	// Covers typical string lengths (5-50 bytes), array sizes (<64 elements)
-	if n < 64 {
-		return e.WriteByte(byte(n << 2))
-	}
-
-	// Pure Go implementation for larger numbers (10-20% of cases)
-	length := writeCompressedUintPure(&e.varintScratch, n)
-
-	// Direct buffer write (avoids WriteBytes overhead)
-	if e.Buf != nil {
-		_, err := e.Buf.Write(e.varintScratch[:length])
-		return err
-	}
-
-	// Slow path: io.Writer
-	_, err := e.w.Write(e.varintScratch[:length])
-	return err
-}
+// WriteCompressedUint is implemented in encoder_write.go
+// This file only contains WriteByte and WriteBytes
