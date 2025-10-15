@@ -108,49 +108,6 @@ func varintSize(n uint64) int {
 	return 4
 }
 
-// cacheVarintSize calculates varint size AND caches the value for later write.
-// Eliminates double-encoding (size calculation + actual write).
-//
-// PERFORMANCE: 2× speedup when value is later written with writeVarintFromCache.
-//
-//go:inline
-func (e *Encoder) cacheVarintSize(n uint64) int {
-	size := varintSize(n)
-	
-	// Cache value if space available (typical: 8-20 varints per struct)
-	if e.varintCacheCount < len(e.varintCache) {
-		e.varintCache[e.varintCacheCount] = n
-		e.varintCacheCount++
-	}
-	
-	return size
-}
-
-// writeVarintFromCache writes a varint using cached value at index.
-// MUST be called in same order as cacheVarintSize calls.
-//
-// PERFORMANCE: Avoids re-encoding, just lookups and writes.
-//
-//go:inline
-func (e *Encoder) writeVarintFromCache(cacheIdx int) error {
-	if cacheIdx >= e.varintCacheCount {
-		// Cache miss - should not happen if used correctly
-		// Fall back to writing 0 (safe default)
-		return e.WriteCompressedUint(0)
-	}
-	
-	// Write cached value (encoding already known from cacheVarintSize)
-	return e.WriteCompressedUint(e.varintCache[cacheIdx])
-}
-
-// clearVarintCache resets the cache for next encoding operation.
-// Call after completing a struct/array encoding.
-//
-//go:inline
-func (e *Encoder) clearVarintCache() {
-	e.varintCacheCount = 0
-}
-
 // WriteStringBytes writes a string as bytes to the encoder's output.
 //
 //go:inline

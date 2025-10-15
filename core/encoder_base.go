@@ -36,12 +36,7 @@ type Encoder struct {
 	single        [1]byte // Single byte writes
 	batchLen      int     // Current batch length (8 bytes on 64-bit)
 
-	// Phase 12: Varint caching (16 bytes)
-	// Eliminates double-encoding of varints during size calculation + write
-	varintCacheCount int    // Number of cached varints (4 bytes + padding)
-	varintCache      [8]uint64 // Cached varint values (64 bytes)
-
-	// = 16 (pointers) + 24 (buffers) + 8 (batchLen) + 16 (cache) + 64 (cache values) = 128 bytes (2 cache lines)
+	// = 16 (pointers) + 24 (buffers) + 8 (batchLen) = 48 bytes (fits in 1 cache line)
 
 	// Cold path (rarely accessed, third cache line):
 	batchBuf [256]byte // Batch buffer for small writes (cold path)
@@ -81,19 +76,19 @@ func GetEncoderFromPool() *Encoder {
 //
 //go:inline
 func PutEncoderToPool(enc *Encoder) {
-	// Reset state
-	enc.w = nil
-	enc.batchLen = 0
-	enc.varintCacheCount = 0 // Reset varint cache
-
-	// Only pool encoders with reasonable buffer sizes
-	if enc.Buf != nil && cap(enc.Buf.data) <= maxBufferPoolCapacity {
-		// CRITICAL: Reset buffer to avoid stale data contaminating next use
-		enc.Buf.data = enc.Buf.data[:0]
-		encoderPool.Put(enc)
+	if enc == nil || enc.Buf == nil {
 		return
 	}
-	// Large or nil buffer encoders are discarded and will be GC'd
+
+	bufCap := cap(enc.Buf.data)
+	if bufCap <= maxBufferPoolCapacity {
+		enc.Buf.Reset()
+		enc.batchLen = 0
+		encoderPool.Put(enc)
+	} else {
+		// Buffer is too large to pool, release it
+		ReleaseBuffer(enc.Buf)
+	}
 } // NewEncoder creates a new encoder writing to w.
 // For most use cases, prefer GetEncoderFromPool() instead.
 // This function is used when you need a specific io.Writer target.
@@ -154,6 +149,27 @@ func (e *Encoder) DetachBytes() BufferLease {
 	e.batchLen = 0
 
 	return lease
+}
+
+// Reset clears the encoder for reuse while keeping the underlying buffer.
+// This is useful for benchmarks and batch processing scenarios.
+//
+//go:inline
+func (e *Encoder) Reset() {
+	if e.Buf != nil {
+		e.Buf.Reset()
+	}
+	e.batchLen = 0
+}
+
+// Grow ensures the encoder's buffer has capacity for at least n more bytes.
+// This can improve performance when the final size is known in advance.
+//
+//go:inline
+func (e *Encoder) Grow(n int) {
+	if e.Buf != nil {
+		e.Buf.Grow(n)
+	}
 }
 
 // Common types and functions are in common.go
