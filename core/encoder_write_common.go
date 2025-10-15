@@ -98,12 +98,12 @@ func varintSize(n uint64) int {
 	if n < 65536 {
 		return int(varintSizeLookup[n])
 	}
-	
+
 	// Fast path: 30-bit values (0.9% of cases)
 	if n < 1073741824 {
 		return 3
 	}
-	
+
 	// Slow path: Large values (0.1% of cases)
 	return 4
 }
