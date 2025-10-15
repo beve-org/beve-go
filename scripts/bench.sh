@@ -20,18 +20,34 @@ mkdir -p "${OUT_DIR}"
 # Run ALL benchmarks in a single efficient command
 echo "Running benchmarks..." >&2
 benchmark_output=$(cd "${ROOT_DIR}" && go test \
-  -bench="Benchmark(SmallStruct|MediumPayload|LargePayload)_(BEVE|JSON|Sonic|CBOR|MessagePack)_(Marshal|Unmarshal)" \
+  -bench="Benchmark(SmallStruct|Medium|Large)_(BEVE|JSON|Sonic|CBOR|MessagePack)_(Marshal|Unmarshal)" \
   -benchmem \
   -benchtime="${ITERATIONS}x" \
   -timeout="${TIMEOUT}" \
   -run=^$ \
   . 2>&1 || true)
 
+echo "Benchmark completed, processing results..." >&2
+
 # Save raw output
 raw_file="${OUT_DIR}/latest_raw.txt"
 echo "${benchmark_output}" > "${raw_file}"
 
-# Process results with Python
+echo "Parsing benchmark results..." >&2
+
+# Process results with dedicated Python script
+python3 "${ROOT_DIR}/scripts/parse_benchmarks.py" "${raw_file}" "${OUT_DIR}"
+
+if [ $? -ne 0 ]; then
+    echo "❌ Failed to parse benchmark results" >&2
+    echo "Raw output saved to: ${raw_file}" >&2
+    exit 1
+fi
+
+# Done! Exit before the old inline Python code
+exit 0
+
+# OLD CODE BELOW - KEPT FOR REFERENCE BUT NOT EXECUTED
 python3 - "${raw_file}" "${OUT_DIR}" <<'PYTHON'
 import sys
 import re
@@ -49,12 +65,12 @@ out_dir = Path(sys.argv[2])
 with open(raw_file, 'r') as f:
     output = f.read()
 
-# Parse benchmarks
-pattern = r'Benchmark(\w+)_(BEVE|JSON|Sonic|CBOR|MessagePack)_(Marshal(?:ZeroCopy)?|Unmarshal)-\d+\s+\d+\s+([\d.]+) ns/op\s+(\d+) B/op\s+(\d+) allocs/op'
+# Parse benchmarks - More flexible pattern
+pattern = r'Benchmark(\w+?)_(BEVE|JSON|Sonic|CBOR|MessagePack)_(Marshal(?:ZeroCopy)?|Unmarshal)[-/](\d+)\s+(\d+)\s+([\d.]+)\s+ns/op\s+([\d.]+)\s+B/op\s+([\d.]+)\s+allocs/op'
 results = []
 
 for match in re.finditer(pattern, output):
-    scenario, codec, operation, nsop, bop, allocsop = match.groups()
+    scenario, codec, operation, procs, iters, nsop, bop, allocsop = match.groups()
     
     # Handle ZeroCopy special case
     if 'ZeroCopy' in operation:
@@ -67,7 +83,8 @@ for match in re.finditer(pattern, output):
         'MediumPayload': 'Medium Payload', 
         'Medium': 'Medium Payload',
         'LargePayload': 'Large Payload',
-        'Large': 'Large Payload'
+        'Large': 'Large Payload',
+        'Small': 'Small Struct'  # Some tests use 'Small' directly
     }
     scenario_formatted = scenario_map.get(scenario, scenario)
     

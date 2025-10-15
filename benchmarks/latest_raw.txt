@@ -2,16 +2,38 @@ goos: darwin
 goarch: arm64
 pkg: github.com/beve-org/beve-go
 cpu: Apple M2 Max
-BenchmarkSmallStruct_BEVE_Marshal-12             	   10000	      1012 ns/op	    2596 B/op	       3 allocs/op
-BenchmarkSmallStruct_BEVE_MarshalZeroCopy-12     	   10000	       529.9 ns/op	     290 B/op	       2 allocs/op
-BenchmarkSmallStruct_JSON_Marshal-12             	   10000	      1434 ns/op	    1168 B/op	       2 allocs/op
-BenchmarkSmallStruct_Sonic_Marshal-12            	   10000	      3845 ns/op	    2525 B/op	       3 allocs/op
-BenchmarkSmallStruct_MessagePack_Marshal-12      	   10000	      2500 ns/op	    8325 B/op	       9 allocs/op
-BenchmarkSmallStruct_CBOR_Marshal-12             	   10000	      1043 ns/op	    1681 B/op	       2 allocs/op
-BenchmarkSmallStruct_BEVE_Unmarshal-12           	   10000	       719.3 ns/op	    1593 B/op	       4 allocs/op
-BenchmarkSmallStruct_JSON_Unmarshal-12           	   10000	      7092 ns/op	    2408 B/op	      47 allocs/op
-BenchmarkSmallStruct_Sonic_Unmarshal-12          	   10000	      1950 ns/op	    3793 B/op	       6 allocs/op
-BenchmarkSmallStruct_MessagePack_Unmarshal-12    	   10000	      1593 ns/op	    1697 B/op	      38 allocs/op
-BenchmarkSmallStruct_CBOR_Unmarshal-12           	   10000	      3161 ns/op	    2800 B/op	      60 allocs/op
+BenchmarkSmallStruct_BEVE_Marshal-12             	     100	      1030 ns/op	    1894 B/op	       3 allocs/op
+BenchmarkSmallStruct_BEVE_MarshalZeroCopy-12     	     100	       312.9 ns/op	     324 B/op	       2 allocs/op
+BenchmarkSmallStruct_JSON_Marshal-12             	     100	      1420 ns/op	     887 B/op	       2 allocs/op
+BenchmarkSmallStruct_Sonic_Marshal-12            	     100	      1199 ns/op	    1950 B/op	       3 allocs/op
+BenchmarkSmallStruct_MessagePack_Marshal-12      	     100	      3271 ns/op	    8339 B/op	       9 allocs/op
+BenchmarkSmallStruct_CBOR_Marshal-12             	     100	      1406 ns/op	    2210 B/op	       2 allocs/op
+BenchmarkSmallStruct_BEVE_Unmarshal-12           	     100	       757.1 ns/op	    1482 B/op	       4 allocs/op
+BenchmarkSmallStruct_JSON_Unmarshal-12           	     100	     10475 ns/op	    3848 B/op	      57 allocs/op
+BenchmarkSmallStruct_Sonic_Unmarshal-12          	     100	      2431 ns/op	    3737 B/op	       6 allocs/op
+BenchmarkSmallStruct_MessagePack_Unmarshal-12    	     100	      1427 ns/op	     756 B/op	      18 allocs/op
+BenchmarkSmallStruct_CBOR_Unmarshal-12           	     100	      1600 ns/op	     856 B/op	      21 allocs/op
+BenchmarkMedium_BEVE_Marshal-12                  	     100	      7604 ns/op	   18937 B/op	       3 allocs/op
+BenchmarkMedium_BEVE_MarshalZeroCopy-12          	     100	      6201 ns/op	     843 B/op	       2 allocs/op
+BenchmarkMedium_JSON_Marshal-12                  	     100	     32763 ns/op	   24882 B/op	       9 allocs/op
+BenchmarkMedium_Sonic_Marshal-12                 	     100	     27559 ns/op	   20816 B/op	       4 allocs/op
+BenchmarkMedium_MessagePack_Marshal-12           	     100	     18882 ns/op	   65931 B/op	      22 allocs/op
+BenchmarkMedium_BEVE_Unmarshal-12                	     100	     14591 ns/op	   34461 B/op	      59 allocs/op
+BenchmarkMedium_JSON_Unmarshal-12                	     100	    107895 ns/op	   40456 B/op	     538 allocs/op
+BenchmarkMedium_Sonic_Unmarshal-12               	     100	     23365 ns/op	   55467 B/op	      33 allocs/op
+BenchmarkMedium_CBOR_Unmarshal-12                	     100	     42328 ns/op	   34664 B/op	     715 allocs/op
+BenchmarkMedium_MessagePack_Unmarshal-12         	     100	     30924 ns/op	   37902 B/op	     705 allocs/op
+BenchmarkMedium_CBOR_Marshal-12                  	     100	     11823 ns/op	   20598 B/op	       2 allocs/op
+BenchmarkLarge_BEVE_Marshal-12                   	     100	     69970 ns/op	  191465 B/op	       3 allocs/op
+BenchmarkLarge_BEVE_MarshalZeroCopy-12           	     100	     53252 ns/op	    5431 B/op	       2 allocs/op
+BenchmarkLarge_JSON_Marshal-12                   	     100	    292380 ns/op	  226899 B/op	       9 allocs/op
+BenchmarkLarge_Sonic_Marshal-12                  	     100	    323524 ns/op	  223570 B/op	       4 allocs/op
+BenchmarkLarge_MessagePack_Marshal-12            	     100	    159745 ns/op	  527190 B/op	     115 allocs/op
+BenchmarkLarge_BEVE_Unmarshal-12                 	     100	    137960 ns/op	  282139 B/op	     419 allocs/op
+BenchmarkLarge_JSON_Unmarshal-12                 	     100	   1402622 ns/op	  504716 B/op	    6690 allocs/op
+BenchmarkLarge_Sonic_Unmarshal-12                	     100	    236778 ns/op	  352119 B/op	     209 allocs/op
+BenchmarkLarge_CBOR_Unmarshal-12                 	     100	    419377 ns/op	  316713 B/op	    6462 allocs/op
+BenchmarkLarge_MessagePack_Unmarshal-12          	     100	    331702 ns/op	  378887 B/op	    6960 allocs/op
+BenchmarkLarge_CBOR_Marshal-12                   	     100	    125702 ns/op	  218852 B/op	       3 allocs/op
 PASS
-ok  	github.com/beve-org/beve-go	0.487s
+ok  	github.com/beve-org/beve-go	0.935s
