@@ -36,9 +36,14 @@ type Encoder struct {
 	single        [1]byte // Single byte writes
 	batchLen      int     // Current batch length (8 bytes on 64-bit)
 
-	// = 16 (pointers) + 24 (buffers) + 8 (int) = 48 bytes (fits in one cache line)
+	// Phase 12: Varint caching (16 bytes)
+	// Eliminates double-encoding of varints during size calculation + write
+	varintCacheCount int    // Number of cached varints (4 bytes + padding)
+	varintCache      [8]uint64 // Cached varint values (64 bytes)
 
-	// Cold path (rarely accessed, second cache line):
+	// = 16 (pointers) + 24 (buffers) + 8 (batchLen) + 16 (cache) + 64 (cache values) = 128 bytes (2 cache lines)
+
+	// Cold path (rarely accessed, third cache line):
 	batchBuf [256]byte // Batch buffer for small writes (cold path)
 }
 
@@ -79,6 +84,7 @@ func PutEncoderToPool(enc *Encoder) {
 	// Reset state
 	enc.w = nil
 	enc.batchLen = 0
+	enc.varintCacheCount = 0 // Reset varint cache
 
 	// Only pool encoders with reasonable buffer sizes
 	if enc.Buf != nil && cap(enc.Buf.data) <= maxBufferPoolCapacity {

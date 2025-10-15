@@ -1,0 +1,275 @@
+
+================================================================================
+PAYLOAD SIZE ANALYSIS
+================================================================================
+
+1. SMALL STRUCT (4 fields)
+--------------------------------------------------------------------------------
+BEVE:               45 bytes  (baseline: 1.05x)
+JSON:               55 bytes  (baseline: 1.28x)
+Sonic:              55 bytes  (baseline: 1.28x)
+MessagePack:        50 bytes  (baseline: 1.16x)
+CBOR:               43 bytes  (baseline: 1.00x)
+
+BEVE overhead:
+  vs MessagePack: -5 bytes (-10.0% larger)
+  vs CBOR:        +2 bytes (4.7% larger)
+  vs JSON:        -10 bytes (18.2% smaller)
+
+2. MEDIUM STRUCT (8 fields)
+--------------------------------------------------------------------------------
+BEVE:              170 bytes  (baseline: 1.05x)
+JSON:              208 bytes  (baseline: 1.28x)
+Sonic:             208 bytes  (baseline: 1.28x)
+MessagePack:       167 bytes  (baseline: 1.03x)
+CBOR:              162 bytes  (baseline: 1.00x)
+
+BEVE overhead:
+  vs MessagePack: +3 bytes (1.8% larger)
+  vs CBOR:        +8 bytes (4.9% larger)
+  vs JSON:        -38 bytes (18.3% smaller)
+
+3. LARGE STRUCT (15 fields)
+--------------------------------------------------------------------------------
+BEVE:              334 bytes  (baseline: 1.05x)
+JSON:              399 bytes  (baseline: 1.25x)
+Sonic:             399 bytes  (baseline: 1.25x)
+MessagePack:       324 bytes  (baseline: 1.02x)
+CBOR:              319 bytes  (baseline: 1.00x)
+
+BEVE overhead:
+  vs MessagePack: +10 bytes (3.1% larger)
+  vs CBOR:        +15 bytes (4.7% larger)
+  vs JSON:        -65 bytes (16.3% smaller)
+
+4. ARRAY OF 10 SMALL STRUCTS
+--------------------------------------------------------------------------------
+BEVE:              422 bytes  (baseline: 1.05x)
+JSON:              516 bytes  (baseline: 1.29x)
+Sonic:             516 bytes  (baseline: 1.29x)
+MessagePack:       471 bytes  (baseline: 1.17x)
+CBOR:              401 bytes  (baseline: 1.00x)
+
+BEVE overhead:
+  vs MessagePack: -49 bytes (-10.4% larger)
+  vs CBOR:        +21 bytes (5.2% larger)
+  vs JSON:        -94 bytes (18.2% smaller)
+
+================================================================================
+ANALYSIS COMPLETE
+================================================================================
+
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go
+cpu: Apple M2 Max
+BenchmarkMarshalStruct-12                           	14385194	       235.5 ns/op	     256 B/op	       3 allocs/op
+BenchmarkMarshalStructZeroCopy-12                   	15785038	       214.9 ns/op	     128 B/op	       2 allocs/op
+BenchmarkMarshalStructJSON-12                       	 5643036	       626.8 ns/op	     336 B/op	       7 allocs/op
+BenchmarkUnmarshalStruct-12                         	 5347106	       669.2 ns/op	     672 B/op	      13 allocs/op
+BenchmarkUnmarshalStructJSON-12                     	 2059905	      1711 ns/op	     800 B/op	      20 allocs/op
+BenchmarkMarshalTypedArray-12                       	 6358498	       575.8 ns/op	    4896 B/op	       2 allocs/op
+BenchmarkMarshalTypedArrayZeroCopy-12               	32534186	       106.8 ns/op	      24 B/op	       1 allocs/op
+BenchmarkMarshalTypedArrayJSON-12                   	  270831	     13186 ns/op	    4123 B/op	       2 allocs/op
+BenchmarkUnmarshalTypedArray-12                     	 1285977	      2783 ns/op	    6219 B/op	       4 allocs/op
+BenchmarkUnmarshalTypedArrayJSON-12                 	   49160	     72782 ns/op	   13096 B/op	      14 allocs/op
+BenchmarkBinaryMarshaler_Marshal-12                 	25510798	       146.0 ns/op	      88 B/op	       3 allocs/op
+BenchmarkBinaryMarshaler_Unmarshal-12               	12567967	       289.5 ns/op	     192 B/op	       8 allocs/op
+BenchmarkBinaryMarshaler_RoundTrip-12               	 7431427	       466.6 ns/op	     280 B/op	      11 allocs/op
+BenchmarkSmallStruct_BEVE_Marshal-12                	 5461068	       689.3 ns/op	    2082 B/op	       3 allocs/op
+BenchmarkSmallStruct_BEVE_MarshalZeroCopy-12        	 7396216	       672.5 ns/op	     289 B/op	       2 allocs/op
+BenchmarkSmallStruct_JSON_Marshal-12                	 1000000	      3271 ns/op	    2834 B/op	       2 allocs/op
+BenchmarkSmallStruct_Sonic_Marshal-12               	 1000000	      4474 ns/op	    3281 B/op	       3 allocs/op
+BenchmarkSmallStruct_MessagePack_Marshal-12         	 1758756	      2045 ns/op	    8324 B/op	       9 allocs/op
+BenchmarkSmallStruct_CBOR_Marshal-12                	 7390407	      1061 ns/op	    1937 B/op	       2 allocs/op
+BenchmarkSmallStruct_BEVE_Unmarshal-12              	 4288760	      1133 ns/op	    3514 B/op	       4 allocs/op
+BenchmarkSmallStruct_JSON_Unmarshal-12              	  506754	     13446 ns/op	    4808 B/op	      87 allocs/op
+BenchmarkSmallStruct_Sonic_Unmarshal-12             	 1822777	      2332 ns/op	    5572 B/op	       6 allocs/op
+BenchmarkSmallStruct_MessagePack_Unmarshal-12       	 1000000	      3345 ns/op	    4770 B/op	     101 allocs/op
+BenchmarkSmallStruct_CBOR_Unmarshal-12              	 1000000	      4782 ns/op	    5096 B/op	     104 allocs/op
+BenchmarkMedium_BEVE_Marshal-12                     	  534141	      8045 ns/op	   21924 B/op	       3 allocs/op
+BenchmarkMedium_BEVE_MarshalZeroCopy-12             	  742142	      4994 ns/op	     131 B/op	       2 allocs/op
+BenchmarkMedium_JSON_Marshal-12                     	  131982	     31791 ns/op	   24911 B/op	       9 allocs/op
+BenchmarkMedium_Sonic_Marshal-12                    	  108516	     39940 ns/op	   25076 B/op	       4 allocs/op
+BenchmarkMedium_MessagePack_Marshal-12              	  186638	     19529 ns/op	   65856 B/op	      22 allocs/op
+BenchmarkMedium_BEVE_Unmarshal-12                   	  233653	     13916 ns/op	   27271 B/op	      59 allocs/op
+BenchmarkMedium_JSON_Unmarshal-12                   	   25288	    168789 ns/op	   67161 B/op	     873 allocs/op
+BenchmarkMedium_Sonic_Unmarshal-12                  	  148675	     23550 ns/op	   41675 B/op	      33 allocs/op
+BenchmarkMedium_CBOR_Unmarshal-12                   	   90782	     46201 ns/op	   38552 B/op	     794 allocs/op
+BenchmarkMedium_MessagePack_Unmarshal-12            	  119245	     32485 ns/op	   38637 B/op	     717 allocs/op
+BenchmarkMedium_CBOR_Marshal-12                     	  298330	     11554 ns/op	   18543 B/op	       2 allocs/op
+BenchmarkLarge_BEVE_Marshal-12                      	   52828	     66088 ns/op	  197223 B/op	       3 allocs/op
+BenchmarkLarge_BEVE_MarshalZeroCopy-12              	   66468	     50739 ns/op	     160 B/op	       2 allocs/op
+BenchmarkLarge_JSON_Marshal-12                      	   13266	    293551 ns/op	  213838 B/op	       9 allocs/op
+BenchmarkLarge_Sonic_Marshal-12                     	   10000	    329688 ns/op	  225085 B/op	       4 allocs/op
+BenchmarkLarge_MessagePack_Marshal-12               	   24462	    147610 ns/op	  526946 B/op	     115 allocs/op
+BenchmarkLarge_BEVE_Unmarshal-12                    	   25953	    131618 ns/op	  273309 B/op	     419 allocs/op
+BenchmarkLarge_JSON_Unmarshal-12                    	    2550	   1427862 ns/op	  533388 B/op	    6926 allocs/op
+BenchmarkLarge_Sonic_Unmarshal-12                   	   16137	    213849 ns/op	  328267 B/op	     207 allocs/op
+BenchmarkLarge_CBOR_Unmarshal-12                    	    8403	    387878 ns/op	  307533 B/op	    6282 allocs/op
+BenchmarkLarge_MessagePack_Unmarshal-12             	   12037	    310639 ns/op	  376272 B/op	    6924 allocs/op
+BenchmarkLarge_CBOR_Marshal-12                      	   32088	    116440 ns/op	  197582 B/op	       2 allocs/op
+BenchmarkSize_BEVE-12                               	1000000000	         0.0000756 ns/op	      1138 bytes	       0 B/op	       0 allocs/op
+BenchmarkSize_JSON-12                               	1000000000	         0.0001072 ns/op	      2456 bytes	       0 B/op	       0 allocs/op
+BenchmarkSize_Sonic-12                              	1000000000	         0.0000992 ns/op	      2034 bytes	       0 B/op	       0 allocs/op
+BenchmarkSize_MessagePack-12                        	1000000000	         0.0000699 ns/op	      1267 bytes	       0 B/op	       0 allocs/op
+BenchmarkSize_CBOR-12                               	1000000000	         0.0000779 ns/op	      1279 bytes	       0 B/op	       0 allocs/op
+BenchmarkComparisonBEVE_Marshal-12                  	22930586	       159.2 ns/op	     192 B/op	       3 allocs/op
+BenchmarkComparisonBEVE_Unmarshal-12                	13342514	       263.4 ns/op	     248 B/op	       4 allocs/op
+BenchmarkComparisonBEVE_LargeArray-12               	  728883	      4990 ns/op	   24753 B/op	       6 allocs/op
+BenchmarkComparisonBEVE_Memory-12                   	23119047	       152.6 ns/op	        60.00 bytes/op	     192 B/op	       3 allocs/op
+BenchmarkCompressionMarshal/Normal-BEVE-12          	  325696	     10777 ns/op	     19303 bytes/op	   20536 B/op	       2 allocs/op
+BenchmarkCompressionMarshal/BEVE+LZ4-12             	  213339	     17154 ns/op	       711.0 bytes/op	   42939 B/op	       3 allocs/op
+BenchmarkCompressionMarshal/BEVE+Zstd-Level1-12     	  163610	     21706 ns/op	       426.0 bytes/op	   41275 B/op	       3 allocs/op
+BenchmarkCompressionMarshal/BEVE+Zstd-Level3-12     	  157189	     22296 ns/op	       426.0 bytes/op	   41245 B/op	       3 allocs/op
+BenchmarkCompressionUnmarshal/Normal-BEVE-12        	  131563	     27260 ns/op	   41753 B/op	     104 allocs/op
+BenchmarkCompressionUnmarshal/BEVE+LZ4-12           	  120552	     30951 ns/op	   62241 B/op	     105 allocs/op
+BenchmarkCompressionUnmarshal/BEVE+Zstd-Level1-12   	  104637	     35137 ns/op	   62283 B/op	     105 allocs/op
+BenchmarkCompressionUnmarshal/BEVE+Zstd-Level3-12   	  102184	     35412 ns/op	   62280 B/op	     105 allocs/op
+BenchmarkCompressionPayloadSizes/Size-_/Normal-12   	 1000000	      3144 ns/op	 614.48 MB/s	    4585 B/op	      14 allocs/op
+BenchmarkCompressionPayloadSizes/Size-_/LZ4-12      	 1000000	      3495 ns/op	  74.40 MB/s	    6634 B/op	      15 allocs/op
+BenchmarkCompressionPayloadSizes/Size-d/Normal-12   	  127232	     28493 ns/op	 677.46 MB/s	   41752 B/op	     104 allocs/op
+BenchmarkCompressionPayloadSizes/Size-d/LZ4-12      	  115118	     31367 ns/op	  22.67 MB/s	   62240 B/op	     105 allocs/op
+BenchmarkCompressionPayloadSizes/Size-Ϩ/Normal-12   	   12927	    280608 ns/op	 690.91 MB/s	  422751 B/op	    1004 allocs/op
+BenchmarkCompressionPayloadSizes/Size-Ϩ/LZ4-12      	   10000	    310450 ns/op	  16.82 MB/s	  619411 B/op	    1005 allocs/op
+BenchmarkFieldIndexWithCompression/Normal-BEVE-12   	  315130	     11491 ns/op	1679.91 MB/s	   20543 B/op	       2 allocs/op
+BenchmarkFieldIndexWithCompression/Field-Index-BEVE-12         	  280284	     12785 ns/op	1095.28 MB/s	   33552 B/op	     110 allocs/op
+BenchmarkFieldIndexWithCompression/Normal-BEVE+LZ4-12          	  203206	     17842 ns/op	   42943 B/op	       3 allocs/op
+BenchmarkFieldIndexWithCompression/Field-Index-BEVE+LZ4-12     	  199677	     18122 ns/op	   49789 B/op	     111 allocs/op
+BenchmarkFileWrite_BEVE-12                                     	   50154	     66785 ns/op	     87321 bytes	     312 B/op	       4 allocs/op
+BenchmarkFileWrite_JSON-12                                     	   55623	     68358 ns/op	    111021 bytes	     312 B/op	       4 allocs/op
+BenchmarkFileWrite_Sonic-12                                    	   54271	     65617 ns/op	    104182 bytes	     328 B/op	       4 allocs/op
+BenchmarkFileWrite_MessagePack-12                              	   59175	     62019 ns/op	     93880 bytes	     328 B/op	       4 allocs/op
+BenchmarkFileWrite_CBOR-12                                     	   57518	     67743 ns/op	    103749 bytes	     296 B/op	       4 allocs/op
+BenchmarkFileRead_BEVE-12                                      	   40405	     93817 ns/op	  240437 B/op	     224 allocs/op
+BenchmarkFileRead_JSON-12                                      	    4399	    761276 ns/op	  393494 B/op	    3641 allocs/op
+BenchmarkFileRead_Sonic-12                                     	   25242	    135177 ns/op	  279748 B/op	     118 allocs/op
+BenchmarkFileRead_MessagePack-12                               	   19912	    182282 ns/op	  273973 B/op	    3228 allocs/op
+BenchmarkFileRead_CBOR-12                                      	   15751	    220534 ns/op	  233873 B/op	    2950 allocs/op
+BenchmarkRoundTrip_BEVE-12                                     	   82758	     44200 ns/op	  104019 B/op	     102 allocs/op
+BenchmarkRoundTrip_JSON-12                                     	   10000	    324263 ns/op	  137553 B/op	    1320 allocs/op
+BenchmarkRoundTrip_Sonic-12                                    	   28287	    108364 ns/op	  139816 B/op	      57 allocs/op
+BenchmarkRoundTrip_MessagePack-12                              	   36673	    105587 ns/op	  211146 B/op	    1503 allocs/op
+BenchmarkRoundTrip_CBOR-12                                     	   34452	    104546 ns/op	  105064 B/op	    1217 allocs/op
+BenchmarkStream_BEVE-12                                        	   69966	     55700 ns/op	     837 B/op	       9 allocs/op
+BenchmarkStream_JSON-12                                        	   42943	     84286 ns/op	     593 B/op	      12 allocs/op
+BenchmarkFileWriteOptimized_BEVE-12                            	   56550	     64070 ns/op	     93905 bytes	     216 B/op	       3 allocs/op
+BenchmarkFileWriteOptimized_JSON-12                            	   51764	     67917 ns/op	    111436 bytes	     216 B/op	       3 allocs/op
+BenchmarkFileWriteOptimized_Sonic-12                           	   51565	     66765 ns/op	    106525 bytes	     216 B/op	       3 allocs/op
+BenchmarkFileWriteOptimized_MessagePack-12                     	   55144	     65564 ns/op	    103438 bytes	     232 B/op	       3 allocs/op
+BenchmarkFileWriteOptimized_CBOR-12                            	   56949	     63423 ns/op	     91458 bytes	     216 B/op	       3 allocs/op
+BenchmarkFullPipeline/Normal-BEVE-Only-12                      	   88603	     39732 ns/op	   63674 B/op	     106 allocs/op
+BenchmarkFullPipeline/Normal-BEVE+LZ4-Full-Cycle-12            	   73267	     49586 ns/op	  110815 B/op	     108 allocs/op
+BenchmarkFullPipeline/FieldIndex-BEVE+LZ4-Full-Cycle-12        	   32464	    110373 ns/op	 1686488 B/op	     119 allocs/op
+BenchmarkEncodeOnly/Normal-BEVE-12                             	  318090	     11279 ns/op	     19303 bytes/op	   20534 B/op	       2 allocs/op
+BenchmarkEncodeOnly/FieldIndex-BEVE-12                         	  283711	     12675 ns/op	     14003 bytes/op	   33552 B/op	     110 allocs/op
+BenchmarkCompressOnly/LZ4-on-Normal-BEVE-12                    	  591146	      6116 ns/op	3156.12 MB/s	   20828 B/op	       1 allocs/op
+BenchmarkCompressOnly/LZ4-on-FieldIndex-BEVE-12                	  741778	      4837 ns/op	2895.16 MB/s	   14544 B/op	       1 allocs/op
+BenchmarkDecompressOnly/LZ4-Decompress-Normal-12               	 1516626	      2299 ns/op	 309.27 MB/s	   20480 B/op	       1 allocs/op
+BenchmarkDecompressOnly/LZ4-Decompress-FieldIndex-12           	 2202465	      1663 ns/op	 397.97 MB/s	   14336 B/op	       1 allocs/op
+BenchmarkRealisticWorkload/API-Normal-BEVE+LZ4-12              	   68564	     49822 ns/op	  110615 B/op	     108 allocs/op
+BenchmarkRealisticWorkload/API-FieldIndex-BEVE+LZ4-12          	   32040	    113373 ns/op	 1683559 B/op	     119 allocs/op
+BenchmarkIOWrite_BEVE_Small-12                                 	12150486	       282.5 ns/op	 916.93 MB/s	     224 B/op	       2 allocs/op
+BenchmarkIOWrite_JSON_Small-12                                 	 4923531	       740.5 ns/op	 405.11 MB/s	     336 B/op	       8 allocs/op
+BenchmarkIOWrite_Sonic_Small-12                                	 3470089	      1029 ns/op	 291.56 MB/s	     292 B/op	       5 allocs/op
+BenchmarkIOWrite_MessagePack_Small-12                          	 9627913	       377.8 ns/op	 659.10 MB/s	     112 B/op	       1 allocs/op
+BenchmarkIOWrite_CBOR_Small-12                                 	 8783708	       406.5 ns/op	 614.94 MB/s	     112 B/op	       1 allocs/op
+BenchmarkIOWrite_BEVE_Medium-12                                	  213258	     17005 ns/op	 975.25 MB/s	      96 B/op	       2 allocs/op
+BenchmarkIOWrite_JSON_Medium-12                                	   74319	     49459 ns/op	 412.67 MB/s	   14684 B/op	     508 allocs/op
+BenchmarkIOWrite_Sonic_Medium-12                               	   44030	     78330 ns/op	 260.30 MB/s	    9860 B/op	     105 allocs/op
+BenchmarkIOWrite_MessagePack_Medium-12                         	  100677	     35721 ns/op	 436.10 MB/s	    3248 B/op	     201 allocs/op
+BenchmarkIOWrite_CBOR_Medium-12                                	  117813	     31221 ns/op	 504.35 MB/s	      48 B/op	       1 allocs/op
+BenchmarkIOWrite_BEVE_Large-12                                 	   21123	    172292 ns/op	 978.42 MB/s	     118 B/op	       2 allocs/op
+BenchmarkIOWrite_JSON_Large-12                                 	    7106	    499428 ns/op	 405.62 MB/s	  144429 B/op	    5008 allocs/op
+BenchmarkIOWrite_Sonic_Large-12                                	    4588	    783496 ns/op	 258.53 MB/s	   96799 B/op	    1005 allocs/op
+BenchmarkIOWrite_MessagePack_Large-12                          	   10000	    351925 ns/op	 452.69 MB/s	   32118 B/op	    2001 allocs/op
+BenchmarkIOWrite_CBOR_Large-12                                 	   10000	    303661 ns/op	 528.01 MB/s	     131 B/op	       1 allocs/op
+BenchmarkIORead_BEVE_Small-12                                  	 4659235	       770.8 ns/op	 336.01 MB/s	     824 B/op	      13 allocs/op
+BenchmarkIORead_JSON_Small-12                                  	 1000000	      3087 ns/op	  96.84 MB/s	    1768 B/op	      31 allocs/op
+BenchmarkIORead_Sonic_Small-12                                 	 3070288	      1157 ns/op	 258.37 MB/s	    1247 B/op	       9 allocs/op
+BenchmarkIORead_MessagePack_Small-12                           	 3447555	      1027 ns/op	 242.39 MB/s	    1048 B/op	      20 allocs/op
+BenchmarkIORead_CBOR_Small-12                                  	 2611120	      1385 ns/op	 180.51 MB/s	    1280 B/op	      21 allocs/op
+BenchmarkIORead_BEVE_Medium-12                                 	   54484	     66652 ns/op	 248.81 MB/s	   87593 B/op	     914 allocs/op
+BenchmarkIORead_JSON_Medium-12                                 	   14750	    241523 ns/op	  84.50 MB/s	  159425 B/op	    1948 allocs/op
+BenchmarkIORead_Sonic_Medium-12                                	   38992	     92112 ns/op	 221.34 MB/s	   79790 B/op	     511 allocs/op
+BenchmarkIORead_MessagePack_Medium-12                          	   44426	     84102 ns/op	 185.23 MB/s	   73272 B/op	    1316 allocs/op
+BenchmarkIORead_CBOR_Medium-12                                 	   29665	    122843 ns/op	 128.18 MB/s	   97080 B/op	    1618 allocs/op
+BenchmarkIORead_BEVE_Large-12                                  	    5601	    649060 ns/op	 259.72 MB/s	  854200 B/op	    9014 allocs/op
+BenchmarkIORead_JSON_Large-12                                  	    1574	   2271579 ns/op	  89.18 MB/s	 1511445 B/op	   18155 allocs/op
+BenchmarkIORead_Sonic_Large-12                                 	    4086	    871071 ns/op	 232.54 MB/s	  746567 B/op	    4111 allocs/op
+BenchmarkIORead_MessagePack_Large-12                           	    4430	    816313 ns/op	 195.16 MB/s	  710079 B/op	   13016 allocs/op
+BenchmarkIORead_CBOR_Large-12                                  	    2713	   1308590 ns/op	 122.53 MB/s	 1173410 B/op	   16022 allocs/op
+BenchmarkIORoundTrip_BEVE_Small-12                             	 2194578	      1596 ns/op	    2835 B/op	      22 allocs/op
+BenchmarkIORoundTrip_JSON_Small-12                             	  865950	      4062 ns/op	    2473 B/op	      41 allocs/op
+BenchmarkIORoundTrip_MessagePack_Small-12                      	 2183409	      1641 ns/op	    1768 B/op	      27 allocs/op
+BenchmarkIORoundTrip_CBOR_Small-12                             	 1836418	      1942 ns/op	    1697 B/op	      24 allocs/op
+BenchmarkIOSequentialWrites_BEVE-12                            	  129855	     28246 ns/op	   22400 B/op	     200 allocs/op
+BenchmarkIOSequentialWrites_JSON-12                            	   51048	     71912 ns/op	   33613 B/op	     800 allocs/op
+BenchmarkIOSequentialWrites_MessagePack-12                     	   98158	     36825 ns/op	   11201 B/op	     100 allocs/op
+BenchmarkIOSequentialWrites_CBOR-12                            	   90964	     39845 ns/op	   11211 B/op	     100 allocs/op
+BenchmarkSimple_BEVE_Marshal-12                                	38064457	        94.54 ns/op	      48 B/op	       2 allocs/op
+BenchmarkSimple_BEVE_MarshalZeroCopy-12                        	38421087	        92.04 ns/op	      24 B/op	       1 allocs/op
+BenchmarkSimple_BEVE_Unmarshal-12                              	24421983	       127.4 ns/op	      48 B/op	       2 allocs/op
+BenchmarkSimple_JSON_Marshal-12                                	45056108	        79.78 ns/op	      24 B/op	       1 allocs/op
+BenchmarkSimple_JSON_Unmarshal-12                              	 9546370	       381.0 ns/op	     224 B/op	       5 allocs/op
+BenchmarkSimple_MsgPack_Marshal-12                             	28469721	       126.5 ns/op	     112 B/op	       2 allocs/op
+BenchmarkSimple_MsgPack_Unmarshal-12                           	23200267	       156.1 ns/op	      52 B/op	       2 allocs/op
+BenchmarkSimple_CBOR_Marshal-12                                	44145868	        81.44 ns/op	      24 B/op	       1 allocs/op
+BenchmarkSimple_CBOR_Unmarshal-12                              	24991683	       145.3 ns/op	       4 B/op	       1 allocs/op
+BenchmarkStreamEncoder_BEVE-12                                 	  308932	     11243 ns/op	   14756 B/op	     209 allocs/op
+BenchmarkStreamEncoder_JSON-12                                 	  283624	     12454 ns/op	   11379 B/op	     108 allocs/op
+BenchmarkStreamEncoder_SingleRecord/BEVE-12                    	12209017	       273.3 ns/op	     544 B/op	       7 allocs/op
+BenchmarkStreamEncoder_SingleRecord/JSON-12                    	24096687	       147.9 ns/op	     144 B/op	       3 allocs/op
+BenchmarkStreamEncoder_LargeRecords/BEVE-12                    	   13860	    265459 ns/op	  422412 B/op	    2014 allocs/op
+BenchmarkStreamEncoder_LargeRecords/JSON-12                    	    7622	    480904 ns/op	  550466 B/op	    6012 allocs/op
+BenchmarkStreamEncoder_BufferSizes/Ѐ-12                        	  294804	     10258 ns/op	    9059 B/op	     206 allocs/op
+BenchmarkStreamEncoder_BufferSizes/က-12                        	  357537	     10112 ns/op	   11107 B/op	     205 allocs/op
+BenchmarkStreamEncoder_BufferSizes/_-12                        	  333032	     11058 ns/op	   15206 B/op	     205 allocs/op
+BenchmarkStreamEncoder_BufferSizes/䀀-12                        	  315000	     11268 ns/op	   23401 B/op	     205 allocs/op
+BenchmarkStreamEncoder_BufferSizes/耀-12                        	  284194	     12625 ns/op	   39793 B/op	     205 allocs/op
+BenchmarkStreamEncoder_Primitives/Integers-12                  	 1722235	      2092 ns/op	     624 B/op	       5 allocs/op
+BenchmarkStreamEncoder_Primitives/Strings-12                   	  816330	      4221 ns/op	    5857 B/op	     108 allocs/op
+BenchmarkStreamEncoder_SingleInt-12                            	195212648	        18.47 ns/op	       0 B/op	       0 allocs/op
+BenchmarkStreamEncoder_SmallStruct-12                          	44050437	        81.43 ns/op	      32 B/op	       1 allocs/op
+BenchmarkStreamEncoder_Batch100-12                             	  441711	      7610 ns/op	    3200 B/op	     200 allocs/op
+BenchmarkStreamEncoder_vs_Marshal/StreamEncoder-12             	36742676	        96.52 ns/op	      64 B/op	       2 allocs/op
+BenchmarkStreamEncoder_vs_Marshal/Marshal-12                   	29657343	       116.0 ns/op	      88 B/op	       3 allocs/op
+BenchmarkStructTag_BeveTag-12                                  	12825654	       278.1 ns/op	     152 B/op	       5 allocs/op
+BenchmarkStructTag_JSONTag-12                                  	12539994	       269.6 ns/op	     152 B/op	       5 allocs/op
+BenchmarkMarshalTime-12                                        	21275227	       165.8 ns/op	     304 B/op	       3 allocs/op
+BenchmarkMarshalTimeInStruct-12                                	27192873	       133.8 ns/op	     144 B/op	       3 allocs/op
+BenchmarkValuePoolGetPut-12                                    	454428978	         8.005 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEncodeBufferPoolGetPut-12                             	456053010	         7.883 ns/op	       0 B/op	       0 allocs/op
+BenchmarkArenaGetPut-12                                        	459321157	         7.893 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDeepNested_BEVE_Marshal-12                            	10746927	       334.9 ns/op	     176 B/op	       3 allocs/op
+BenchmarkDeepNested_JSON_Marshal-12                            	 4904984	       737.4 ns/op	     200 B/op	       2 allocs/op
+BenchmarkDeepNested_Sonic_Marshal-12                           	 3100506	      1155 ns/op	     218 B/op	       3 allocs/op
+BenchmarkDeepNested_MessagePack_Marshal-12                     	 3280026	      1090 ns/op	     520 B/op	       5 allocs/op
+BenchmarkDeepNested_CBOR_Marshal-12                            	 6107779	       585.4 ns/op	     136 B/op	       2 allocs/op
+BenchmarkManySmallStrings_BEVE_Marshal-12                      	11358014	       313.7 ns/op	     464 B/op	       2 allocs/op
+BenchmarkManySmallStrings_JSON_Marshal-12                      	 8274885	       431.0 ns/op	     192 B/op	       1 allocs/op
+BenchmarkManySmallStrings_Sonic_Marshal-12                     	 2879173	      1225 ns/op	     209 B/op	       2 allocs/op
+BenchmarkManySmallStrings_MessagePack_Marshal-12               	 6830071	       521.7 ns/op	     240 B/op	       3 allocs/op
+BenchmarkManySmallStrings_CBOR_Marshal-12                      	10164488	       352.6 ns/op	     112 B/op	       1 allocs/op
+BenchmarkLargeMap_BEVE_Marshal-12                              	  275036	     12649 ns/op	    4097 B/op	       1 allocs/op
+BenchmarkLargeMap_JSON_Marshal-12                              	   30292	    118512 ns/op	   55054 B/op	    1354 allocs/op
+BenchmarkLargeMap_Sonic_Marshal-12                             	   62631	     58192 ns/op	    6278 B/op	       3 allocs/op
+BenchmarkLargeMap_MessagePack_Marshal-12                       	  212035	     16675 ns/op	    8178 B/op	       8 allocs/op
+BenchmarkLargeMap_CBOR_Marshal-12                              	  105454	     34631 ns/op	    4099 B/op	       1 allocs/op
+BenchmarkInterfaceSlice_BEVE_Marshal-12                        	  955238	      3785 ns/op	     504 B/op	       2 allocs/op
+BenchmarkInterfaceSlice_JSON_Marshal-12                        	  825204	      4376 ns/op	     600 B/op	       2 allocs/op
+BenchmarkInterfaceSlice_Sonic_Marshal-12                       	  686084	      5098 ns/op	     619 B/op	       3 allocs/op
+BenchmarkInterfaceSlice_MessagePack_Marshal-12                 	  665210	      5297 ns/op	    1032 B/op	       6 allocs/op
+BenchmarkInterfaceSlice_CBOR_Marshal-12                        	 1000000	      3074 ns/op	     440 B/op	       2 allocs/op
+BenchmarkWideStruct_BEVE_Marshal-12                            	 8056245	       444.1 ns/op	     736 B/op	       2 allocs/op
+BenchmarkWideStruct_JSON_Marshal-12                            	 4259436	       839.7 ns/op	     448 B/op	       1 allocs/op
+BenchmarkWideStruct_Sonic_Marshal-12                           	 3623022	      1002 ns/op	     467 B/op	       2 allocs/op
+BenchmarkWideStruct_MessagePack_Marshal-12                     	 3947617	       930.2 ns/op	     496 B/op	       4 allocs/op
+BenchmarkWideStruct_CBOR_Marshal-12                            	 5111923	       697.4 ns/op	     288 B/op	       1 allocs/op
+BenchmarkStringHeavy_BEVE_Marshal-12                           	13841031	       258.2 ns/op	     640 B/op	       3 allocs/op
+BenchmarkStringHeavy_JSON_Marshal-12                           	 4805036	       754.4 ns/op	     656 B/op	       2 allocs/op
+BenchmarkStringHeavy_Sonic_Marshal-12                          	 3563689	      1019 ns/op	     679 B/op	       3 allocs/op
+BenchmarkStringHeavy_MessagePack_Marshal-12                    	 7586815	       480.0 ns/op	    1088 B/op	       6 allocs/op
+BenchmarkStringHeavy_CBOR_Marshal-12                           	12291603	       295.4 ns/op	     560 B/op	       2 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go	889.508s
