@@ -219,7 +219,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          # No additional deps needed for aggregation script
+          python -m pip install matplotlib numpy
 
       - name: Compose multi-platform summary
         shell: bash
