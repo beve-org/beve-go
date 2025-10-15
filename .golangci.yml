@@ -6,9 +6,7 @@ run:
   timeout: 5m
   tests: true
   modules-download-mode: readonly
-  skip-files:
-    - examples/**/*.go$
-    - cmd
+
 linters:
   # Enabled by default in v2.5.0: errcheck, govet, ineffassign, staticcheck, unused
   enable:
@@ -26,8 +24,8 @@ linters:
       - mocks/
       - generated/
       - pb/
-      - examples
-      - cmd/
+      - 'examples/**/*.go$'
+      - 'cmd/**/*.go$'
       - api/
 
 
