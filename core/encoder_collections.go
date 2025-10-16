@@ -1983,10 +1983,10 @@ func appendEncodedFloat64(dst []byte, v float64) []byte {
 //go:inline
 func appendEncodedString(dst []byte, s string) []byte {
 	sLen := len(s)
-	
+
 	// Write header
 	dst = append(dst, 0x02)
-	
+
 	// Inline varint for length (eliminate function call)
 	switch {
 	case sLen < 64:
@@ -1998,7 +1998,7 @@ func appendEncodedString(dst []byte, s string) []byte {
 	default:
 		dst = append(dst, byte(0x03|((sLen>>24)<<2)), byte(sLen>>16), byte(sLen>>8), byte(sLen))
 	}
-	
+
 	// Write string data
 	return append(dst, stringToBytes(s)...)
 }
