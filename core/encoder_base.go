@@ -124,6 +124,34 @@ func (e *Encoder) Encode(v reflect.Value) error {
 	return fn(e, v)
 }
 
+// EncodeAndDetach encodes the value and returns the bytes directly.
+// This is optimized for Marshal() use case and leverages stack encoding when possible.
+//
+// Phase 1.1: For small structs, this uses stack-based encoding to eliminate
+// heap allocations during the encoding process.
+//
+//go:inline
+func (e *Encoder) EncodeAndDetach(v reflect.Value) ([]byte, error) {
+	// Phase 1.1: Try stack encoding first for small structs (top-level only)
+	// This fast path eliminates buffer allocations for common small struct case
+	if v.Kind() == reflect.Struct && v.IsValid() {
+		if data, ok := e.tryStackEncode(v); ok {
+			return data, nil // Already copied to heap (single allocation)
+		}
+	}
+
+	// Standard encoding path - encode to buffer
+	if err := e.Encode(v); err != nil {
+		return nil, err
+	}
+
+	// Copy buffer to new slice
+	encoded := e.Buf.Bytes()
+	result := make([]byte, len(encoded))
+	copy(result, encoded)
+	return result, nil
+}
+
 // DetachBytes transfers ownership of the encoder's buffered bytes to the caller.
 //
 // The returned lease shares the encoder's underlying storage and must be
