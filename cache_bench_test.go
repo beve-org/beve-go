@@ -6,14 +6,14 @@ import (
 
 // Struct with more primitive fields (good for cache)
 type CachedStruct struct {
-	ID        int     `beve:"id"`
-	Name      string  `beve:"name"`
-	Age       int     `beve:"age"`
-	Email     string  `beve:"email"`
-	Score     float64 `beve:"score"`
-	IsActive  bool    `beve:"is_active"`
-	Balance   float64 `beve:"balance"`
-	Count     int     `beve:"count"`
+	ID       int     `beve:"id"`
+	Name     string  `beve:"name"`
+	Age      int     `beve:"age"`
+	Email    string  `beve:"email"`
+	Score    float64 `beve:"score"`
+	IsActive bool    `beve:"is_active"`
+	Balance  float64 `beve:"balance"`
+	Count    int     `beve:"count"`
 }
 
 func BenchmarkCachedStruct_BEVE_Marshal(b *testing.B) {
@@ -37,15 +37,15 @@ func BenchmarkCachedStruct_BEVE_Marshal(b *testing.B) {
 
 // Comparison: Same struct with slice (slower)
 type UserWithSlice struct {
-	ID        int      `beve:"id"`
-	Name      string   `beve:"name"`
-	Age       int      `beve:"age"`
-	Email     string   `beve:"email"`
-	Score     float64  `beve:"score"`
-	IsActive  bool     `beve:"is_active"`
-	Balance   float64  `beve:"balance"`
-	Count     int      `beve:"count"`
-	Tags      []string `beve:"tags"`
+	ID       int      `beve:"id"`
+	Name     string   `beve:"name"`
+	Age      int      `beve:"age"`
+	Email    string   `beve:"email"`
+	Score    float64  `beve:"score"`
+	IsActive bool     `beve:"is_active"`
+	Balance  float64  `beve:"balance"`
+	Count    int      `beve:"count"`
+	Tags     []string `beve:"tags"`
 }
 
 func BenchmarkUserWithSlice_BEVE_Marshal(b *testing.B) {

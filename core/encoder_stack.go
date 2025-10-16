@@ -17,15 +17,15 @@ const (
 // Eliminates heap allocations for the common case of small structs
 //
 // Performance benefits:
-//  - Zero heap allocations during encoding
-//  - Single cache line access (128 bytes)
-//  - ~150ns faster than heap allocation path
-//  - Reduces GC pressure significantly
+//   - Zero heap allocations during encoding
+//   - Single cache line access (128 bytes)
+//   - ~150ns faster than heap allocation path
+//   - Reduces GC pressure significantly
 //
 // Architecture:
-//  - Uses fixed-size stack buffer ([128]byte)
-//  - Falls back to heap for structs >96 bytes
-//  - Thread-safe (each goroutine has own stack)
+//   - Uses fixed-size stack buffer ([128]byte)
+//   - Falls back to heap for structs >96 bytes
+//   - Thread-safe (each goroutine has own stack)
 type stackEncoder struct {
 	buf     [stackBufferSize]byte
 	pos     int

@@ -128,9 +128,10 @@ func (e *Encoder) Encode(v reflect.Value) error {
 // This is optimized for Marshal() use case and leverages multiple optimization layers.
 //
 // Optimization layers (tried in order):
-//   Phase 1.1: Stack encoding (primitives only) - 143ns
-//   Phase 1.2: Cached encoding (all structs) - ~250ns target
-//   Fallback: Standard reflection path - ~600ns
+//
+//	Phase 1.1: Stack encoding (primitives only) - 143ns
+//	Phase 1.2: Cached encoding (all structs) - ~250ns target
+//	Fallback: Standard reflection path - ~600ns
 //
 //go:inline
 func (e *Encoder) EncodeAndDetach(v reflect.Value) ([]byte, error) {
@@ -139,7 +140,7 @@ func (e *Encoder) EncodeAndDetach(v reflect.Value) ([]byte, error) {
 		if data, ok := e.tryStackEncode(v); ok {
 			return data, nil // 143ns - single allocation
 		}
-		
+
 		// Phase 1.2: Try cached encoding (all structs with ≤12 fields)
 		cache := getOrBuildEncoderCache(v.Type())
 		if cache.fieldCount > 0 && cache.fieldCount <= 12 {
@@ -147,7 +148,7 @@ func (e *Encoder) EncodeAndDetach(v reflect.Value) ([]byte, error) {
 			if e.Buf != nil {
 				e.Buf.Reset()
 			}
-			
+
 			if e.tryEncodeCached(v, cache) {
 				// Success! Copy to result
 				encoded := e.Buf.Bytes()
@@ -155,7 +156,7 @@ func (e *Encoder) EncodeAndDetach(v reflect.Value) ([]byte, error) {
 				copy(result, encoded)
 				return result, nil
 			}
-			
+
 			// Cache encoding failed, reset buffer
 			if e.Buf != nil {
 				e.Buf.Reset()
