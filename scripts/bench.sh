@@ -8,7 +8,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="${ROOT_DIR}/benchmarks"
 
-ITERATIONS="${BENCH_ITERATIONS:-10000}"
+ITERATIONS="${BENCH_ITERATIONS:-100000}"
 TIMEOUT="${BENCH_TIMEOUT:-20m}"
 
 echo "🚀 BEVE Benchmark Runner" >&2

@@ -50,7 +50,7 @@ func BenchmarkCompressionMarshal(b *testing.B) {
 
 		var totalSize int64
 		for i := 0; i < b.N; i++ {
-			data, err := Marshal(users)
+			data, err := Marshal(&users)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -66,7 +66,7 @@ func BenchmarkCompressionMarshal(b *testing.B) {
 		var totalSize int64
 		for i := 0; i < b.N; i++ {
 			// Marshal to BEVE
-			data, err := Marshal(users)
+			data, err := Marshal(&users)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -92,7 +92,7 @@ func BenchmarkCompressionMarshal(b *testing.B) {
 		var totalSize int64
 		for i := 0; i < b.N; i++ {
 			// Marshal to BEVE
-			data, err := Marshal(users)
+			data, err := Marshal(&users)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -114,7 +114,7 @@ func BenchmarkCompressionMarshal(b *testing.B) {
 		var totalSize int64
 		for i := 0; i < b.N; i++ {
 			// Marshal to BEVE
-			data, err := Marshal(users)
+			data, err := Marshal(&users)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -132,7 +132,7 @@ func BenchmarkCompressionUnmarshal(b *testing.B) {
 	users := generateBenchUsers(100)
 
 	// Pre-encode data
-	normalData, _ := Marshal(users)
+	normalData, _ := Marshal(&users)
 
 	lz4Data := make([]byte, lz4.CompressBlockBound(len(normalData)))
 	lz4Size, _ := lz4.CompressBlock(normalData, lz4Data, nil)
@@ -229,7 +229,7 @@ func BenchmarkCompressionPayloadSizes(b *testing.B) {
 
 	for _, size := range sizes {
 		users := generateBenchUsers(size)
-		normalData, _ := Marshal(users)
+		normalData, _ := Marshal(&users)
 
 		b.Run("Size-"+string(rune(size))+"/Normal", func(b *testing.B) {
 			b.SetBytes(int64(len(normalData)))
@@ -265,7 +265,7 @@ func BenchmarkCompressionPayloadSizes(b *testing.B) {
 // Test compression ratios
 func TestCompressionRatios(t *testing.T) {
 	users := generateBenchUsers(100)
-	normalData, _ := Marshal(users)
+	normalData, _ := Marshal(&users)
 
 	t.Logf("Normal BEVE size: %d bytes", len(normalData))
 

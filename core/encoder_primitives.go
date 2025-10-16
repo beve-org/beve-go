@@ -211,7 +211,8 @@ func (e *Encoder) EncodeString(s string) error {
 			e.Buf.data = e.Buf.data[:needed]
 			e.Buf.data[dataLen] = 0x02                      // header
 			e.Buf.data[dataLen+1] = byte(uint64(sLen) << 2) // compressed size
-			copy(e.Buf.data[dataLen+2:], s)                 // string data
+			// Use unsafe string→[]byte cast (zero-copy, no allocation)
+			copy(e.Buf.data[dataLen+2:], stringToBytes(s))
 			return nil
 		}
 	}
