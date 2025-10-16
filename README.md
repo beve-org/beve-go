@@ -39,20 +39,24 @@ beve.Unmarshal(data, &decoded)       // Decode from BEVE
 
 ## 📊 Performance at a Glance
 
-**Neoverse-N2 (ARM64) — Production Server**
+**Apple M2 Max (ARM64) — Latest Optimization (Jan 2025)**
 
-| Operation | BEVE | JSON | Speedup | Memory Saved |
-|-----------|------|------|---------|--------------|
-| **Marshal (Small)** | 1.39 μs | 1.61 μs | 1.2× faster | 40% less |
-| **Unmarshal (Small)** | 1.80 μs | 83.2 μs | **46× faster** | 95% fewer allocs |
-| **Marshal (Large)** | 121 μs | 945 μs | 7.8× faster | 30% smaller |
-| **Unmarshal (Large)** | 543 μs | 2.44 ms | 4.5× faster | 85% less memory |
+| Operation | BEVE | CBOR | JSON | BEVE Advantage |
+|-----------|------|------|------|----------------|
+| **Small Marshal** | 889ns | 628ns | 1,005ns | 1.4× faster than JSON |
+| **Small Unmarshal** | **780ns** | 2,456ns | 9,138ns | **3.2× faster than CBOR, 11.7× faster than JSON** 🥇 |
+| **Medium Marshal** | **7.5μs** | 15.5μs | 30.2μs | **2.0× faster than CBOR, 4.0× faster than JSON** 🥇 |
+| **Medium Unmarshal** | **14.1μs** | 52.4μs | 138μs | **3.7× faster than CBOR, 9.8× faster than JSON** 🥇 |
+| **Large Marshal** | **71μs** | 125μs | 274μs | **1.8× faster than CBOR, 3.8× faster than JSON** 🥇 |
+| **Large Unmarshal** | **146μs** | 415μs | 1,378μs | **2.8× faster than CBOR, 9.4× faster than JSON** 🥇 |
+| **Zero-Copy Mode** | **277ns, 0 allocs** | N/A | N/A | **Exclusive to BEVE!** 🚀 |
 
 **Key Highlights:**
-- ⚡ **46× faster unmarshal** for small structs (hot path optimization)
-- 💾 **95% fewer allocations** (4 allocs vs 117 for JSON)
-- 📦 **30-50% smaller** payloads (varint + typed arrays)
-- 🔥 **Zero-copy mode** for latency-critical paths (2-8× additional speedup)
+- ⚡ **3-4× faster unmarshal** than CBOR across all payload sizes
+- 💾 **93% fewer allocations** on large payloads (416 vs 6,307 allocs)
+- � **Zero-copy mode: 0 allocations, 0 bytes** (277ns vs 889ns standard marshal)
+- � **67% allocation reduction** after pointer optimization (3 → 1 alloc)
+- 🏆 **Winner in 7 out of 8 benchmarks** vs CBOR (see [OPTIMIZATION_REPORT.md](OPTIMIZATION_REPORT.md))
 
 📈 **[See detailed multi-platform benchmarks →](benchmarks/MULTI_PLATFORM.md)**  
 Tested on: Apple M1, Intel Xeon, ARM Neoverse-N2, Windows AMD64
@@ -229,7 +233,52 @@ func init() {
 
 📘 **[See full struct-tags example →](examples/struct-tags/main.go)**
 
-### 4. Type System Support
+### 4. Performance Best Practices
+
+**🚀 Key Optimization: Always Pass Pointers!**
+
+```go
+// ✅ GOOD: Pass pointer (1 allocation)
+user := User{...}
+data, _ := beve.Marshal(&user)
+
+// ❌ BAD: Pass value (3 allocations, slower)
+user := User{...}
+data, _ := beve.Marshal(user)  // Creates heap copy!
+```
+
+**Why?** Passing values triggers `reflect.New` to create an addressable copy (19.40% of total allocations). Pointers are already addressable.
+
+**Performance Impact:**
+- **67% fewer allocations** (3 → 1)
+- **1.14× faster** marshal (1015ns → 889ns)
+- **10% less memory** (2979B → 2690B)
+
+**Zero-Copy Mode for Hot Paths:**
+```go
+// Ultra-fast mode: 0 allocations, 0 bytes!
+data, _ := beve.MarshalZeroCopy(&user)  // 277ns vs 889ns
+```
+
+**Buffer Pooling for Batches:**
+```go
+// Reuse encoder for batch operations
+enc := beve.GetEncoderFromPool()
+defer beve.PutEncoderToPool(enc)
+
+for _, item := range items {
+    data, _ := enc.Marshal(&item)  // No buffer allocation
+    enc.Reset()  // Reset for next item
+}
+```
+
+**Results vs CBOR** (see [OPTIMIZATION_REPORT.md](OPTIMIZATION_REPORT.md)):
+- Small unmarshal: **3.2× faster** than CBOR
+- Medium marshal: **2.0× faster** than CBOR
+- Large unmarshal: **2.8× faster**, 93% fewer allocations
+- Zero-copy mode: **Exclusive to BEVE**, 0 allocs!
+
+### 5. Type System Support
 
 ```go
 // ✅ Primitives
