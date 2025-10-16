@@ -297,9 +297,9 @@ def main():
         # Add to summary table
         summary_lines.append(
             f"| {slug} | {cpu_name} | {os_name} | "
-            f"[📄 Report](benchmarks/{slug}/benchmark.md) · "
-            f"[📊 JSON](benchmarks/{slug}/benchmark.json) · "
-            f"[📈 Chart](benchmarks/{slug}/benchmark.png) |"
+            f"[📄 Report]({slug}/benchmark.md) · "
+            f"[📊 JSON]({slug}/benchmark.json) · "
+            f"[📈 Chart]({slug}/benchmark.png) |"
         )
 
         # Store platform data
@@ -330,7 +330,7 @@ def main():
         summary_lines.extend([
             f"### {cpu_name} — {os_name}",
             "",
-            f"![Benchmark Chart](benchmarks/{slug}/benchmark.png)",
+            f"![Benchmark Chart]({slug}/benchmark.png)",
             "",
             "_Performance visualization: lower is better._",
             "",
@@ -363,7 +363,7 @@ def main():
                     f"{format_value(entry.get('allocs_per_op', 'n/a'))} |"
                 )
 
-        summary_lines.extend(["", f"[📄 View full report](benchmarks/{slug}/benchmark.md)", ""])
+        summary_lines.extend(["", f"[📄 View full report]({slug}/benchmark.md)", ""])
 
     # Add footer
     summary_lines.extend([
