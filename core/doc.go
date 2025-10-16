@@ -36,9 +36,15 @@
 //     Software prefetching was tested but showed performance regression on M2 Max due to
 //     strong hardware prefetcher. Set to "1", "true", or "yes" to enable for testing.
 //
+//   - BEVE_USE_LOCKFREE_POOL: Enable lock-free per-P encoder pools (default: false, Phase 3A)
+//     Lock-free pools eliminate mutex contention and improve CPU locality. Expected 1.3-1.4×
+//     speedup under high concurrency. Requires Go 1.21+ and uses runtime.procPin/Unpin.
+//     Set to "1", "true", or "yes" to enable.
+//
 // Example:
 //
 //	export BEVE_ENABLE_PREFETCH=true
+//	export BEVE_USE_LOCKFREE_POOL=true
 //	go run main.go
 //
 // # Example Usage
