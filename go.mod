@@ -10,7 +10,7 @@ require (
 	github.com/klauspost/compress v1.18.0
 	github.com/pierrec/lz4/v4 v4.1.22
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	golang.org/x/sys v0.28.0
+	golang.org/x/sys v0.37.0
 )
 
 require (

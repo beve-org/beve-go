@@ -432,11 +432,10 @@ func marshalString(v string) ([]byte, error) {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
-	// Use pooled byte slice
-	result := getByteSlice()
-	*result = growSlice(result, len(data))
-	copy(*result, data)
-	return *result, nil
+	// Copy to new slice (encoder will be reused)
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
 }
 
 func marshalBool(v bool) ([]byte, error) {
@@ -450,11 +449,10 @@ func marshalBool(v bool) ([]byte, error) {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
-	// Use pooled byte slice
-	result := getByteSlice()
-	*result = growSlice(result, len(data))
-	copy(*result, data)
-	return *result, nil
+	// Copy to new slice (encoder will be reused)
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
 }
 
 func marshalFloat64(v float64) ([]byte, error) {
@@ -468,11 +466,10 @@ func marshalFloat64(v float64) ([]byte, error) {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
-	// Use pooled byte slice
-	result := getByteSlice()
-	*result = growSlice(result, len(data))
-	copy(*result, data)
-	return *result, nil
+	// Copy to new slice (encoder will be reused)
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
 }
 
 func marshalBytes(v []byte) ([]byte, error) {
@@ -489,11 +486,10 @@ func marshalBytes(v []byte) ([]byte, error) {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
-	// Use pooled byte slice
-	result := getByteSlice()
-	*result = growSlice(result, len(data))
-	copy(*result, data)
-	return *result, nil
+	// Copy to new slice (encoder will be reused)
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
 }
 
 // marshalTime is a fast-path encoder for time.Time (avoids reflection).
@@ -518,11 +514,10 @@ func marshalInt64(n int64) ([]byte, error) {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
-	// Use pooled byte slice
-	result := getByteSlice()
-	*result = growSlice(result, len(data))
-	copy(*result, data)
-	return *result, nil
+	// Copy to new slice (encoder will be reused)
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
 }
 
 func marshalUint64(n uint64) ([]byte, error) {
@@ -535,10 +530,10 @@ func marshalUint64(n uint64) ([]byte, error) {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
-	result := getByteSlice()
-	*result = growSlice(result, len(data))
-	copy(*result, data)
-	return *result, nil
+	// Copy to new slice (encoder will be reused)
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
 }
 
 func marshalFloat32(v float32) ([]byte, error) {
@@ -552,10 +547,10 @@ func marshalFloat32(v float32) ([]byte, error) {
 		return nil, err
 	}
 	data := enc.Buf.Bytes()
-	result := getByteSlice()
-	*result = growSlice(result, len(data))
-	copy(*result, data)
-	return *result, nil
+	// Copy to new slice (encoder will be reused)
+	result := make([]byte, len(data))
+	copy(result, data)
+	return result, nil
 }
 
 func marshalStringSlice(slice []string) ([]byte, error) {
