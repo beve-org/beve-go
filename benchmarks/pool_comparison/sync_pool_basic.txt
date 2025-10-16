@@ -1,0 +1,12 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go/core
+cpu: Apple M2 Max
+BenchmarkLockFreePoolVsSyncPool/SyncPool_1G-12         	398685206	         8.833 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLockFreePoolVsSyncPool/LockFree_1G-12         	100000000	        30.73 ns/op	       100.0 %_hit_rate	         0 discards	         0 overflows	 100000000 puts	       0 B/op	       0 allocs/op
+BenchmarkLockFreePoolVsSyncPool/SyncPool_10G-12        	1000000000	         2.040 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLockFreePoolVsSyncPool/LockFree_10G-12        	26846421	       133.0 ns/op	       100.0 %_hit_rate	         0 discards	         0 overflows	  26846420 puts	       0 B/op	       0 allocs/op
+BenchmarkLockFreePoolVsSyncPool/SyncPool_100G-12       	1000000000	         1.269 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLockFreePoolVsSyncPool/LockFree_100G-12       	26581874	       135.8 ns/op	       100.0 %_hit_rate	         0 discards	        11.00 overflows	  26581789 puts	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go/core	18.929s

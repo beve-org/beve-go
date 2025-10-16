@@ -1,0 +1,8 @@
+--- FAIL: TestLockFreePoolBasic (0.00s)
+    encoder_pool_lockfree_test.go:37: Expected 0 hits, got 1
+    encoder_pool_lockfree_test.go:40: Expected 1 miss, got 0
+    encoder_pool_lockfree_test.go:66: Expected 1 hit, got 2
+FAIL
+exit status 1
+FAIL	github.com/beve-org/beve-go/core	0.209s
+FAIL

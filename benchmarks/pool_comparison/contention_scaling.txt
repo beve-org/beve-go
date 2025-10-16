@@ -1,0 +1,22 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/beve-org/beve-go/core
+cpu: Apple M2 Max
+BenchmarkPoolContentionScaling/SyncPool_1G-12         	269785309	         8.873 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/LockFree_1G-12         	75142064	        32.38 ns/op	       100.0 %_hit_rate	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/SyncPool_2G-12         	534698299	         5.710 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/LockFree_2G-12         	49382919	        46.80 ns/op	       100.0 %_hit_rate	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/SyncPool_4G-12         	951948834	         2.876 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/LockFree_4G-12         	34959070	        73.88 ns/op	       100.0 %_hit_rate	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/SyncPool_8G-12         	1000000000	         2.000 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/LockFree_8G-12         	18804288	       107.4 ns/op	       100.0 %_hit_rate	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/SyncPool_<G-12         	1000000000	         2.046 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/LockFree_<G-12         	17567685	       132.7 ns/op	       100.0 %_hit_rate	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/SyncPool_HG-12         	1000000000	         1.546 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/LockFree_HG-12         	18797820	       135.5 ns/op	       100.0 %_hit_rate	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/SyncPool_`G-12         	1000000000	         1.592 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/LockFree_`G-12         	18096669	       137.0 ns/op	       100.0 %_hit_rate	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/SyncPool_\u0090G-12    	1000000000	         1.696 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPoolContentionScaling/LockFree_\u0090G-12    	18245712	       132.1 ns/op	       100.0 %_hit_rate	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/beve-org/beve-go/core	47.523s

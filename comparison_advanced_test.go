@@ -93,24 +93,20 @@ func generateComplexData(userCount, orderCount int) ComplexData {
 
 func BenchmarkSmallStruct_BEVE_Marshal(b *testing.B) {
 	user := generateUser()
-	// Use pointer to avoid reflect.New allocation (19.40% of total allocs)
-	userPtr := &user
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		data, _ := Marshal(userPtr)
+		data, _ := Marshal(&user)
 		benchBytesSink = data
 	}
 }
 
 func BenchmarkSmallStruct_BEVE_MarshalZeroCopy(b *testing.B) {
 	user := generateUser()
-	// Use pointer to avoid reflect.New allocation
-	userPtr := &user
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		lease, _ := MarshalZeroCopy(userPtr)
+		lease, _ := MarshalZeroCopy(&user)
 		benchBytesSink = lease.Bytes()
 		lease.Release()
 	}
@@ -121,7 +117,7 @@ func BenchmarkSmallStruct_JSON_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		data, _ := json.Marshal(user)
+		data, _ := json.Marshal(&user)
 		benchBytesSink = data
 	}
 }
@@ -131,7 +127,7 @@ func BenchmarkSmallStruct_Sonic_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		data, _ := sonic.Marshal(user)
+		data, _ := sonic.Marshal(&user)
 		benchBytesSink = data
 	}
 }
@@ -141,7 +137,7 @@ func BenchmarkSmallStruct_MessagePack_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		data, _ := msgpack.Marshal(user)
+		data, _ := msgpack.Marshal(&user)
 		benchBytesSink = data
 	}
 }
@@ -151,7 +147,7 @@ func BenchmarkSmallStruct_CBOR_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		data, _ := cbor.Marshal(user)
+		data, _ := cbor.Marshal(&user)
 		benchBytesSink = data
 	}
 }
@@ -160,7 +156,6 @@ func BenchmarkSmallStruct_CBOR_Marshal(b *testing.B) {
 
 func BenchmarkSmallStruct_BEVE_Unmarshal(b *testing.B) {
 	user := generateUser()
-	// Marshal with pointer to avoid reflect.New overhead
 	data, _ := Marshal(&user)
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -172,7 +167,7 @@ func BenchmarkSmallStruct_BEVE_Unmarshal(b *testing.B) {
 
 func BenchmarkSmallStruct_JSON_Unmarshal(b *testing.B) {
 	user := generateUser()
-	data, _ := json.Marshal(user)
+	data, _ := json.Marshal(&user)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -183,7 +178,7 @@ func BenchmarkSmallStruct_JSON_Unmarshal(b *testing.B) {
 
 func BenchmarkSmallStruct_Sonic_Unmarshal(b *testing.B) {
 	user := generateUser()
-	data, _ := sonic.Marshal(user)
+	data, _ := sonic.Marshal(&user)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -194,7 +189,7 @@ func BenchmarkSmallStruct_Sonic_Unmarshal(b *testing.B) {
 
 func BenchmarkSmallStruct_MessagePack_Unmarshal(b *testing.B) {
 	user := generateUser()
-	data, _ := msgpack.Marshal(user)
+	data, _ := msgpack.Marshal(&user)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -205,7 +200,7 @@ func BenchmarkSmallStruct_MessagePack_Unmarshal(b *testing.B) {
 
 func BenchmarkSmallStruct_CBOR_Unmarshal(b *testing.B) {
 	user := generateUser()
-	data, _ := cbor.Marshal(user)
+	data, _ := cbor.Marshal(&user)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -221,7 +216,7 @@ func BenchmarkMedium_BEVE_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := Marshal(data)
+		result, _ := Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -231,7 +226,7 @@ func BenchmarkMedium_BEVE_MarshalZeroCopy(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		lease, _ := MarshalZeroCopy(data)
+		lease, _ := MarshalZeroCopy(&data)
 		benchBytesSink = lease.Bytes()
 		lease.Release()
 	}
@@ -242,7 +237,7 @@ func BenchmarkMedium_JSON_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := json.Marshal(data)
+		result, _ := json.Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -252,7 +247,7 @@ func BenchmarkMedium_Sonic_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := sonic.Marshal(data)
+		result, _ := sonic.Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -262,7 +257,7 @@ func BenchmarkMedium_MessagePack_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := msgpack.Marshal(data)
+		result, _ := msgpack.Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -271,7 +266,7 @@ func BenchmarkMedium_MessagePack_Marshal(b *testing.B) {
 
 func BenchmarkMedium_BEVE_Unmarshal(b *testing.B) {
 	data := generateComplexData(10, 20)
-	encoded, _ := Marshal(data)
+	encoded, _ := Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -282,7 +277,7 @@ func BenchmarkMedium_BEVE_Unmarshal(b *testing.B) {
 
 func BenchmarkMedium_JSON_Unmarshal(b *testing.B) {
 	data := generateComplexData(10, 20)
-	encoded, _ := json.Marshal(data)
+	encoded, _ := json.Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -293,7 +288,7 @@ func BenchmarkMedium_JSON_Unmarshal(b *testing.B) {
 
 func BenchmarkMedium_Sonic_Unmarshal(b *testing.B) {
 	data := generateComplexData(10, 20)
-	encoded, _ := sonic.Marshal(data)
+	encoded, _ := sonic.Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -304,7 +299,7 @@ func BenchmarkMedium_Sonic_Unmarshal(b *testing.B) {
 
 func BenchmarkMedium_CBOR_Unmarshal(b *testing.B) {
 	data := generateComplexData(10, 20)
-	encoded, _ := cbor.Marshal(data)
+	encoded, _ := cbor.Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -315,7 +310,7 @@ func BenchmarkMedium_CBOR_Unmarshal(b *testing.B) {
 
 func BenchmarkMedium_MessagePack_Unmarshal(b *testing.B) {
 	data := generateComplexData(10, 20)
-	encoded, _ := msgpack.Marshal(data)
+	encoded, _ := msgpack.Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -329,7 +324,7 @@ func BenchmarkMedium_CBOR_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := cbor.Marshal(data)
+		result, _ := cbor.Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -341,7 +336,7 @@ func BenchmarkLarge_BEVE_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := Marshal(data)
+		result, _ := Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -351,7 +346,7 @@ func BenchmarkLarge_BEVE_MarshalZeroCopy(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		lease, _ := MarshalZeroCopy(data)
+		lease, _ := MarshalZeroCopy(&data)
 		benchBytesSink = lease.Bytes()
 		lease.Release()
 	}
@@ -362,7 +357,7 @@ func BenchmarkLarge_JSON_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := json.Marshal(data)
+		result, _ := json.Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -372,7 +367,7 @@ func BenchmarkLarge_Sonic_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := sonic.Marshal(data)
+		result, _ := sonic.Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -382,7 +377,7 @@ func BenchmarkLarge_MessagePack_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := msgpack.Marshal(data)
+		result, _ := msgpack.Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -391,7 +386,7 @@ func BenchmarkLarge_MessagePack_Marshal(b *testing.B) {
 
 func BenchmarkLarge_BEVE_Unmarshal(b *testing.B) {
 	data := generateComplexData(100, 200)
-	encoded, _ := Marshal(data)
+	encoded, _ := Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -402,7 +397,7 @@ func BenchmarkLarge_BEVE_Unmarshal(b *testing.B) {
 
 func BenchmarkLarge_JSON_Unmarshal(b *testing.B) {
 	data := generateComplexData(100, 200)
-	encoded, _ := json.Marshal(data)
+	encoded, _ := json.Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -413,7 +408,7 @@ func BenchmarkLarge_JSON_Unmarshal(b *testing.B) {
 
 func BenchmarkLarge_Sonic_Unmarshal(b *testing.B) {
 	data := generateComplexData(100, 200)
-	encoded, _ := sonic.Marshal(data)
+	encoded, _ := sonic.Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -424,7 +419,7 @@ func BenchmarkLarge_Sonic_Unmarshal(b *testing.B) {
 
 func BenchmarkLarge_CBOR_Unmarshal(b *testing.B) {
 	data := generateComplexData(100, 200)
-	encoded, _ := cbor.Marshal(data)
+	encoded, _ := cbor.Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -435,7 +430,7 @@ func BenchmarkLarge_CBOR_Unmarshal(b *testing.B) {
 
 func BenchmarkLarge_MessagePack_Unmarshal(b *testing.B) {
 	data := generateComplexData(100, 200)
-	encoded, _ := msgpack.Marshal(data)
+	encoded, _ := msgpack.Marshal(&data)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
@@ -449,7 +444,7 @@ func BenchmarkLarge_CBOR_Marshal(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		result, _ := cbor.Marshal(data)
+		result, _ := cbor.Marshal(&data)
 		benchBytesSink = result
 	}
 }
@@ -458,35 +453,35 @@ func BenchmarkLarge_CBOR_Marshal(b *testing.B) {
 
 func BenchmarkSize_BEVE(b *testing.B) {
 	user := generateUser()
-	data, _ := Marshal(user)
+	data, _ := Marshal(&user)
 	b.ReportMetric(float64(len(data)), "bytes")
 	b.ReportAllocs()
 }
 
 func BenchmarkSize_JSON(b *testing.B) {
 	user := generateUser()
-	data, _ := json.Marshal(user)
+	data, _ := json.Marshal(&user)
 	b.ReportMetric(float64(len(data)), "bytes")
 	b.ReportAllocs()
 }
 
 func BenchmarkSize_Sonic(b *testing.B) {
 	user := generateUser()
-	data, _ := sonic.Marshal(user)
+	data, _ := sonic.Marshal(&user)
 	b.ReportMetric(float64(len(data)), "bytes")
 	b.ReportAllocs()
 }
 
 func BenchmarkSize_MessagePack(b *testing.B) {
 	user := generateUser()
-	data, _ := msgpack.Marshal(user)
+	data, _ := msgpack.Marshal(&user)
 	b.ReportMetric(float64(len(data)), "bytes")
 	b.ReportAllocs()
 }
 
 func BenchmarkSize_CBOR(b *testing.B) {
 	user := generateUser()
-	data, _ := cbor.Marshal(user)
+	data, _ := cbor.Marshal(&user)
 	b.ReportMetric(float64(len(data)), "bytes")
 	b.ReportAllocs()
 }
