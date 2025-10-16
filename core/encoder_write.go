@@ -123,3 +123,59 @@ func (e *Encoder) WriteCompressedUint(n uint64) error {
 	e.varintScratch[3] = byte(n)
 	return e.WriteBytes(e.varintScratch[:4])
 }
+
+// varintSize returns the number of bytes needed to encode a uint64.
+// Fallback implementation for non-AMD64/ARM64 architectures.
+//
+//go:inline
+func varintSize(n uint64) int {
+	if n < 64 {
+		return 1
+	}
+	if n < 16384 {
+		return 2
+	}
+	if n < 1073741824 {
+		return 3
+	}
+	return 4
+}
+
+// writeVarintInline writes a compressed uint directly to buffer slice.
+// Returns the number of bytes written (1-4).
+//
+// CRITICAL: Caller MUST ensure buffer has sufficient capacity!
+// Use varintSize(n) to determine required space before calling.
+//
+// Fallback implementation for non-AMD64/ARM64 architectures.
+//
+//go:inline
+func writeVarintInline(buf []byte, n uint64) int {
+	// 1-byte encoding (6-bit value)
+	if n < 64 {
+		buf[0] = byte(n << 2)
+		return 1
+	}
+
+	// 2-byte encoding (14-bit value)
+	if n < 16384 {
+		buf[0] = byte(0x01 | ((n >> 8) << 2))
+		buf[1] = byte(n)
+		return 2
+	}
+
+	// 3-byte encoding (30-bit value)
+	if n < 1073741824 {
+		buf[0] = byte(0x02 | ((n >> 16) << 2))
+		buf[1] = byte(n >> 8)
+		buf[2] = byte(n)
+		return 3
+	}
+
+	// 4-byte encoding (32-bit value)
+	buf[0] = byte(0x03 | ((n >> 24) << 2))
+	buf[1] = byte(n >> 16)
+	buf[2] = byte(n >> 8)
+	buf[3] = byte(n)
+	return 4
+}

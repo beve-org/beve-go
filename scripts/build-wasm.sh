@@ -52,9 +52,8 @@ build_wasm() {
         -opt=z \
         -no-debug \
         -panic=trap \
-        -gc=leaking \
         ${extra_flags} \
-        ./wasm/main.go
+        ./wasm
     
     if [ -f "${output}" ]; then
         local size=$(ls -lh "${output}" | awk '{print $5}')
