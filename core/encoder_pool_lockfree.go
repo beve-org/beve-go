@@ -34,10 +34,10 @@ var globalLockFreeStats lockFreePoolStats
 // encoderStack represents a lock-free stack of encoders for a single P
 // Cache-line padded to prevent false sharing (128 bytes on ARM64, 64 on AMD64)
 type encoderStack struct {
-	_     [128]byte   // Leading padding
-	head  *Encoder    // Stack head (lock-free linked list)
-	depth int32       // Current pool depth (atomic)
-	_     [128]byte   // Trailing padding
+	_     [128]byte // Leading padding
+	head  *Encoder  // Stack head (lock-free linked list)
+	depth int32     // Current pool depth (atomic)
+	_     [128]byte // Trailing padding
 }
 
 // perPEncoderPools contains one encoderStack per P (CPU core)
@@ -51,7 +51,7 @@ var (
 func initPerPPools() {
 	numP := runtime.GOMAXPROCS(0)
 	perPEncoderPools = make([]*encoderStack, numP)
-	
+
 	for i := 0; i < numP; i++ {
 		perPEncoderPools[i] = &encoderStack{}
 	}
@@ -92,10 +92,10 @@ func runtime_procUnpin()
 func getEncoderFromLockFreePool() *Encoder {
 	// Ensure pools are initialized
 	perPEncoderPoolsOnce.Do(initPerPPools)
-	
+
 	// Pin to current P to prevent migration
 	pid := runtime_procPin()
-	
+
 	// Safety check: pid should be in valid range
 	if pid < 0 || pid >= len(perPEncoderPools) {
 		runtime_procUnpin()
@@ -103,10 +103,10 @@ func getEncoderFromLockFreePool() *Encoder {
 		atomic.AddUint64(&globalLockFreeStats.misses, 1)
 		return NewEncoder(nil)
 	}
-	
+
 	stack := perPEncoderPools[pid]
 	runtime_procUnpin() // Unpin as we got our stack pointer
-	
+
 	// Lock-free pop from stack using atomic CAS
 	for {
 		head := (*Encoder)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&stack.head))))
@@ -117,10 +117,10 @@ func getEncoderFromLockFreePool() *Encoder {
 			enc.Buf = AcquireBuffer(getOptimalBufferCapacity())
 			return enc
 		}
-		
+
 		// Load next pointer atomically
 		next := (*Encoder)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&head.next))))
-		
+
 		// Try to atomically swap head with head.next
 		// This is the lock-free "pop" operation
 		if atomic.CompareAndSwapPointer(
@@ -131,12 +131,12 @@ func getEncoderFromLockFreePool() *Encoder {
 			// Success! We popped the encoder
 			atomic.AddInt32(&stack.depth, -1)
 			atomic.AddUint64(&globalLockFreeStats.hits, 1)
-			
+
 			// Clear the next pointer (encoder is no longer in list)
 			atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&head.next)), nil)
 			return head
 		}
-		
+
 		// CAS failed (another goroutine modified head), retry
 		// Hardware will handle contention with exponential backoff
 	}
@@ -147,7 +147,7 @@ func putEncoderToLockFreePool(enc *Encoder) {
 	if enc == nil || enc.Buf == nil {
 		return
 	}
-	
+
 	// Check buffer size: don't pool overly large buffers
 	bufCap := cap(enc.Buf.data)
 	if bufCap > maxBufferPoolCapacity {
@@ -155,18 +155,18 @@ func putEncoderToLockFreePool(enc *Encoder) {
 		ReleaseBuffer(enc.Buf)
 		return
 	}
-	
+
 	// Reset encoder state
 	enc.Buf.Reset()
 	enc.batchLen = 0
 	enc.w = nil
-	
+
 	// Ensure pools are initialized
 	perPEncoderPoolsOnce.Do(initPerPPools)
-	
+
 	// Pin to current P
 	pid := runtime_procPin()
-	
+
 	// Safety check
 	if pid < 0 || pid >= len(perPEncoderPools) {
 		runtime_procUnpin()
@@ -174,10 +174,10 @@ func putEncoderToLockFreePool(enc *Encoder) {
 		ReleaseBuffer(enc.Buf)
 		return
 	}
-	
+
 	stack := perPEncoderPools[pid]
 	runtime_procUnpin()
-	
+
 	// Check pool depth to prevent unbounded growth
 	currentDepth := atomic.LoadInt32(&stack.depth)
 	if currentDepth >= lockFreePoolMaxDepth {
@@ -185,14 +185,14 @@ func putEncoderToLockFreePool(enc *Encoder) {
 		ReleaseBuffer(enc.Buf)
 		return
 	}
-	
+
 	// Lock-free push to stack using atomic CAS
 	for {
 		oldHead := (*Encoder)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&stack.head))))
-		
+
 		// Link encoder to current head (atomically)
 		atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&enc.next)), unsafe.Pointer(oldHead))
-		
+
 		// Try to atomically swap head with enc
 		// This is the lock-free "push" operation
 		if atomic.CompareAndSwapPointer(
@@ -205,7 +205,7 @@ func putEncoderToLockFreePool(enc *Encoder) {
 			atomic.AddUint64(&globalLockFreeStats.puts, 1)
 			return
 		}
-		
+
 		// CAS failed, retry
 	}
 }

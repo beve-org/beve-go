@@ -66,7 +66,7 @@ var encoderPool = sync.Pool{
 }
 
 // GetEncoderFromPool acquires an encoder from the pool.
-// 
+//
 // If BEVE_USE_LOCKFREE_POOL=true, uses lock-free per-P pools.
 // Otherwise, uses standard sync.Pool (default).
 //
@@ -77,7 +77,7 @@ func GetEncoderFromPool() *Encoder {
 	if UseLockFreePool {
 		return getEncoderFromLockFreePool()
 	}
-	
+
 	// Standard sync.Pool path (default)
 	return encoderPool.Get().(*Encoder)
 }

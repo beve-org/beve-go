@@ -31,10 +31,10 @@ func BenchmarkRealWorldPoolComparison(b *testing.B) {
 		Tags:    []string{"go", "rust", "python"},
 		Metrics: map[string]int{"views": 1000, "likes": 250},
 	}
-	
+
 	// Pre-compute reflect.Value to avoid reflection overhead in benchmark
 	v := reflect.ValueOf(testData)
-	
+
 	benchmarks := []struct {
 		name          string
 		useLockFree   bool
@@ -47,28 +47,28 @@ func BenchmarkRealWorldPoolComparison(b *testing.B) {
 		{"SyncPool_100G_Encode", false, 100},
 		{"LockFree_100G_Encode", true, 100},
 	}
-	
+
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			// Save and restore original state
 			originalUseLockFreePool := UseLockFreePool
 			defer func() { UseLockFreePool = originalUseLockFreePool }()
-			
+
 			UseLockFreePool = bm.useLockFree
 			ResetLockFreePoolStats()
-			
+
 			b.ReportAllocs()
 			b.ResetTimer()
-			
+
 			if bm.numGoroutines == 1 {
 				// Single goroutine benchmark
 				for i := 0; i < b.N; i++ {
 					enc := GetEncoderFromPool()
-					
+
 					// Actual encoding work
 					enc.Buf.Reset()
 					_ = enc.encodeStructFast(v)
-					
+
 					PutEncoderToPool(enc)
 				}
 			} else {
@@ -77,30 +77,30 @@ func BenchmarkRealWorldPoolComparison(b *testing.B) {
 				if opsPerGoroutine == 0 {
 					opsPerGoroutine = 1
 				}
-				
+
 				var wg sync.WaitGroup
 				wg.Add(bm.numGoroutines)
-				
+
 				for g := 0; g < bm.numGoroutines; g++ {
 					go func() {
 						defer wg.Done()
 						for i := 0; i < opsPerGoroutine; i++ {
 							enc := GetEncoderFromPool()
-							
+
 							// Actual encoding work
 							enc.Buf.Reset()
 							_ = enc.encodeStructFast(v)
-							
+
 							PutEncoderToPool(enc)
 						}
 					}()
 				}
-				
+
 				wg.Wait()
 			}
-			
+
 			b.StopTimer()
-			
+
 			// Report statistics for lock-free pool
 			if bm.useLockFree {
 				hits, misses, puts, discards, overflows := GetLockFreePoolStats()
@@ -109,7 +109,7 @@ func BenchmarkRealWorldPoolComparison(b *testing.B) {
 				if total > 0 {
 					hitRate = float64(hits) / float64(total) * 100
 				}
-				
+
 				b.ReportMetric(hitRate, "%_hit_rate")
 				b.ReportMetric(float64(puts), "puts")
 				b.ReportMetric(float64(discards), "discards")
@@ -122,25 +122,25 @@ func BenchmarkRealWorldPoolComparison(b *testing.B) {
 // BenchmarkPoolContentionScaling tests scaling under increasing contention
 func BenchmarkPoolContentionScaling(b *testing.B) {
 	goroutineCounts := []int{1, 2, 4, 8, 12, 24, 48, 96}
-	
+
 	for _, numG := range goroutineCounts {
 		b.Run("SyncPool_"+string(rune('0'+numG))+"G", func(b *testing.B) {
 			// Save and restore
 			originalUseLockFreePool := UseLockFreePool
 			defer func() { UseLockFreePool = originalUseLockFreePool }()
 			UseLockFreePool = false
-			
+
 			b.ReportAllocs()
 			b.ResetTimer()
-			
+
 			opsPerG := b.N / numG
 			if opsPerG == 0 {
 				opsPerG = 1
 			}
-			
+
 			var wg sync.WaitGroup
 			wg.Add(numG)
-			
+
 			for g := 0; g < numG; g++ {
 				go func() {
 					defer wg.Done()
@@ -151,28 +151,28 @@ func BenchmarkPoolContentionScaling(b *testing.B) {
 					}
 				}()
 			}
-			
+
 			wg.Wait()
 		})
-		
+
 		b.Run("LockFree_"+string(rune('0'+numG))+"G", func(b *testing.B) {
 			// Save and restore
 			originalUseLockFreePool := UseLockFreePool
 			defer func() { UseLockFreePool = originalUseLockFreePool }()
 			UseLockFreePool = true
 			ResetLockFreePoolStats()
-			
+
 			b.ReportAllocs()
 			b.ResetTimer()
-			
+
 			opsPerG := b.N / numG
 			if opsPerG == 0 {
 				opsPerG = 1
 			}
-			
+
 			var wg sync.WaitGroup
 			wg.Add(numG)
-			
+
 			for g := 0; g < numG; g++ {
 				go func() {
 					defer wg.Done()
@@ -183,9 +183,9 @@ func BenchmarkPoolContentionScaling(b *testing.B) {
 					}
 				}()
 			}
-			
+
 			wg.Wait()
-			
+
 			b.StopTimer()
 			hits, misses, _, _, _ := GetLockFreePoolStats()
 			total := hits + misses
