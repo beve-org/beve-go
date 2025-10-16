@@ -168,7 +168,68 @@ type Product struct {
 - `beve:",omitempty"` — Skip zero/empty values
 - `beve:"-"` — Ignore field completely
 
-### 3. Type System Support
+### 3. Configurable Struct Tags (JSON/CBOR/MessagePack Compatibility)
+
+**Use existing JSON tags without modifying your structs!**
+
+```go
+// Existing struct with json tags
+type User struct {
+    ID       int    `json:"id"`
+    Username string `json:"username"`
+    Email    string `json:"email,omitempty"`
+}
+
+// Configure BEVE to use json tags
+beve.SetStructTag("json")
+
+// Now BEVE reads json:"..." tags instead of beve:"..."
+data, _ := beve.Marshal(user)
+beve.Unmarshal(data, &user)
+```
+
+**Supported Tag Names:**
+- `beve.SetStructTag("json")` — Use json tags (default fallback)
+- `beve.SetStructTag("msgpack")` — Use msgpack tags
+- `beve.SetStructTag("cbor")` — Use cbor tags
+- `beve.SetStructTag("beve")` — Use beve tags (default)
+
+**Benefits:**
+- ✅ **Zero code changes** — Use existing struct tags
+- ✅ **Automatic fallback** — Falls back to `json` tags if configured tag not found
+- ✅ **Zero overhead** — Tag resolution happens at cache build time
+- ✅ **Thread-safe** — Can be changed at runtime (clears cache)
+
+**Example with Multiple Tags:**
+```go
+type Product struct {
+    ID    int64   `beve:"id" json:"product_id" msgpack:"pid"`
+    Name  string  `beve:"name" json:"title" msgpack:"n"`
+    Price float64 `beve:"price" json:"price" msgpack:"p"`
+}
+
+// Use different tag configurations
+beve.SetStructTag("beve")    // Uses: id, name, price
+beve.SetStructTag("json")    // Uses: product_id, title, price
+beve.SetStructTag("msgpack") // Uses: pid, n, p
+```
+
+**Get Current Tag:**
+```go
+currentTag := beve.GetStructTag() // Returns "beve", "json", etc.
+```
+
+**Best Practice:**
+Set once at application startup:
+```go
+func init() {
+    beve.SetStructTag("json") // Use json tags throughout the app
+}
+```
+
+📘 **[See full struct-tags example →](examples/struct-tags/main.go)**
+
+### 4. Type System Support
 
 ```go
 // ✅ Primitives
@@ -192,7 +253,7 @@ type User struct { Addr Address }
 CreatedAt time.Time `beve:"created_at"`
 ```
 
-### 4. Custom Binary Marshaling
+### 5. Custom Binary Marshaling
 
 Implement `BinaryMarshaler` for custom types:
 
@@ -215,7 +276,7 @@ func (p *Point) UnmarshalBEVE(data []byte) error {
 }
 ```
 
-### 5. Streaming API
+### 6. Streaming API
 
 ```go
 // Encode multiple objects
@@ -230,7 +291,7 @@ dec.Decode(&user1)
 dec.Decode(&user2)
 ```
 
-### 6. Buffer Pooling (Zero Allocation)
+### 7. Buffer Pooling (Zero Allocation)
 
 ```go
 // Automatic pooling with GetEncoderFromPool
@@ -571,8 +632,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 📞 Support
 
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/beve-org/beve-go/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/beve-org/beve-go/discussions)
-- 📧 **Email**: support@beve.org
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/beve-org/beve/discussions)
+- 📧 **Email**: buraksenturk25@gmail.com
 
 ---
 
