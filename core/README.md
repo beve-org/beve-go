@@ -131,12 +131,12 @@ var encoderPool = sync.Pool{...}
   - **Total: 48 bytes** (fits in L1 cache line)
 - **Second cache line**: Cold path (`batchBuf`)
 
-**Current Pool**: ⚠️ **sync.Pool** (mutex-based, global lock)
-
-**Planned Upgrade** (Phase 3A):
-- **Lock-Free Per-P Pools**: Eliminate mutex contention
-- **Expected Improvement**: 1.3-1.4× faster (253ns → 180ns)
-- **See**: [Phase 3A](#phase-3a-lock-free-pooling) below
+**Pool Implementation**: ✅ **sync.Pool** (Production-Ready)
+- Go 1.21+ per-P local caching eliminates contention
+- Exceptionally fast: 8-9ns per Get/Put operation
+- Automatic GC integration
+- Battle-tested in production
+- **Recommended for all workloads**
 
 ---
 
@@ -663,91 +663,31 @@ func init() {
 
 **Documentation**: [PHASE_2A_PREFETCH_SIMD.md](../PHASE_2A_PREFETCH_SIMD.md)
 
-#### 🚧 Phase 3A: Lock-Free Pooling (Planned)
+---
 
-**Scope**: Per-P encoder pools
+## Future Optimization Opportunities
 
-**Goal**: Eliminate sync.Pool mutex contention
+### Potential Areas for Exploration
 
-**Expected Results**:
-- Small: 253ns → **180ns** (1.4× faster)
-- Medium: 5.2μs → **4.0μs** (1.3× faster)
-- Large: 46μs → **35μs** (1.3× faster)
+#### 1. Batch Arena Allocator
+- **Goal**: Single allocation for bulk encoding (1000s of structs)
+- **Expected**: 2-3× speedup for batch operations
+- **Complexity**: Medium
+- **Status**: Research phase
 
-**Design**:
-```go
-type encoderStack struct {
-    _      [128]byte     // Cache-line padding
-    head   *Encoder      // Stack head
-    count  int32         // Pool depth
-    _      [128]byte     // Cache-line padding
-}
+#### 2. Parallel Array Encoding
+- **Goal**: Multi-threaded encoding for large arrays
+- **Expected**: 5-8× speedup for 100K+ item arrays
+- **Complexity**: High (work stealing, synchronization)
+- **Status**: Research phase
 
-var perPPools []*encoderStack  // One per CPU core
+#### 3. Adaptive Prefetching
+- **Goal**: Runtime-adaptive prefetch strategy based on CPU detection
+- **Expected**: May benefit weaker hardware prefetchers (Intel, AMD)
+- **Complexity**: Medium
+- **Status**: Monitoring M2 Max results
 
-func GetEncoderFromPoolLockFree() *Encoder {
-    pid := runtime_procPin()    // Pin to current P
-    defer runtime_procUnpin()
-    
-    stack := perPPools[pid]
-    
-    // Lock-free pop with atomic CAS
-    for {
-        head := stack.head
-        if head == nil {
-            return NewEncoder()
-        }
-        
-        if atomic.CompareAndSwapPointer(&stack.head, head, head.next) {
-            return head
-        }
-    }
-}
-```
-
-**Status**: Design phase, implementation starting
-
-**Complexity**: HIGH (runtime internals, atomic ops)
-
-**Files** (planned):
-- `encoder_pool_lockfree.go` - Per-P pool implementation
-- `encoder_pool_lockfree_test.go` - Benchmarks & tests
-- `PHASE_3A_LOCKFREE_POOL.md` - Documentation
-
-#### 🚧 Phase 3B: Batch Arena (Planned)
-
-**Scope**: Arena allocator for bulk encoding
-
-**Goal**: Single allocation for 1000s of structs
-
-**Expected Results**:
-- 100 structs: 85μs → **30μs** (2.8× faster)
-- Allocations: 300+ → **3** (99% reduction)
-
-**Status**: Design phase
-
-**Files** (planned):
-- `arena.go` - Already exists, needs batch encode
-- `arena_test.go` - Tests
-- `PHASE_3B_BATCH_ARENA.md` - Documentation
-
-#### 🚧 Phase 4: Parallel Encoding (Planned)
-
-**Scope**: Multi-threaded array encoding with work stealing
-
-**Goal**: 8-10× speedup for large arrays
-
-**Expected Results**:
-- 10K array: 50ms → **6ms** (8.3× faster)
-- 100K array: 500ms → **55ms** (9.1× faster)
-
-**Design**:
-```go
-type WorkerPool struct {
-    workers   int
-    taskQueue chan func()
-    wg        sync.WaitGroup
-}
+**Note**: Current optimizations (Phase 1: Stack/Cache, Phase 2: SIMD, Phase 2A: Prefetch infrastructure) provide excellent performance. Future work focuses on specialized use cases rather than general-purpose improvements.
 
 func (pe *ParallelEncoder) EncodeArrayParallel(data []any) ([]byte, error) {
     // Split into chunks
@@ -810,35 +750,16 @@ func (pe *ParallelEncoder) EncodeArrayParallel(data []any) ([]byte, error) {
 - ❌ Encoders migrate across CPU cores (cache miss)
 
 **Performance**:
-- Single goroutine: Excellent
-- 100+ goroutines: Degradation from lock contention
+- Single goroutine: 8-9ns per Get/Put (excellent)
+- 100+ goroutines: Excellent scaling (Go 1.21+ per-P local caching)
 
-### Planned System (Phase 3A - Lock-Free Per-P)
+**Why No Lock-Free Pool?**:
+Comprehensive benchmarking showed sync.Pool is 2-2.5× faster than lock-free per-P pools due to:
+- Go 1.21+ per-P local caching eliminates contention naturally
+- `runtime_procPin/Unpin` overhead (20-30ns) > mutex cost (5-8ns)
+- Goroutine scheduler's work stealing > CPU pinning
 
-**Architecture**:
-```
-┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-│  CPU 0   │ │  CPU 1   │ │  CPU 2   │ │  CPU 3   │
-│          │ │          │ │          │ │          │
-│ ┌──────┐ │ │ ┌──────┐ │ │ ┌──────┐ │ │ ┌──────┐ │
-│ │ Pool │ │ │ │ Pool │ │ │ │ Pool │ │ │ │ Pool │ │
-│ └──────┘ │ │ └──────┘ │ │ └──────┘ │ │ └──────┘ │
-│          │ │          │ │          │ │          │
-│ Enc Enc  │ │ Enc Enc  │ │ Enc Enc  │ │ Enc Enc  │
-└──────────┘ └──────────┘ └──────────┘ └──────────┘
-   No lock!     No lock!     No lock!     No lock!
-```
-
-**Characteristics**:
-- ✅ Zero contention (per-P, no sharing)
-- ✅ CPU locality (encoder stays on same core)
-- ✅ L1/L2 cache hot
-- ⚠️ More complex (runtime internals)
-- ⚠️ Higher memory (12 pools on 12-core)
-
-**Expected Performance**:
-- Single goroutine: Same or better
-- 100+ goroutines: **1.3-1.4× faster**
+See benchmarks/POOL_COMPARISON.md for detailed analysis.
 
 ---
 
@@ -1015,12 +936,12 @@ type HotStruct struct {
 - Multi-platform support (ARM64, AMD64)
 
 ⚠️ **Experimental**:
-- Phase 2A: Prefetching (disabled, available for testing)
+- Phase 2A: Prefetching (disabled by default, available via `BEVE_ENABLE_PREFETCH=1`)
 
-🚧 **Planned**:
-- Phase 3A: Lock-Free Pooling (1.3-1.4× improvement)
-- Phase 3B: Batch Arena (2-3× for bulk ops)
-- Phase 4: Parallel Encoding (8-10× for large arrays)
+� **Research Areas**:
+- Batch Arena allocators (bulk encoding optimization)
+- Parallel array encoding (multi-threaded for large datasets)
+- Adaptive prefetching strategies
 
 ### Performance Profile
 

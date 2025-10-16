@@ -38,10 +38,7 @@ type Encoder struct {
 
 	// = 16 (pointers) + 24 (buffers) + 8 (batchLen) = 48 bytes (fits in 1 cache line)
 
-	// Lock-free pool support (Phase 3A)
-	next *Encoder // Next encoder in lock-free stack (8 bytes)
-
-	// Cold path (rarely accessed, third cache line):
+	// Cold path (rarely accessed, second cache line):
 	batchBuf [256]byte // Batch buffer for small writes (cold path)
 }
 
@@ -67,18 +64,8 @@ var encoderPool = sync.Pool{
 
 // GetEncoderFromPool acquires an encoder from the pool.
 //
-// If BEVE_USE_LOCKFREE_POOL=true, uses lock-free per-P pools.
-// Otherwise, uses standard sync.Pool (default).
-//
 //go:inline
 func GetEncoderFromPool() *Encoder {
-	// Check if lock-free pool is enabled (Phase 3A)
-	// This is determined at init time via BEVE_USE_LOCKFREE_POOL env var
-	if UseLockFreePool {
-		return getEncoderFromLockFreePool()
-	}
-
-	// Standard sync.Pool path (default)
 	return encoderPool.Get().(*Encoder)
 }
 
@@ -87,27 +74,16 @@ func GetEncoderFromPool() *Encoder {
 // Encoders keep buffers up to maxBufferPoolCapacity (1MB) so large payloads
 // benefit from pooling without unbounded memory growth.
 //
-// If BEVE_USE_LOCKFREE_POOL=true, returns to per-P lock-free pool.
-// Otherwise, returns to standard sync.Pool (default).
-//
 //go:inline
 func PutEncoderToPool(enc *Encoder) {
 	if enc == nil || enc.Buf == nil {
 		return
 	}
 
-	// Check if lock-free pool is enabled (Phase 3A)
-	if UseLockFreePool {
-		putEncoderToLockFreePool(enc)
-		return
-	}
-
-	// Standard sync.Pool path (default)
 	bufCap := cap(enc.Buf.data)
 	if bufCap <= maxBufferPoolCapacity {
 		enc.Buf.Reset()
 		enc.batchLen = 0
-		enc.next = nil // Clear lock-free pool linkage
 		encoderPool.Put(enc)
 	} else {
 		// Buffer is too large to pool, release it
