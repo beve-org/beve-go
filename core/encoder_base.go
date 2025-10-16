@@ -125,18 +125,41 @@ func (e *Encoder) Encode(v reflect.Value) error {
 }
 
 // EncodeAndDetach encodes the value and returns the bytes directly.
-// This is optimized for Marshal() use case and leverages stack encoding when possible.
+// This is optimized for Marshal() use case and leverages multiple optimization layers.
 //
-// Phase 1.1: For small structs, this uses stack-based encoding to eliminate
-// heap allocations during the encoding process.
+// Optimization layers (tried in order):
+//   Phase 1.1: Stack encoding (primitives only) - 143ns
+//   Phase 1.2: Cached encoding (all structs) - ~250ns target
+//   Fallback: Standard reflection path - ~600ns
 //
 //go:inline
 func (e *Encoder) EncodeAndDetach(v reflect.Value) ([]byte, error) {
-	// Phase 1.1: Try stack encoding first for small structs (top-level only)
-	// This fast path eliminates buffer allocations for common small struct case
 	if v.Kind() == reflect.Struct && v.IsValid() {
+		// Phase 1.1: Try stack encoding first (primitives only, fastest)
 		if data, ok := e.tryStackEncode(v); ok {
-			return data, nil // Already copied to heap (single allocation)
+			return data, nil // 143ns - single allocation
+		}
+		
+		// Phase 1.2: Try cached encoding (all structs with ≤12 fields)
+		cache := getOrBuildEncoderCache(v.Type())
+		if cache.fieldCount > 0 && cache.fieldCount <= 12 {
+			// Reset buffer for cached encoding
+			if e.Buf != nil {
+				e.Buf.Reset()
+			}
+			
+			if e.tryEncodeCached(v, cache) {
+				// Success! Copy to result
+				encoded := e.Buf.Bytes()
+				result := make([]byte, len(encoded))
+				copy(result, encoded)
+				return result, nil
+			}
+			
+			// Cache encoding failed, reset buffer
+			if e.Buf != nil {
+				e.Buf.Reset()
+			}
 		}
 	}
 

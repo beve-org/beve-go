@@ -120,17 +120,21 @@ func marshalGeneric(v interface{}) ([]byte, error) {
 		return nil, err
 	}
 
+	var result []byte
 	if !handled {
 		rv := reflect.ValueOf(v)
-		if err := enc.Encode(rv); err != nil {
+		// Phase 1.1: Use EncodeAndDetach which leverages stack encoding
+		result, err = enc.EncodeAndDetach(rv)
+		if err != nil {
 			putEncoderToPool(enc)
 			return nil, err
 		}
+	} else {
+		// Fast path already encoded
+		encoded := enc.Buf.Bytes()
+		result = make([]byte, len(encoded))
+		copy(result, encoded)
 	}
-
-	encoded := enc.Buf.Bytes()
-	result := make([]byte, len(encoded))
-	copy(result, encoded)
 
 	putEncoderToPool(enc)
 	return result, nil
