@@ -1974,9 +1974,32 @@ func appendEncodedFloat64(dst []byte, v float64) []byte {
 	return dst
 }
 
+// appendEncodedString encodes a string with inline varint optimization.
+//
+// Phase 15: String operations optimization attempt
+// Reverted complex allocation - Go's append is already optimized.
+// Focus: Inline varint write to eliminate appendCompressedUint function call.
+//
+//go:inline
 func appendEncodedString(dst []byte, s string) []byte {
+	sLen := len(s)
+	
+	// Write header
 	dst = append(dst, 0x02)
-	dst = appendCompressedUint(dst, uint64(len(s)))
+	
+	// Inline varint for length (eliminate function call)
+	switch {
+	case sLen < 64:
+		dst = append(dst, byte(sLen<<2))
+	case sLen < 16384:
+		dst = append(dst, byte(0x01|((sLen>>8)<<2)), byte(sLen))
+	case sLen < 1073741824:
+		dst = append(dst, byte(0x02|((sLen>>16)<<2)), byte(sLen>>8), byte(sLen))
+	default:
+		dst = append(dst, byte(0x03|((sLen>>24)<<2)), byte(sLen>>16), byte(sLen>>8), byte(sLen))
+	}
+	
+	// Write string data
 	return append(dst, stringToBytes(s)...)
 }
 
