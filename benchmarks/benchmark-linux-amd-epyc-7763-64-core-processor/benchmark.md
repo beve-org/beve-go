@@ -6,36 +6,36 @@ _Performance visualization: lower is better. Chart shows relative performance ac
 
 | Scenario | Codec | Operation | ns/op | B/op | allocs/op |
 |----------|-------|-----------|-------|------|-----------|
-| Large Payload | BEVE ZeroCopy | Marshal | 95859 | 259 | 2 |
-| Large Payload | BEVE | Marshal | 130717 | 188845 | 3 |
-| Large Payload | Sonic | Marshal | 162877 | 216625 | 4 |
-| Large Payload | CBOR | Marshal | 215579 | 205573 | 2 |
-| Large Payload | MessagePack | Marshal | 301385 | 526836 | 115 |
-| Large Payload | JSON | Marshal | 432415 | 213793 | 9 |
-| Large Payload | BEVE | Unmarshal | 235102 | 267680 | 419 |
-| Large Payload | Sonic | Unmarshal | 367213 | 555581 | 595 |
-| Large Payload | MessagePack | Unmarshal | 587056 | 364460 | 6665 |
-| Large Payload | CBOR | Unmarshal | 781213 | 316105 | 6441 |
-| Large Payload | JSON | Unmarshal | 2295163 | 522371 | 6942 |
-| Medium Payload | BEVE ZeroCopy | Marshal | 11114 | 128 | 2 |
-| Medium Payload | Sonic | Marshal | 18766 | 25758 | 4 |
-| Medium Payload | BEVE | Marshal | 20109 | 21903 | 3 |
-| Medium Payload | CBOR | Marshal | 20709 | 18589 | 2 |
+| Large Payload | BEVE ZeroCopy | Marshal | 81493 | 233 | 2 |
+| Large Payload | BEVE | Marshal | 120747 | 196905 | 3 |
+| Large Payload | Sonic | Marshal | 159237 | 208881 | 4 |
+| Large Payload | CBOR | Marshal | 203414 | 189182 | 2 |
+| Large Payload | MessagePack | Marshal | 291611 | 526834 | 115 |
+| Large Payload | JSON | Marshal | 419425 | 205335 | 9 |
+| Large Payload | BEVE | Unmarshal | 230925 | 269055 | 419 |
+| Large Payload | Sonic | Unmarshal | 341857 | 525139 | 559 |
+| Large Payload | MessagePack | Unmarshal | 571717 | 349079 | 6355 |
+| Large Payload | CBOR | Unmarshal | 709310 | 310777 | 6333 |
+| Large Payload | JSON | Unmarshal | 2497613 | 602410 | 7797 |
+| Medium Payload | BEVE ZeroCopy | Marshal | 8765 | 134 | 2 |
+| Medium Payload | Sonic | Marshal | 13976 | 19152 | 4 |
+| Medium Payload | BEVE | Marshal | 14574 | 19235 | 3 |
+| Medium Payload | CBOR | Marshal | 22652 | 21860 | 2 |
+| Medium Payload | JSON | Marshal | 32683 | 16725 | 9 |
 | Medium Payload | MessagePack | Marshal | 35973 | 65838 | 22 |
-| Medium Payload | JSON | Marshal | 53016 | 22059 | 9 |
-| Medium Payload | BEVE | Unmarshal | 24575 | 28895 | 59 |
-| Medium Payload | MessagePack | Unmarshal | 41483 | 22621 | 395 |
-| Medium Payload | Sonic | Unmarshal | 41709 | 64272 | 79 |
-| Medium Payload | CBOR | Unmarshal | 87893 | 38200 | 785 |
-| Medium Payload | JSON | Unmarshal | 214468 | 50624 | 641 |
-| Small Struct | BEVE ZeroCopy | Marshal | 626 | 290 | 2 |
-| Small Struct | Sonic | Marshal | 1558 | 1995 | 3 |
-| Small Struct | CBOR | Marshal | 2016 | 1552 | 2 |
-| Small Struct | BEVE | Marshal | 2309 | 2979 | 3 |
-| Small Struct | MessagePack | Marshal | 3187 | 4225 | 8 |
-| Small Struct | JSON | Marshal | 3589 | 1424 | 2 |
-| Small Struct | BEVE | Unmarshal | 2714 | 3384 | 4 |
-| Small Struct | Sonic | Unmarshal | 2950 | 3654 | 9 |
-| Small Struct | MessagePack | Unmarshal | 3426 | 1792 | 40 |
-| Small Struct | CBOR | Unmarshal | 6702 | 2304 | 51 |
-| Small Struct | JSON | Unmarshal | 10467 | 2120 | 38 |
+| Medium Payload | BEVE | Unmarshal | 23989 | 27774 | 59 |
+| Medium Payload | Sonic | Unmarshal | 39305 | 60281 | 75 |
+| Medium Payload | MessagePack | Unmarshal | 52711 | 31903 | 585 |
+| Medium Payload | CBOR | Unmarshal | 68284 | 29192 | 599 |
+| Medium Payload | JSON | Unmarshal | 197961 | 48968 | 625 |
+| Small Struct | BEVE ZeroCopy | Marshal | 742 | 289 | 2 |
+| Small Struct | Sonic | Marshal | 811 | 985 | 3 |
+| Small Struct | BEVE | Marshal | 878 | 1313 | 3 |
+| Small Struct | CBOR | Marshal | 2207 | 2193 | 2 |
+| Small Struct | MessagePack | Marshal | 4370 | 8321 | 9 |
+| Small Struct | JSON | Marshal | 5198 | 2835 | 2 |
+| Small Struct | BEVE | Unmarshal | 943 | 952 | 4 |
+| Small Struct | MessagePack | Unmarshal | 1732 | 832 | 20 |
+| Small Struct | Sonic | Unmarshal | 4189 | 7399 | 10 |
+| Small Struct | CBOR | Unmarshal | 4740 | 2416 | 52 |
+| Small Struct | JSON | Unmarshal | 15829 | 4168 | 67 |
