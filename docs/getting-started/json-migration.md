@@ -11,18 +11,21 @@ Complete guide to migrating your existing `encoding/json` code to BEVE.
 
 ### Performance Improvements
 
+*Benchmark platform: Neoverse-N2 ARM64 (see [Multi-Platform Results](../benchmarks/MULTI_PLATFORM.md) for other platforms)*
+
 | Metric | JSON | BEVE | Improvement |
 |--------|------|------|-------------|
-| **Small unmarshal** | 9,138ns | 780ns | **11.7× faster** |
-| **Medium marshal** | 30,200ns | 7,500ns | **4.0× faster** |
-| **Large unmarshal** | 1,378,000ns | 146,000ns | **9.4× faster** |
+| **Small marshal** | 4.78μs | 694ns | **6.9× faster** |
+| **Small unmarshal** | 8.07μs | 805ns | **10× faster** |
+| **Medium marshal** | 40.51μs | 9.34μs | **4.3× faster** |
+| **Large unmarshal** | 2.10ms | 230μs | **9.1× faster** |
 | **Payload size** | 100% | ~65% | **35% smaller** |
-| **Allocations** | 600+ | 2-4 | **150-300× fewer** |
+| **Allocations** | 39-7.5K | 1-417 | **10-1875× fewer** |
 
 ### Key Benefits
 
 ✅ **Drop-in replacement** - Same API as `encoding/json`  
-✅ **2-46× faster** - Optimized for modern CPUs  
+✅ **6.9-10× faster** - Optimized for modern CPUs (Neoverse-N2)  
 ✅ **30-50% smaller** - Varint encoding, typed arrays  
 ✅ **Zero-copy mode** - 0 allocations for hot paths  
 ✅ **JSON compatible** - Bidirectional conversion  
@@ -582,18 +585,22 @@ type User struct {
 
 | Operation | JSON | BEVE | Speedup |
 |-----------|------|------|---------|
-| Marshal | 1,005ns | 889ns | 1.1× |
-| Unmarshal | 9,138ns | 780ns | **11.7×** |
+| Marshal | 4.78μs | 694ns | **6.9×** |
+| Unmarshal | 8.07μs | 805ns | **10×** |
 | Size | 45 bytes | 29 bytes | 35% smaller |
+
+*Platform: Neoverse-N2 ARM64*
 
 ### Benchmark: Large Payload (100 records)
 
 | Operation | JSON | BEVE | Speedup |
 |-----------|------|------|---------|
-| Marshal | 274μs | 71μs | **3.8×** |
-| Unmarshal | 1,378μs | 146μs | **9.4×** |
+| Marshal | 380μs | 103μs | **3.7×** |
+| Unmarshal | 2.10ms | 230μs | **9.1×** |
 | Size | 15,000 bytes | 9,750 bytes | 35% smaller |
-| Allocations | 6,307 | 416 | **93% fewer** |
+| Allocations | 7,500 | 417 | **94% fewer** |
+
+*Platform: Neoverse-N2 ARM64*
 
 **See**: [Performance Docs](../performance/benchmarks.md) for detailed results.
 
