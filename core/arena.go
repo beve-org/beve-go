@@ -1,27 +1,27 @@
 // Package core provides experimental arena-based memory allocation.
-//
+
 // Arena allocators group related allocations into a single memory region,
 // which can be freed all at once. This dramatically reduces GC pressure
 // for request-scoped or session-scoped operations.
-//
+
 // Benefits:
 //   - Reduced GC overhead: Free entire arena in one operation vs tracking individual objects
 //   - Better cache locality: Related objects allocated contiguously in memory
 //   - Lower allocation overhead: Bump allocator (fast pointer increment) vs heap allocation
 //   - Predictable memory usage: Arena size known upfront
-//
+
 // Use cases:
 //   - HTTP request handlers (allocate during request, free at end)
 //   - Batch processing (process N items, free all at once)
 //   - Temporary data structures (parse, process, discard)
-//
+
 // Performance impact:
 //   - Allocation: ~2ns (bump allocator) vs ~20ns (heap)
 //   - GC pressure: 10-100× reduction for high-allocation workloads
 //   - Memory overhead: ~1-5% (arena header + alignment)
-//
+
 // EXPERIMENTAL: This API may change. Requires Go 1.20+ with experimental arena package.
-//
+
 // Note: As of Go 1.23, the arena package is still experimental and may not be
 // available in all builds. This file provides a fallback implementation using
 // standard memory allocation when arenas are unavailable.
