@@ -355,7 +355,6 @@ jobs:
             cp dist/extensions_summary.json benchmarks/extensions_summary.json
             echo "✅ Copied extension benchmarks summary"
           fi
-          fi
           
           # List what we have
           echo "📁 Benchmark directory contents:"
