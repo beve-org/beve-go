@@ -1,52 +1,188 @@
-# BEVE Go Documentation
+# 📚 BEVE-Go Documentation Index
 
-Welcome to the BEVE Go documentation! This directory contains specifications, proposals, and design documents.
+**Welcome to BEVE-Go!** This is your central hub for all documentation.
 
-## 📚 Table of Contents
+> **BEVE** (Binary Efficient Versatile Encoding) - High-performance binary serialization for Go, designed to be faster than JSON, MessagePack, and CBOR while maintaining JSON compatibility.
+
+---
+
+## � Quick Navigation
+
+### For New Users
+- 📦 [Installation](getting-started/installation.md) - Install BEVE-Go *(Coming Soon)*
+- ⚡ [5-Minute Quick Start](getting-started/quick-start.md) - First encode/decode *(Coming Soon)*
+- 📖 [Basic Usage](getting-started/basic-usage.md) - Common patterns *(Coming Soon)*
+- 🔄 [Migrating from JSON](getting-started/json-migration.md) - Switch from `encoding/json` *(Coming Soon)*
+
+### For API Consumers
+- 🔧 [Encoding & Decoding](guides/encoding-decoding.md) - Marshal/Unmarshal APIs *(Coming Soon)*
+- 🏷️ [Struct Tags](guides/struct-tags.md) - Tag system guide *(Coming Soon)*
+- ⚡ [Performance Tuning](guides/performance.md) - Optimize your code *(Coming Soon)*
+- 🧩 [Extensions](guides/extensions.md) - Extension system overview *(Coming Soon)*
+- ⚠️ [Error Handling](guides/error-handling.md) - Error handling patterns *(Coming Soon)*
+
+### For Performance Engineers
+- 📊 [Benchmarks](performance/benchmarks.md) - Latest benchmark results *(Coming Soon)*
+- 🚀 [Optimizations](performance/optimizations.md) - All optimizations explained *(Coming Soon)*
+- ⚖️ [Comparison](performance/comparison.md) - BEVE vs JSON/CBOR/MessagePack *(Coming Soon)*
+- 🔍 [Profiling Guide](performance/profiling.md) - Profile your code *(Coming Soon)*
+
+### For Production Users
+- 🚢 [Deployment Guide](production/deployment.md) - Docker/K8s setup *(Coming Soon)*
+- 📡 [Monitoring](production/monitoring.md) - Metrics & observability *(Coming Soon)*
+- 🔧 [Troubleshooting](production/troubleshooting.md) - Common issues *(Coming Soon)*
+- ✅ [Best Practices](production/best-practices.md) - Production patterns *(Coming Soon)*
+
+### For Contributors
+- 💻 [Development Setup](contributing/development-setup.md) - Dev environment *(Coming Soon)*
+- 🧪 [Testing Guidelines](contributing/testing.md) - How to test *(Coming Soon)*
+- 📊 [Benchmarking Standards](contributing/benchmarking.md) - Write benchmarks *(Coming Soon)*
+- 👀 [Code Review Checklist](contributing/code-review.md) - Review process *(Coming Soon)*
+- 🚀 [Release Process](contributing/release-process.md) - Release workflow *(Coming Soon)*
+
+---
+
+## 📖 Documentation Sections
+
+### 🎯 Getting Started *(Phase 2 - Coming Soon)*
+
+Perfect for new users who want to get up and running quickly.
+
+| Guide | Description | Time |
+|-------|-------------|------|
+| Installation | Install BEVE-Go and verify setup | 2 min |
+| Quick Start | First encode/decode tutorial | 5 min |
+| Basic Usage | Common usage patterns | 10 min |
+| JSON Migration | Migrate from `encoding/json` | 15 min |
+
+**Total Onboarding Time**: ~30 minutes
+
+---
+
+### 📚 User Guides *(Phase 3 - Coming Soon)*
+
+Comprehensive guides for all major features.
+
+| Guide | Description |
+|-------|-------------|
+| Encoding & Decoding | Marshal, Unmarshal, streaming, custom types |
+| Struct Tags | Tag syntax, options, nested structs |
+| Streaming | Stream encoding/decoding for large data |
+| Performance | Zero-copy, buffer pooling, SIMD, profiling |
+| Extensions | Extension system, MarshalAuto, typed arrays |
+| Arena Allocator | Arena usage, pooling, performance |
+| Error Handling | Error types, validation, recovery |
+
+---
+
+### 🏛️ Architecture *(Phase 4 - Coming Soon)*
+
+Deep technical documentation for understanding BEVE internals.
+
+| Document | Description |
+|----------|-------------|
+| Overview | System architecture, component diagram |
+| Encoder Design | Encoder internals, buffer management |
+| Decoder Design | Decoder internals, reflection caching |
+| Buffer Pooling | sync.Pool, arena allocator, memory reuse |
+| Extension System | Extension architecture, binary format |
+| SIMD Optimizations | SIMD instructions, platform detection |
+
+---
+
+### 📊 Performance *(Phase 5 - Coming Soon)*
+
+All performance-related documentation consolidated in one place.
+
+| Document | Description |
+|----------|-------------|
+| Benchmarks | Latest results across all platforms |
+| Optimizations | All optimizations chronologically |
+| Comparison | BEVE vs JSON/CBOR/MessagePack/Protobuf |
+| Profiling | CPU/memory profiling, interpreting results |
+
+**Key Metrics** (Apple M2 Max):
+- Small unmarshal: **11.7× faster than JSON**
+- Medium marshal: **4.0× faster than JSON**
+- Large unmarshal: **9.4× faster than JSON**
+- Zero-copy mode: **0 allocations, 277ns**
+
+---
+
+### � Production *(Phase 6 - Coming Soon)*
+
+Production deployment and operations guides.
+
+| Guide | Description |
+|-------|-------------|
+| Deployment | Docker, Kubernetes, load balancing |
+| Monitoring | Prometheus, Grafana, alerting |
+| Troubleshooting | Common issues, debug checklist |
+| Best Practices | Configuration, capacity planning, security |
+
+---
+
+### 📚 API Reference *(Phase 7 - Coming Soon)*
+
+Complete API documentation with examples.
+
+| Package | Description |
+|---------|-------------|
+| core | Core encoding/decoding APIs |
+| translator | JSON ↔ BEVE translation |
+| wasm | WebAssembly bindings |
+| bevegen | Code generator tool |
+
+Also see: [GoDoc](https://godoc.org/github.com/beve-org/beve-go) for full API reference
+
+---
+
+### 🧩 Extensions *(Phase 8 - Coming Soon)*
+
+Detailed documentation for all 8 BEVE extensions.
+
+| Extension | Feature | Performance |
+|-----------|---------|-------------|
+| Extension 0 | Field Index | O(1) field access, 77ns |
+| Extensions 1-3 | Typed Arrays | 25-48% size reduction |
+| Extensions 4-6 | Timestamps/Duration/Interval | Nanosecond precision, 14-29 bytes |
+| Extension 8 | UUID | 50% smaller, 0.3ns marshal |
+| Extension 9 | RegExp | 173× faster with cache |
+
+**[Extension Overview →](../EXTENSIONS_README.md)**
+
+---
+
+## 📋 Current Documentation (Available Now)
 
 ### Core Documentation
 
 - **[SPECIFICATION.md](../SPECIFICATION.md)** - BEVE v1.0 Binary Format Specification
 - **[README.md](../README.md)** - Main project README with quickstart and examples
+- **[EXTENSIONS_README.md](../EXTENSIONS_README.md)** - Extension system documentation
+- **[CHANGELOG.md](../CHANGELOG.md)** - Version history and updates
 
-### Proposals
+### Technical Reports (Archived)
 
-#### 🎯 Active Proposals
-
-- **[Extension Proposal: Essential Data Types](EXTENSION_PROPOSAL.md)**  
-  Adds temporal types (timestamp, duration, interval), UUID/ULID, and regular expressions to BEVE.
-  - Status: Draft
-  - Impact: Native support for common data types, 30-55% space savings vs JSON
-  - Priority: High
-
-- **[Field Index Mode](proposals/FIELD_INDEX.md)** 🔥 **NEW**  
-  Introduces integer field indexes instead of string keys for maximum performance.
-  - Status: Draft
-  - Impact: **49% faster** end-to-end serialization, 27% smaller intermediate payloads
-  - Use cases: Microservices, API pagination, cache serialization, IoT telemetry
-  - Priority: High
-
-#### 📋 Proposal Guidelines
-
-When creating a new proposal:
-1. Copy `proposals/TEMPLATE.md` (if exists, or use existing proposals as reference)
-2. Include: Abstract, Motivation, Specification, Performance Analysis, Trade-offs
-3. Add benchmarks and real-world use cases
-4. Submit for community discussion
+Historical technical reports moved to [archive/](../archive/README.md):
+- Performance optimization reports
+- Test coverage improvements
+- Arena allocator analysis
 
 ### Benchmarks
 
-- **[Multi-Platform Benchmarks](../benchmarks/MULTI_PLATFORM.md)**  
-  Performance comparison across AMD64, ARM64, Windows, macOS, and Linux platforms.
+- **[Multi-Platform Benchmarks](../benchmarks/MULTI_PLATFORM.md)** - Performance comparison across platforms
 
-### Analysis Documents
+### Proposals (Legacy)
 
-- **[CORE_ANALYSIS.md](../CORE_ANALYSIS.md)** - Deep dive into BEVE Go internals
-- **[Phase Results](../)** - Development phase retrospectives (PHASE*_RESULTS.md files)
+- **[Extension Proposal](EXTENSION_PROPOSAL.md)** - Essential data types proposal
+- **[Field Index Mode](proposals/FIELD_INDEX.md)** - Field index performance proposal
+
+---
 
 ## 🎯 Current Focus Areas
 
-### 1. Extension System (v1.4.0)
+### 1. Documentation Modernization (v1.3.0) - In Progress 🚧
 
 Implementing extension types from `EXTENSION_PROPOSAL.md`:
 

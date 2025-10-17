@@ -290,7 +290,7 @@ func (d *Decoder) captureRawValue() ([]byte, error) {
 		}
 		return nil, err
 	}
-	
+
 	size := d.Pos - start
 	var raw []byte
 	if d.arena != nil {

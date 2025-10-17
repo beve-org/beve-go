@@ -42,7 +42,7 @@ type Encoder struct {
 	// Hot path fields (first 64 bytes - one cache line):
 
 	// Most frequently accessed fields (pointers: 8 bytes each)
-	Buf   *Buffer // Pre-allocated buffer (pooled) - exported for backward compat
+	Buf   *Buffer   // Pre-allocated buffer (pooled) - exported for backward compat
 	w     io.Writer // Target writer (may be nil if using Buf)
 	arena *Arena    // Optional arena allocator (nil = standard heap allocation)
 
