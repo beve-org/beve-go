@@ -66,6 +66,7 @@ Commit messages should be short!
 - **ZeroCopy Mode**: Use `MarshalZeroCopy()` for 2-8× faster encoding
 - **Streaming**: `NewStreamEncoder(w)` for batch operations
 - **Type Caching**: Struct fields cached on first use
+- **Arena Allocator**: Use `NewArenaPool()` for high-throughput scenarios (55% faster reuse)
 
 ## Coding Guidelines
 

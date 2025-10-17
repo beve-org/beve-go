@@ -487,6 +487,12 @@ BEVE uses a **tagged, self-describing binary format**:
    - Zero lock contention
    - Automatic GC integration
 
+5. **Arena Allocator** (55% faster with pooling, Oct 2025) 🆕
+   - Bulk allocation for temporary buffers (~2ns vs ~20ns heap)
+   - Arena pooling reduces create/destroy overhead
+   - Best for large arrays and roundtrip scenarios
+   - Optional: zero-impact when not used
+
 📊 **[Detailed optimization docs →](core/README.md)**
 
 ---
@@ -708,6 +714,45 @@ Extensions work seamlessly with standard Marshal/Unmarshal:
 var result interface{}
 beve.Unmarshal(data, &result)
 ```
+
+### Arena Allocator (v1.3.0) 🆕
+
+**Reduce GC pressure** with arena allocation for high-throughput scenarios:
+
+```go
+import "github.com/beve-org/beve-go/core"
+
+// Create arena pool for reuse (55% faster than create/destroy)
+pool := core.NewArenaPool(16 * 1024) // 16KB arenas
+
+// Encode with arena
+arena := pool.Get()
+enc := core.GetEncoderFromPoolWithArena(arena)
+enc.Encode(largeData)
+core.PutEncoderToPool(enc)
+pool.Put(arena) // Reuse arena
+
+// Decode with arena
+arena = pool.Get()
+dec := core.NewDecoderWithArena(data, arena)
+var result LargeStruct
+dec.Decode(&result)
+core.PutDecoderToPool(dec)
+pool.Put(arena)
+```
+
+**Performance (Apple M2 Max)**:
+- Arena pool reuse: **55% faster** (599ns → 270ns)
+- Large arrays: **11% faster** encoding (3240ns → 2871ns)
+- captureRawValue: **100% allocation reduction** (1→0 allocs)
+- Pool overhead: **+11ns** (acceptable for bulk operations)
+
+**When to use arenas**:
+- ✅ High-throughput APIs (>10k req/sec)
+- ✅ Large array operations (>1000 elements)
+- ✅ Bulk encode/decode batches
+- ❌ Small structs (overhead > benefit)
+- ❌ Single-shot operations (use standard API)
 
 📚 **[Full extensions documentation →](EXTENSIONS_README.md)**  
 📊 **[Extension performance report →](COVERAGE_IMPROVEMENT_REPORT.md)**

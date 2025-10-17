@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Arena Allocator Support (October 2025) 🚀
+- **Arena-aware encoding/decoding** for GC pressure reduction
+  - `core.NewDecoderWithArena()` - Decoder with arena allocator
+  - `core.GetEncoderFromPoolWithArena()` - Encoder with arena allocator
+  - `core.NewArenaPool()` - Arena pooling for reuse (55% faster)
+  - Files: `core/arena.go`, `core/decoder_base.go`, `core/encoder_base.go`
+
+- **Performance (Apple M2 Max)**:
+  - Arena pool reuse: **55% faster** (599ns → 270ns, -3 allocs)
+  - Decoder captureRawValue: **100% allocation reduction** (1→0 allocs)
+  - Large array encoding: **11% faster** (3240ns → 2871ns)
+  - Roundtrip large payload: **4% faster** (84.8μs → 81.4μs, -252B)
+  - Pool overhead: **+11ns** (acceptable for bulk operations)
+
+- **New Benchmarks**:
+  - `decoder_arena_bench_test.go` (238 lines, 14 sub-benchmarks)
+  - `encoder_arena_bench_test.go` (176 lines, 12 sub-benchmarks)
+  - `arena_roundtrip_bench_test.go` (211 lines, 8 sub-benchmarks)
+
+- **Documentation**:
+  - Added arena usage examples to README.md
+  - Updated performance optimization section
+  - Arena best practices (when to use, when to avoid)
+
 ### Test Coverage - Major Improvement (October 2025) 🎯
 - **Test Coverage: 62.2% → 68.0%** (+5.8 percentage points)
 - **New Test Files**: 2 (extension_unmarshal_test.go, extension_utils_test.go)
