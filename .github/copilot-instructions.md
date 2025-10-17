@@ -3,6 +3,8 @@
 ## Project Overview
 BEVE (Binary Efficient Versatile Encoding) is a high-performance binary serialization library for Go, designed to be faster than JSON, MessagePack, and CBOR while maintaining JSON compatibility.
 
+Commit messages should be short!
+
 **Status**: Production Ready (v1.3.0)  
 **License**: MIT  
 **MIME Type**: `application/beve`  
@@ -87,7 +89,13 @@ BEVE (Binary Efficient Versatile Encoding) is a high-performance binary serializ
 - Round-trip validation (BEVE → JSON → BEVE)
 - Cross-platform CI (AMD64, ARM64, Windows)
 - Extension tests with edge cases and error paths
-- Coverage target: >60% (current: 61.7%)
+- Coverage target: >60% (current: 68.0%)
+
+**⚠️ Cross-Platform Compatibility Rules:**
+- **NEVER use hardcoded paths** like `/tmp/` (Unix-only)
+- **ALWAYS use `os.TempDir()`** for temp files
+- **ALWAYS use `filepath.Join()`** for path construction
+- Test on Windows CI before merging (GitHub Actions)
 
 ### CI/CD Automation
 - **Multi-platform benchmarks**: Automatic testing on M1, Neoverse-N2, EPYC, Windows
@@ -124,6 +132,7 @@ BEVE (Binary Efficient Versatile Encoding) is a high-performance binary serializ
 2. **Empty interfaces**: Less efficient, prefer concrete types
 3. **Encoder reuse**: Always call `Close()` to return to pool
 4. **Tag names**: Default is `beve`, configure with `SetStructTag("json")`
+5. **Windows paths**: Use `os.TempDir()` and `filepath.Join()`, never hardcode `/tmp/`
 
 ## References
 
