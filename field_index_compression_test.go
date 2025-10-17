@@ -17,11 +17,6 @@ type FieldIndexedObject struct {
 	Fields     []FieldIndexEntry
 }
 
-type FieldIndexEntry struct {
-	Index uint32 // Field index instead of string name
-	Value []byte // Serialized value
-}
-
 // encodeWithFieldIndex simulates field-indexed BEVE format
 func encodeWithFieldIndex(users []BenchUser) []byte {
 	buf := new(bytes.Buffer)

@@ -283,7 +283,18 @@ func MarshalZeroCopy(v interface{}) (ZeroCopyBytes, error) {
 
 // Unmarshal decodes BEVE binary data into v.
 // It follows the same interface as encoding/json.Unmarshal.
+// Automatically detects and decodes BEVE extensions (0x86-0xF6 headers).
 func Unmarshal(data []byte, v interface{}) error {
+	// Check for extension headers first
+	if len(data) > 0 {
+		header := data[0]
+		// Extension headers range: 0x86-0xF6
+		if header >= 0x86 && header <= 0xF6 {
+			return UnmarshalAuto(data, v)
+		}
+	}
+
+	// Standard BEVE v1.0 decoding
 	d := NewDecoder(data)
 	return d.Decode(v)
 }
