@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -149,7 +150,7 @@ func TestIntegration_E2E_FileStorage(t *testing.T) {
 		{ID: 3, Timestamp: time.Now().Add(2 * time.Second), Value: 41.8, Tags: []string{"sensor2", "temp"}},
 	}
 
-	tmpFile := "/tmp/beve_test_records.bin"
+	tmpFile := filepath.Join(os.TempDir(), "beve_test_records.bin")
 	defer os.Remove(tmpFile)
 
 	t.Run("write records to file", func(t *testing.T) {
