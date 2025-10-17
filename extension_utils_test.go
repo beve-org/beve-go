@@ -12,10 +12,10 @@ import (
 func TestReadCompressedSize_RoundTrip(t *testing.T) {
 	// Test various sizes for proper encoding/decoding
 	testSizes := []int{
-		0, 1, 5, 63,           // 1-byte encoding
-		64, 100, 16383,         // 2-byte encoding
-		16384, 1000000,         // 4-byte encoding
-		1073741823,             // Max 4-byte (30-bit)
+		0, 1, 5, 63, // 1-byte encoding
+		64, 100, 16383, // 2-byte encoding
+		16384, 1000000, // 4-byte encoding
+		1073741823, // Max 4-byte (30-bit)
 	}
 
 	for _, size := range testSizes {
