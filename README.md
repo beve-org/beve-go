@@ -4,8 +4,8 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/beve-org/beve-go)](https://goreportcard.com/report/github.com/beve-org/beve-go)
 [![GoDoc](https://godoc.org/github.com/beve-org/beve-go?status.svg)](https://godoc.org/github.com/beve-org/beve-go)
-[![Coverage](https://img.shields.io/badge/coverage-61.7%25-brightgreen)](COVERAGE_IMPROVEMENT_REPORT.md)
-[![Tests](https://img.shields.io/badge/tests-23_passing-success)](TEST_ENHANCEMENT_SUMMARY.md)
+[![Coverage](https://img.shields.io/badge/coverage-68.0%25-brightgreen)](COVERAGE_IMPROVEMENT_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-178_passing-success)](TEST_ENHANCEMENT_SUMMARY.md)
 [![Extensions](https://img.shields.io/badge/extensions-8%2F12-blue)](EXTENSIONS_README.md)
 
 **High-performance binary serialization library for Go** — designed to be **faster than JSON, MessagePack, and CBOR** while maintaining **JSON compatibility** and **zero-copy encoding**.

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Test Coverage - Major Improvement (October 2025) 🎯
+- **Test Coverage: 62.2% → 68.0%** (+5.8 percentage points)
+- **New Test Files**: 2 (extension_unmarshal_test.go, extension_utils_test.go)
+- **New Test Functions**: +155 (178 total)
+- **Coverage by Function**:
+  - unmarshalExtension: 12% → 84% (+72%)
+  - assignValue: 44% → 89% (+45%)
+  - DetectEncoding: 38% → 83% (+45%)
+  - readCompressedSize: 48% → 81% (+33%)
+- **Test Improvements**:
+  - Extension unmarshal tests (8 extension types + 9 error cases)
+  - assignValue type conversion tests (int, uint, float, string, bool, slice, map)
+  - DetectEncoding tests (8 extensions + 6 standard types)
+  - readCompressedSize tests (round-trip, errors, offset handling)
+- Files: `extension_unmarshal_test.go` (NEW), `extension_utils_test.go` (NEW)
+
 ### Performance - Slow Operations Optimization (October 2025) 🔥
 - **RegExp Marshal: 173× faster** with LRU regex cache
   - Cache hit: 2,715ns → 15.7ns (0 allocs)
