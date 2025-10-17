@@ -1241,7 +1241,7 @@ func (d *Decoder) decodeBoolTypedArray(v reflect.Value, length int) error {
 		}
 		return nil
 	case reflect.Interface:
-		slice := make([]bool, length)
+		slice := d.allocBoolSlice(length) // Arena-aware allocation
 		for i := 0; i < length; i++ {
 			bit := (data[i>>3] >> (uint(i) & 7)) & 0x01
 			slice[i] = bit == 1
@@ -1471,7 +1471,7 @@ func (d *Decoder) decodeSignedTypedArray(v reflect.Value, length, byteCount int)
 			}
 			v.Set(reflect.ValueOf(slice))
 		case 4:
-			slice := make([]int32, length)
+			slice := d.allocInt32Slice(length) // Arena-aware allocation
 			for i := 0; i < length; i++ {
 				data, err := d.ReadBytes(byteCount)
 				if err != nil {
@@ -1488,7 +1488,7 @@ func (d *Decoder) decodeSignedTypedArray(v reflect.Value, length, byteCount int)
 			}
 			v.Set(reflect.ValueOf(slice))
 		default:
-			slice := make([]int64, length)
+			slice := d.allocInt64Slice(length) // Arena-aware allocation
 			for i := 0; i < length; i++ {
 				data, err := d.ReadBytes(byteCount)
 				if err != nil {
@@ -1607,7 +1607,7 @@ func (d *Decoder) decodeUnsignedTypedArray(v reflect.Value, length, byteCount in
 			}
 			v.Set(reflect.ValueOf(slice))
 		case 4:
-			slice := make([]uint32, length)
+			slice := d.allocUint32Slice(length) // Arena-aware allocation
 			for i := 0; i < length; i++ {
 				data, err := d.ReadBytes(byteCount)
 				if err != nil {
@@ -1621,7 +1621,7 @@ func (d *Decoder) decodeUnsignedTypedArray(v reflect.Value, length, byteCount in
 			}
 			v.Set(reflect.ValueOf(slice))
 		default:
-			slice := make([]uint64, length)
+			slice := d.allocUint64Slice(length) // Arena-aware allocation
 			for i := 0; i < length; i++ {
 				data, err := d.ReadBytes(byteCount)
 				if err != nil {
@@ -1723,7 +1723,7 @@ func (d *Decoder) decodeFloatTypedArray(v reflect.Value, length, byteCount int) 
 		// Create typed slice based on byte count
 		switch byteCount {
 		case 4:
-			slice := make([]float32, length)
+			slice := d.allocFloat32Slice(length) // Arena-aware allocation
 			for i := 0; i < length; i++ {
 				data, err := d.ReadBytes(4)
 				if err != nil {
@@ -1734,7 +1734,7 @@ func (d *Decoder) decodeFloatTypedArray(v reflect.Value, length, byteCount int) 
 			}
 			v.Set(reflect.ValueOf(slice))
 		case 8:
-			slice := make([]float64, length)
+			slice := d.allocFloat64Slice(length) // Arena-aware allocation
 			for i := 0; i < length; i++ {
 				data, err := d.ReadBytes(8)
 				if err != nil {
@@ -1756,4 +1756,115 @@ func (d *Decoder) decodeFloatTypedArray(v reflect.Value, length, byteCount int) 
 // DecodeExtension decodes an extension type (placeholder).
 func (d *Decoder) DecodeExtension(v reflect.Value, header byte) error {
 	return &UnsupportedError{"extensions not implemented"}
+}
+
+// ============================================================================
+// Arena-aware allocation helpers
+// ============================================================================
+
+// allocSliceHeader allocates a slice header using arena when available.
+//
+// This is a helper for typed array allocations. Instead of calling make()
+// directly, we check if decoder has an arena and use it for allocation.
+//
+// Performance:
+//   - With arena: ~2ns (bump allocator)
+//   - Without arena: ~20ns (heap allocation)
+//
+// Example usage:
+//
+//	// Before:
+//	slice := make([]int32, length)
+//
+//	// After:
+//	slice := d.allocInt32Slice(length)
+//
+// The slice memory will be freed when arena.Free() is called, dramatically
+// reducing GC pressure for high-throughput decoding.
+func (d *Decoder) allocInt32Slice(length int) []int32 {
+	if d.arena != nil {
+		// Arena allocation: allocate raw bytes, then cast to []int32
+		byteSize := length * 4 // int32 = 4 bytes
+		raw := d.arena.AllocBytes(byteSize)
+		if raw == nil {
+			// Arena full, fallback to heap
+			return make([]int32, length)
+		}
+		// Use unsafe to create slice header pointing to arena memory
+		return unsafe.Slice((*int32)(unsafe.Pointer(&raw[0])), length)
+	}
+	// Fallback to standard heap allocation
+	return make([]int32, length)
+}
+
+func (d *Decoder) allocInt64Slice(length int) []int64 {
+	if d.arena != nil {
+		byteSize := length * 8
+		raw := d.arena.AllocBytes(byteSize)
+		if raw == nil {
+			return make([]int64, length)
+		}
+		return unsafe.Slice((*int64)(unsafe.Pointer(&raw[0])), length)
+	}
+	return make([]int64, length)
+}
+
+func (d *Decoder) allocUint32Slice(length int) []uint32 {
+	if d.arena != nil {
+		byteSize := length * 4
+		raw := d.arena.AllocBytes(byteSize)
+		if raw == nil {
+			return make([]uint32, length)
+		}
+		return unsafe.Slice((*uint32)(unsafe.Pointer(&raw[0])), length)
+	}
+	return make([]uint32, length)
+}
+
+func (d *Decoder) allocUint64Slice(length int) []uint64 {
+	if d.arena != nil {
+		byteSize := length * 8
+		raw := d.arena.AllocBytes(byteSize)
+		if raw == nil {
+			return make([]uint64, length)
+		}
+		return unsafe.Slice((*uint64)(unsafe.Pointer(&raw[0])), length)
+	}
+	return make([]uint64, length)
+}
+
+func (d *Decoder) allocFloat32Slice(length int) []float32 {
+	if d.arena != nil {
+		byteSize := length * 4
+		raw := d.arena.AllocBytes(byteSize)
+		if raw == nil {
+			return make([]float32, length)
+		}
+		return unsafe.Slice((*float32)(unsafe.Pointer(&raw[0])), length)
+	}
+	return make([]float32, length)
+}
+
+func (d *Decoder) allocFloat64Slice(length int) []float64 {
+	if d.arena != nil {
+		byteSize := length * 8
+		raw := d.arena.AllocBytes(byteSize)
+		if raw == nil {
+			return make([]float64, length)
+		}
+		return unsafe.Slice((*float64)(unsafe.Pointer(&raw[0])), length)
+	}
+	return make([]float64, length)
+}
+
+func (d *Decoder) allocBoolSlice(length int) []bool {
+	if d.arena != nil {
+		byteSize := length // bool = 1 byte in Go
+		raw := d.arena.AllocBytes(byteSize)
+		if raw == nil {
+			return make([]bool, length)
+		}
+		return unsafe.Slice((*bool)(unsafe.Pointer(&raw[0])), length)
+	}
+	return make([]bool, length)
 }
