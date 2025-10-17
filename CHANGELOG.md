@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation - Comprehensive Modernization (October 2025) 📚
+- **Complete Documentation Overhaul**: 37 documents, ~24,570 lines, 500+ examples
+  - **Phase 1-5** (Foundation): Getting Started, User Guides, Architecture, Performance
+  - **Phase 6** (Production): Deployment, Monitoring, Security, Troubleshooting
+  - **Phase 7** (API Reference): Encoder, Decoder, Extensions, Types APIs
+  - **Phase 8** (Extensions): All 8 extensions documented in detail
+  - **Phase 9** (Navigation): Comprehensive INDEX.md with use case navigation
+
+- **Documentation Structure**:
+  - `docs/getting-started/` - 4 guides (~2,100 lines): Installation, Quick Start, Basic Usage, JSON Migration
+  - `docs/guides/` - 7 guides (~4,800 lines): Encoding, Struct Tags, Streaming, Extensions, Performance, Arena, Error Handling
+  - `docs/architecture/` - 6 docs (~4,600 lines): Overview, Encoder Design, Decoder Design, Buffer Management, Extension System, Zero-Copy
+  - `docs/performance/` - 4 docs (~3,200 lines): Benchmarks, Optimization Guide, Comparison, Profiling
+  - `docs/extensions/` - 8 docs (~3,870 lines): Field Index, Typed Array, Typed Nested, Timestamp, Duration, Interval, UUID, RegExp
+  - `docs/production/` - 4 docs (~2,850 lines): Deployment (Docker/K8s), Monitoring (Prometheus/Grafana), Security (DoS prevention), Troubleshooting (runbooks)
+  - `docs/api/` - 4 docs (~1,900 lines): Encoder API, Decoder API, Extension API, Types API
+
+- **Production Ready Content**:
+  - 3 production runbooks (high memory, high latency, decode error spike)
+  - 12-item production deployment checklist
+  - 15-item security checklist
+  - 5 alerting rules (latency, error rate, pool hit rate, memory, service down)
+  - Prometheus/Grafana integration examples
+  - OpenTelemetry distributed tracing examples
+
+- **Performance Highlights** (from benchmarks/MULTI_PLATFORM.md):
+  - Neoverse-N2: Small marshal 694ns, Small unmarshal 805ns, Large ZeroCopy 68μs
+  - 6.9-10× faster than JSON, 2-300× fewer allocations
+  - Cross-platform benchmarks (M1, EPYC, Neoverse-N2, Windows AMD64)
+
+- **Git Commits**:
+  - Phase 1-5: commits 716fe2b, 1841d72, ac75a54, f8fd05a, 96b3ec2, ea860d3, b872df1
+  - Phase 8: commit 490d188 (34.18 KiB)
+  - Phase 6-7-9: commit 7ee1af2 (38.45 KiB, 9 files, 5,419 insertions)
+
 ### Added - Arena Allocator Support (October 2025) 🚀
 - **Arena-aware encoding/decoding** for GC pressure reduction
   - `core.NewDecoderWithArena()` - Decoder with arena allocator
