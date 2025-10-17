@@ -2,7 +2,7 @@
 
 **Welcome to BEVE-Go!** Comprehensive documentation for high-performance binary serialization.
 
-> **BEVE** (Binary Efficient Versatile Encoding) - Faster than JSON, MessagePack, and CBOR with JSON compatibility. **v1.3.0** production ready with 37 documents, 24,570+ lines, 500+ examples.
+> **BEVE** (Binary Efficient Versatile Encoding) - Faster than JSON, MessagePack, and CBOR with JSON compatibility. **v1.3.0** production ready with **39 documents**, **25,450+ lines**, 520+ examples.
 
 ---
 
@@ -81,6 +81,8 @@ Comprehensive guides for all major features.
 | [Extensions](guides/extensions.md) | Extension system, MarshalAuto, typed arrays |
 | [Arena Allocator](guides/arena-allocator.md) | Arena usage, pooling, performance |
 | [Error Handling](guides/error-handling.md) | Error types, validation, recovery |
+| **[Code Generator](guides/codegen.md)** | **bevegen tool - 10× faster marshaling** |
+| **[Translator](guides/translator.md)** | **JSON ↔ BEVE conversion utility** |
 
 ---
 
@@ -283,6 +285,9 @@ Detailed documentation for all 8 BEVE extensions.
 - **Get started quickly** → [Quick Start](getting-started/quick-start.md) (5 min)
 - **Migrate from JSON** → [JSON Migration](getting-started/json-migration.md)
 - **Optimize performance** → [Performance Guide](guides/performance.md) + [Optimization Guide](performance/optimization-guide.md)
+- **Generate optimized code** → **[Code Generator](guides/codegen.md)** (10× faster)
+- **Convert JSON to BEVE** → **[Translator](guides/translator.md)** (bidirectional)
+- **Debug BEVE data** → **[Translator](guides/translator.md)** (JSON pretty-print)
 - **Use extensions** → [Extensions Guide](guides/extensions.md) + [Extension API](api/extension-api.md)
 - **Deploy to production** → [Deployment](production/deployment.md) + [Monitoring](production/monitoring.md)
 - **Debug issues** → [Troubleshooting](production/troubleshooting.md)
@@ -299,20 +304,21 @@ Detailed documentation for all 8 BEVE extensions.
 
 | Metric | Count |
 |--------|-------|
-| **Total Documents** | 37 |
-| **Total Lines** | ~24,570 |
-| **Code Examples** | 500+ |
+| **Total Documents** | **39** |
+| **Total Lines** | **~25,450** |
+| **Code Examples** | 520+ |
 | **Diagrams** | 20+ |
 | **Benchmarks** | 15+ tables |
 | **Production Runbooks** | 3 |
 | **Extensions Documented** | 8/8 |
+| **Tools Documented** | **2** (bevegen, translator) |
 
 ### Documentation Structure
 
 ```
 docs/
 ├── getting-started/      4 docs  (~2,100 lines)
-├── guides/               7 docs  (~4,800 lines)
+├── guides/               9 docs  (~5,680 lines)  ← +2 NEW
 ├── architecture/         6 docs  (~4,600 lines)
 ├── performance/          4 docs  (~3,200 lines)
 ├── extensions/           8 docs  (~3,870 lines)
