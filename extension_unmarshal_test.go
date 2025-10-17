@@ -413,13 +413,13 @@ func TestDetectEncoding_AllExtensions(t *testing.T) {
 		{"interval", []byte{ExtInterval, 0x00}, "interval"},
 		{"uuid", []byte{ExtUUID, 0x00}, "uuid"},
 		{"regex", []byte{ExtRegex, 0x00}, "regex"},
-		{"standard_null", []byte{0x00}, "standard"},        // null
-		{"standard_bool", []byte{0x08}, "standard"},        // boolean
-		{"standard_number", []byte{0x01}, "standard"},      // number
-		{"standard_string", []byte{0x02}, "standard"},      // string
-		{"standard_object", []byte{0x03}, "standard"},      // object
-		{"standard_array", []byte{0x05}, "standard"},       // array
-		{"unknown", []byte{0xFF}, "unknown"},
+		{"standard_null", []byte{0x00}, "beve_null_or_bool"},
+		{"standard_bool", []byte{0x08}, "beve_null_or_bool"},
+		{"standard_number", []byte{0x01}, "beve_number"},
+		{"standard_string", []byte{0x02}, "beve_string"},
+		{"standard_object", []byte{0x03}, "beve_object"},
+		{"standard_array", []byte{0x05}, "beve_generic_array"},
+		{"unknown", []byte{0xFF}, "unknown_0xFF"},
 	}
 
 	for _, tt := range tests {
@@ -434,7 +434,7 @@ func TestDetectEncoding_AllExtensions(t *testing.T) {
 
 func TestDetectEncoding_EmptyData(t *testing.T) {
 	result := DetectEncoding([]byte{})
-	if result != "unknown" {
-		t.Errorf("Expected 'unknown' for empty data, got %s", result)
+	if result != "empty" {
+		t.Errorf("Expected 'empty' for empty data, got %s", result)
 	}
 }
