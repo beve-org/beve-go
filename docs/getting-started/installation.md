@@ -83,7 +83,7 @@ func main() {
 
     // Encode
     user := User{Name: "Alice", Age: 30}
-    data, err := beve.Marshal(user)
+    data, err := beve.Marshal(&user)
     if err != nil {
         panic(err)
     }
