@@ -6,36 +6,36 @@ _Performance visualization: lower is better. Chart shows relative performance ac
 
 | Scenario | Codec | Operation | ns/op | B/op | allocs/op |
 |----------|-------|-----------|-------|------|-----------|
-| Large Payload | BEVE ZeroCopy | Marshal | 78288 | 52 | 0 |
-| Large Payload | BEVE | Marshal | 113305 | 196642 | 1 |
-| Large Payload | Sonic | Marshal | 155984 | 206763 | 3 |
-| Large Payload | CBOR | Marshal | 213966 | 188543 | 1 |
-| Large Payload | MessagePack | Marshal | 275794 | 526706 | 115 |
-| Large Payload | JSON | Marshal | 467944 | 213265 | 8 |
-| Large Payload | BEVE | Unmarshal | 272015 | 273797 | 417 |
-| Large Payload | Sonic | Unmarshal | 404565 | 529590 | 570 |
-| Large Payload | MessagePack | Unmarshal | 679461 | 350647 | 6398 |
-| Large Payload | CBOR | Unmarshal | 822770 | 311225 | 6350 |
-| Large Payload | JSON | Unmarshal | 2542790 | 505763 | 6689 |
-| Medium Payload | BEVE ZeroCopy | Marshal | 7910 | 5 | 0 |
-| Medium Payload | BEVE | Marshal | 12430 | 18437 | 1 |
-| Medium Payload | Sonic | Marshal | 13364 | 16625 | 3 |
-| Medium Payload | CBOR | Marshal | 22300 | 20491 | 1 |
-| Medium Payload | MessagePack | Marshal | 25228 | 33001 | 21 |
-| Medium Payload | JSON | Marshal | 48475 | 22000 | 8 |
-| Medium Payload | BEVE | Unmarshal | 29216 | 30843 | 59 |
-| Medium Payload | Sonic | Unmarshal | 52062 | 66684 | 80 |
-| Medium Payload | MessagePack | Unmarshal | 72539 | 38253 | 710 |
-| Medium Payload | CBOR | Unmarshal | 93435 | 37536 | 767 |
-| Medium Payload | JSON | Unmarshal | 243516 | 49400 | 652 |
-| Small Struct | BEVE ZeroCopy | Marshal | 592 | 0 | 0 |
-| Small Struct | BEVE | Marshal | 903 | 1024 | 1 |
-| Small Struct | Sonic | Marshal | 1027 | 1203 | 2 |
-| Small Struct | CBOR | Marshal | 2419 | 2688 | 1 |
-| Small Struct | MessagePack | Marshal | 2699 | 4104 | 8 |
-| Small Struct | JSON | Marshal | 4034 | 2048 | 1 |
-| Small Struct | BEVE | Unmarshal | 2490 | 3512 | 4 |
-| Small Struct | MessagePack | Unmarshal | 3102 | 1664 | 37 |
-| Small Struct | Sonic | Unmarshal | 5498 | 7419 | 10 |
-| Small Struct | CBOR | Unmarshal | 9428 | 4584 | 96 |
-| Small Struct | JSON | Unmarshal | 16854 | 4048 | 63 |
+| Large Payload | BEVE ZeroCopy | Marshal | 89323 | 52 | 0 |
+| Large Payload | BEVE | Marshal | 144248 | 188440 | 1 |
+| Large Payload | Sonic | Marshal | 190627 | 215080 | 3 |
+| Large Payload | CBOR | Marshal | 216046 | 188544 | 1 |
+| Large Payload | MessagePack | Marshal | 284193 | 526708 | 115 |
+| Large Payload | JSON | Marshal | 515311 | 221485 | 8 |
+| Large Payload | BEVE | Unmarshal | 283555 | 275654 | 419 |
+| Large Payload | Sonic | Unmarshal | 435129 | 569977 | 579 |
+| Large Payload | MessagePack | Unmarshal | 685814 | 370504 | 6806 |
+| Large Payload | CBOR | Unmarshal | 895950 | 335370 | 6837 |
+| Large Payload | JSON | Unmarshal | 2575251 | 518549 | 6851 |
+| Medium Payload | BEVE ZeroCopy | Marshal | 10941 | 6 | 0 |
+| Medium Payload | BEVE | Marshal | 15791 | 16389 | 1 |
+| Medium Payload | Sonic | Marshal | 20771 | 20755 | 3 |
+| Medium Payload | CBOR | Marshal | 25664 | 19083 | 1 |
+| Medium Payload | MessagePack | Marshal | 43125 | 65773 | 22 |
+| Medium Payload | JSON | Marshal | 70663 | 27502 | 8 |
+| Medium Payload | BEVE | Unmarshal | 40159 | 31068 | 59 |
+| Medium Payload | Sonic | Unmarshal | 55616 | 56002 | 70 |
+| Medium Payload | MessagePack | Unmarshal | 93810 | 42063 | 788 |
+| Medium Payload | CBOR | Unmarshal | 120723 | 38584 | 792 |
+| Medium Payload | JSON | Unmarshal | 315639 | 57488 | 737 |
+| Small Struct | BEVE ZeroCopy | Marshal | 1194 | 0 | 0 |
+| Small Struct | BEVE | Marshal | 1418 | 1408 | 1 |
+| Small Struct | CBOR | Marshal | 1882 | 1280 | 1 |
+| Small Struct | Sonic | Marshal | 2845 | 2113 | 2 |
+| Small Struct | JSON | Marshal | 3185 | 896 | 1 |
+| Small Struct | MessagePack | Marshal | 6602 | 8200 | 9 |
+| Small Struct | CBOR | Unmarshal | 2744 | 616 | 16 |
+| Small Struct | BEVE | Unmarshal | 2898 | 3000 | 4 |
+| Small Struct | MessagePack | Unmarshal | 6642 | 3448 | 72 |
+| Small Struct | Sonic | Unmarshal | 7098 | 7398 | 10 |
+| Small Struct | JSON | Unmarshal | 11520 | 2120 | 38 |
