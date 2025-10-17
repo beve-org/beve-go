@@ -67,16 +67,16 @@ func MarshalWithOptions(v interface{}, opts MarshalOptions) ([]byte, error) {
 func appendHybridEncoding(typed, generic []byte) []byte {
 	// Modify header to indicate hybrid mode
 	result := make([]byte, 0, len(typed)+len(generic)+1)
-	
+
 	if len(typed) > 0 {
 		// Change header from 0x8E to 0xEE (hybrid flag)
 		result = append(result, 0xEE)
 		result = append(result, typed[1:]...)
 	}
-	
+
 	result = append(result, 0xFF) // Delimiter
 	result = append(result, generic...)
-	
+
 	return result
 }
 
@@ -160,11 +160,11 @@ func SupportsExtension(ext byte) bool {
 // GetCapabilities returns parser capabilities
 func GetCapabilities() map[string]bool {
 	return map[string]bool{
-		"typed_array":         true,
-		"typed_nested_array":  false, // Not yet implemented
-		"field_index":         false, // Not yet implemented
-		"timestamp":           false, // Not yet implemented
-		"uuid":                false, // Not yet implemented
+		"typed_array":        true,
+		"typed_nested_array": false, // Not yet implemented
+		"field_index":        false, // Not yet implemented
+		"timestamp":          false, // Not yet implemented
+		"uuid":               false, // Not yet implemented
 	}
 }
 

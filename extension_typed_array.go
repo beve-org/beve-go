@@ -264,7 +264,7 @@ func decodeNumberAt(data []byte, offset int) (interface{}, int, error) {
 	}
 
 	header := data[offset]
-	numType := (header >> 3) & 0x03         // Bits 3-4
+	numType := (header >> 3) & 0x03          // Bits 3-4
 	byteCount := 1 << ((header >> 5) & 0x07) // Bits 5-7
 
 	if offset+1+byteCount > len(data) {

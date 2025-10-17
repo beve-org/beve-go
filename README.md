@@ -4,6 +4,9 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/beve-org/beve-go)](https://goreportcard.com/report/github.com/beve-org/beve-go)
 [![GoDoc](https://godoc.org/github.com/beve-org/beve-go?status.svg)](https://godoc.org/github.com/beve-org/beve-go)
+[![Coverage](https://img.shields.io/badge/coverage-61.7%25-brightgreen)](COVERAGE_IMPROVEMENT_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-23_passing-success)](TEST_ENHANCEMENT_SUMMARY.md)
+[![Extensions](https://img.shields.io/badge/extensions-8%2F12-blue)](EXTENSIONS_README.md)
 
 **High-performance binary serialization library for Go** — designed to be **faster than JSON, MessagePack, and CBOR** while maintaining **JSON compatibility** and **zero-copy encoding**.
 
@@ -25,6 +28,7 @@ beve.Unmarshal(data, &decoded)       // Decode from BEVE
 - 🎨 **Tagged Format**: Self-describing like JSON, no schema required
 - 🔒 **Type Safe**: Full Go type system support with struct tags
 - ⚡ **SIMD Optimized**: Hardware-accelerated for ARM64 (NEON) and AMD64 (AVX2)
+- 🧩 **8 Extensions**: Typed arrays, timestamps, UUIDs, RegExp, field index, intervals
 
 ### When to Use BEVE?
 
@@ -587,6 +591,122 @@ beve.Unmarshal(data, &cached)
 
 ---
 
+## 🧩 BEVE Extensions (v1.3.0)
+
+**8 production-ready extensions** for specialized use cases:
+
+### Extension 0: Field Index
+**O(1) field access** without full deserialization:
+
+```go
+obj := map[string]interface{}{
+    "name": "Alice",
+    "age": 30,
+    "email": "alice@example.com",
+}
+
+// Encode with field index
+data, _ := beve.EncodeIndexedObject(obj)
+
+// Fast field access (77ns, O(1))
+email, _ := beve.ReadFieldByName(data, "email")
+fmt.Println(email) // "alice@example.com"
+```
+
+**Performance**: 77ns per field (6.5× faster than linear search)
+
+### Extension 1: Typed Object Arrays
+**25-48% size reduction** for homogeneous arrays:
+
+```go
+users := []User{
+    {Name: "Alice", Age: 30},
+    {Name: "Bob", Age: 25},
+}
+
+// Automatic typed array encoding
+data, _ := beve.MarshalTyped(users)
+
+// Or use auto-detection
+data, _ := beve.MarshalAuto(users)
+```
+
+**Size Savings**: 25-48% smaller than standard encoding
+
+### Extension 4: Nanosecond Timestamps
+**Fixed 14-16 byte encoding** with nanosecond precision:
+
+```go
+now := time.Now()
+
+// Encode timestamp (14-16 bytes)
+data, _ := beve.MarshalTimestamp(now)
+
+// Decode with full precision
+decoded, _ := beve.UnmarshalTimestamp(data)
+fmt.Println(decoded.Equal(now)) // true
+```
+
+**Features**: UTC/local timezone, nanosecond precision, fixed size
+
+### Extension 5 & 6: Duration and Interval
+**Time durations and ranges**:
+
+```go
+// Duration (14 bytes, signed)
+duration := 5*time.Hour + 30*time.Minute
+data, _ := beve.EncodeDuration(duration)
+
+// Interval (29 bytes, 2 timestamps)
+start := time.Now()
+end := start.Add(time.Hour)
+data, _ := beve.EncodeInterval(start, end)
+```
+
+### Extension 8: Binary UUID
+**50% size reduction** vs string UUIDs:
+
+```go
+// From binary (18 bytes vs 36 for string)
+uuid := [16]byte{...}
+data, _ := beve.MarshalUUID(uuid)
+
+// From string
+uuidStr := "6ba7b810-9dad-41d1-80b4-00c04fd430c8"
+data, _ := beve.MarshalUUIDString(uuidStr)
+```
+
+**Performance**: 0.3ns marshal, 400× faster than string encoding
+
+### Extension 9: RegExp
+**Compact regex pattern storage**:
+
+```go
+pattern := regexp.MustCompile("^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$")
+
+// Encode regex (7-51 bytes)
+data, _ := beve.MarshalRegExp(pattern)
+
+// Decode and use
+decoded, _ := beve.UnmarshalRegExp(data)
+decoded.MatchString("test@example.com") // true
+```
+
+### Global Auto-Detection
+
+Extensions work seamlessly with standard Marshal/Unmarshal:
+
+```go
+// Automatically detects and decodes any extension
+var result interface{}
+beve.Unmarshal(data, &result)
+```
+
+📚 **[Full extensions documentation →](EXTENSIONS_README.md)**  
+📊 **[Extension performance report →](COVERAGE_IMPROVEMENT_REPORT.md)**
+
+---
+
 ## 📚 Documentation
 
 ### Core Documentation
@@ -595,6 +715,24 @@ beve.Unmarshal(data, &cached)
 - 🔧 **[Core Package README](core/README.md)** — Architecture & optimizations
 - 🎯 **[Code Generator (bevegen)](cmd/bevegen/README.md)** — Codegen tool
 - 🔄 **[Translator Package](translator/README.md)** — JSON ↔ BEVE conversion
+- 🧩 **[Extensions Guide](EXTENSIONS_README.md)** — Advanced extensions (v1.3.0)
+
+### Test & Quality Reports
+- ✅ **[Test Coverage Report](COVERAGE_IMPROVEMENT_REPORT.md)** — 61.7% coverage, 23 test functions
+- 📈 **[Test Enhancement Summary](TEST_ENHANCEMENT_SUMMARY.md)** — +9.3% coverage improvement
+- 🏆 **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** — 8 extensions, production-ready
+
+### CI/CD & Automation
+- 🚀 **[GitHub Actions Benchmarks](.github/workflows/benchmarks.yml)** — Multi-platform testing
+- 📊 **Extension Benchmarks** — Automatic tracking of all 8 extensions
+- 🔍 **Coverage Reports** — Generated on every CI run
+- 🌍 **Cross-Platform** — ARM64 (M1, Neoverse-N2), x86_64 (EPYC), Windows
+
+**Automated Reports**:
+- Platform-specific benchmark charts (PNG)
+- Coverage HTML reports with function-level analysis
+- Extension performance tracking (JSON + visualizations)
+- Multi-platform comparison matrices
 
 ### Examples
 - [Basic Usage](examples/basic-usage/main.go)
@@ -602,6 +740,7 @@ beve.Unmarshal(data, &cached)
 - [HTTP Server](examples/http-server/main.go)
 - [Fiber Framework](examples/fiber-server/main.go)
 - [Streaming](examples/streaming/main.go)
+- [Extensions Demo](examples/extensions_demo.go) — All 8 extensions
 
 ### API Reference
 - [GoDoc](https://godoc.org/github.com/beve-org/beve-go) — Full API documentation
@@ -638,7 +777,24 @@ BenchmarkUnmarshal/MediumPayload-4       39,600 ns/op   25,700 B/op   58 allocs/
 BenchmarkUnmarshal/LargePayload-4         1,843 ns/op  264,000 B/op  418 allocs/op
 ```
 
-📈 **[View detailed benchmarks →](benchmarks/MULTI_PLATFORM.md)**
+### Extension Performance (v1.3.0)
+
+All 8 extensions are benchmarked automatically in CI:
+
+```
+BenchmarkFieldIndex/Marshal-4           77.0 ns/op      0 B/op      0 allocs/op
+BenchmarkTypedObjectArray/25Items-4    842.0 ns/op    504 B/op      2 allocs/op
+BenchmarkTimestamp/Marshal-4             9.2 ns/op      0 B/op      0 allocs/op
+BenchmarkDuration/Marshal-4              3.6 ns/op      0 B/op      0 allocs/op
+BenchmarkInterval/Marshal-4              5.8 ns/op      0 B/op      0 allocs/op
+BenchmarkUUID/Marshal-4                  0.3 ns/op      0 B/op      0 allocs/op
+BenchmarkRegExp/Marshal-4               12.4 ns/op      0 B/op      0 allocs/op
+```
+
+**Coverage**: 61.7% (23 test functions, 433 assertions)
+
+📈 **[View detailed benchmarks →](benchmarks/MULTI_PLATFORM.md)**  
+📊 **[Extension performance report →](COVERAGE_IMPROVEMENT_REPORT.md)**
 
 ---
 

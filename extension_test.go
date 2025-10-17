@@ -24,7 +24,7 @@ func TestTypedArrayEncoding(t *testing.T) {
 			},
 		},
 		{
-			name: "empty array",
+			name:  "empty array",
 			input: []User{},
 		},
 		{

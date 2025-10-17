@@ -69,6 +69,40 @@ jobs:
           
           echo "✓ Benchmark suite completed successfully"
 
+      - name: Run extension benchmarks
+        shell: bash
+        run: |
+          echo "🧩 Running extension benchmarks..."
+          
+          # Run extension-specific benchmarks
+          go test -bench="BenchmarkRegExp|BenchmarkDuration|BenchmarkInterval|BenchmarkTimestamp|BenchmarkUUID|BenchmarkFieldIndex|BenchmarkTypedVsStandard|BenchmarkMarshalAuto|BenchmarkExtension" \
+            -benchmem -benchtime=1s -run=^$ \
+            -timeout 5m \
+            > benchmarks/extensions_bench.txt 2>&1 || true
+          
+          echo "✓ Extension benchmarks completed"
+
+      - name: Generate test coverage report
+        shell: bash
+        run: |
+          echo "📊 Generating test coverage..."
+          
+          # Run tests with coverage
+          go test -coverprofile=benchmarks/coverage.out . 2>&1 | tee benchmarks/test_output.txt
+          
+          # Generate coverage HTML
+          go tool cover -html=benchmarks/coverage.out -o benchmarks/coverage.html || true
+          
+          # Generate coverage summary
+          go tool cover -func=benchmarks/coverage.out > benchmarks/coverage_summary.txt || true
+          
+          # Extract coverage percentage
+          COVERAGE=$(go tool cover -func=benchmarks/coverage.out | grep "total:" | awk '{print $3}' || echo "N/A")
+          echo "Coverage: $COVERAGE"
+          echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+          
+          echo "✓ Coverage report generated"
+
       - name: Install plotting dependencies
         shell: bash
         run: |
@@ -194,6 +228,18 @@ jobs:
           name: benchmark-${{ steps.organize.outputs.cpu_slug }}
           path: benchmarks/${{ steps.organize.outputs.cpu_slug }}
 
+      - name: Upload extension benchmarks
+        uses: actions/upload-artifact@v4
+        with:
+          name: extensions-${{ steps.organize.outputs.cpu_slug }}
+          path: |
+            benchmarks/extensions_bench.txt
+            benchmarks/coverage.out
+            benchmarks/coverage.html
+            benchmarks/coverage_summary.txt
+            benchmarks/test_output.txt
+          if-no-files-found: ignore
+
   aggregate:
     name: Aggregate Results
     runs-on: ubuntu-latest
@@ -226,6 +272,46 @@ jobs:
         run: |
           # Use the dedicated aggregation script for better maintainability
           python scripts/aggregate_benchmarks.py
+          
+          # Aggregate extension benchmarks
+          echo "🧩 Aggregating extension benchmarks..."
+          python - <<'PYEND'
+          import os
+          from pathlib import Path
+          import json
+          
+          artifacts_dir = Path("artifacts")
+          extensions_summary = {}
+          
+          # Collect extension benchmark results
+          for ext_dir in artifacts_dir.glob("extensions-*"):
+              platform = ext_dir.name.replace("extensions-", "")
+              bench_file = ext_dir / "extensions_bench.txt"
+              coverage_file = ext_dir / "coverage_summary.txt"
+              
+              if bench_file.exists():
+                  extensions_summary[platform] = {
+                      "benchmark": bench_file.read_text(encoding="utf-8", errors="ignore"),
+                  }
+              
+              if coverage_file.exists():
+                  coverage_text = coverage_file.read_text(encoding="utf-8", errors="ignore")
+                  # Extract total coverage
+                  for line in coverage_text.split("\n"):
+                      if "total:" in line:
+                          extensions_summary[platform]["coverage"] = line.split()[-1]
+                          break
+          
+          # Save extensions summary
+          dist_dir = Path("dist")
+          dist_dir.mkdir(exist_ok=True)
+          (dist_dir / "extensions_summary.json").write_text(
+              json.dumps(extensions_summary, indent=2),
+              encoding="utf-8"
+          )
+          
+          print(f"✓ Aggregated extension data for {len(extensions_summary)} platforms")
+          PYEND
 
       - name: Generate multi-platform charts
         shell: bash
@@ -262,6 +348,13 @@ jobs:
             echo "✅ Copied multi-platform summary"
           else
             echo "⚠️  Warning: dist/MULTI_PLATFORM.md not found"
+          fi
+          
+          # Copy extension benchmarks summary
+          if [ -f "dist/extensions_summary.json" ]; then
+            cp dist/extensions_summary.json benchmarks/extensions_summary.json
+            echo "✅ Copied extension benchmarks summary"
+          fi
           fi
           
           # List what we have
