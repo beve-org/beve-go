@@ -37,7 +37,7 @@ func EncodeIndexedObject(obj map[string]interface{}) ([]byte, error) {
 	// Pre-allocate space for offsets and sizes (avoid allocations)
 	offsets := make([]int, len(keys))
 	sizes := make([]int, len(keys))
-	
+
 	// Encode all values into single buffer
 	e.Buf.Reset()
 	for i, key := range keys {
@@ -47,7 +47,7 @@ func EncodeIndexedObject(obj map[string]interface{}) ([]byte, error) {
 		}
 		sizes[i] = e.Buf.Len() - offsets[i]
 	}
-	
+
 	// Get encoded values from single buffer
 	encodedValues := e.Buf.Bytes()
 	totalValueSize := len(encodedValues)

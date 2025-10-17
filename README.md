@@ -43,7 +43,7 @@ beve.Unmarshal(data, &decoded)       // Decode from BEVE
 
 ## 📊 Performance at a Glance
 
-**Apple M2 Max (ARM64) — Latest Optimization (Jan 2025)**
+**Apple M2 Max (ARM64) — Latest Optimization (Oct 2025)**
 
 | Operation | BEVE | CBOR | JSON | BEVE Advantage |
 |-----------|------|------|------|----------------|
@@ -55,12 +55,19 @@ beve.Unmarshal(data, &decoded)       // Decode from BEVE
 | **Large Unmarshal** | **146μs** | 415μs | 1,378μs | **2.8× faster than CBOR, 9.4× faster than JSON** 🥇 |
 | **Zero-Copy Mode** | **277ns, 0 allocs** | N/A | N/A | **Exclusive to BEVE!** 🚀 |
 
+**Extension Performance (Oct 2025 Optimizations):**
+- 🔥 **RegExp Marshal**: 15.7ns (cache hit), 173× faster than direct compile
+- ⚡ **Field Index Encode**: 9.3μs (5 allocs), 95% fewer allocations
+- 💾 **Field Index Decode**: 3.6μs (106 allocs), 48% allocation reduction
+- 🎯 **UUID Binary**: 0.3ns marshal, 400× faster than string encoding
+
 **Key Highlights:**
 - ⚡ **3-4× faster unmarshal** than CBOR across all payload sizes
 - 💾 **93% fewer allocations** on large payloads (416 vs 6,307 allocs)
-- � **Zero-copy mode: 0 allocations, 0 bytes** (277ns vs 889ns standard marshal)
-- � **67% allocation reduction** after pointer optimization (3 → 1 alloc)
+- 🚀 **Zero-copy mode: 0 allocations, 0 bytes** (277ns vs 889ns standard marshal)
+- 📉 **67% allocation reduction** after pointer optimization (3 → 1 alloc)
 - 🏆 **Winner in 7 out of 8 benchmarks** vs CBOR (see [OPTIMIZATION_REPORT.md](OPTIMIZATION_REPORT.md))
+- 🔥 **173× RegExp speedup** with LRU cache (see [SLOW_OPERATIONS_OPTIMIZATION.md](SLOW_OPERATIONS_OPTIMIZATION.md))
 
 📈 **[See detailed multi-platform benchmarks →](benchmarks/MULTI_PLATFORM.md)**  
 Tested on: Apple M1, Intel Xeon, ARM Neoverse-N2, Windows AMD64

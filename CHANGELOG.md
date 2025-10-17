@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance - Slow Operations Optimization (October 2025) 🔥
+- **RegExp Marshal: 173× faster** with LRU regex cache
+  - Cache hit: 2,715ns → 15.7ns (0 allocs)
+  - Cache miss: 34ns (1 alloc)
+  - Thread-safe with `sync.RWMutex`
+  - Files: `extension_regexp_cache.go` (NEW), `extension_regexp.go`
+  
+- **Field Index Encode: 95% fewer allocations**
+  - 104 allocs → 5 allocs (single-buffer encoding)
+  - 11μs → 9.3μs (15% faster)
+  - Eliminated intermediate buffer copies
+  - File: `extension_field_index.go`
+  
+- **Field Index Decode: 48% fewer allocations**
+  - 204 allocs → 106 allocs (two-pass with pre-allocated arrays)
+  - 4.4μs → 3.6μs (23% faster)
+  - Zero-copy string references
+  - File: `extension_field_index.go`
+
+### Added - Performance Documentation
+- Created comprehensive [SLOW_OPERATIONS_OPTIMIZATION.md](SLOW_OPERATIONS_OPTIMIZATION.md)
+  - Detailed before/after analysis
+  - Real-world impact scenarios
+  - Benchmark comparisons with visualizations
+  - 842 lines of technical documentation
+
+### Changed - Documentation Policy
+- **MANDATORY:** All code changes must update relevant documentation before commit
+- Updated `.github/copilot-instructions.md` with strict documentation rules
+- Documentation files must stay synchronized with code changes
+
 ### Performance - Pointer Optimization (January 2025) 🚀
 - **67% allocation reduction** on small struct marshal (3 → 1 alloc)
 - **1.14× faster marshal** (1,015ns → 889ns) by eliminating `reflect.New` heap copies

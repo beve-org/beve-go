@@ -134,7 +134,41 @@ BEVE (Binary Efficient Versatile Encoding) is a high-performance binary serializ
 - **Test Coverage**: [COVERAGE_IMPROVEMENT_REPORT.md](../COVERAGE_IMPROVEMENT_REPORT.md)
 - **Test Enhancement**: [TEST_ENHANCEMENT_SUMMARY.md](../TEST_ENHANCEMENT_SUMMARY.md)
 - **Documentation Update**: [DOCUMENTATION_UPDATE_SUMMARY.md](../DOCUMENTATION_UPDATE_SUMMARY.md)
+- **Performance Optimization**: [SLOW_OPERATIONS_OPTIMIZATION.md](../SLOW_OPERATIONS_OPTIMIZATION.md)
 - **C++ Reference**: [Glaze](https://github.com/stephenberry/glaze) (original BEVE impl)
+
+---
+
+## 🚨 CRITICAL: Documentation Update Policy
+
+**⚠️ MANDATORY RULE: Every code change MUST update relevant documentation immediately.**
+
+When making ANY change (optimization, feature, bug fix):
+
+1. **BEFORE committing code**:
+   - ✅ Update README.md if user-facing behavior changes
+   - ✅ Update relevant .md files (benchmarks, coverage, optimization reports)
+   - ✅ Update copilot-instructions.md with new metrics/files
+   - ✅ Update CHANGELOG.md with changes
+   - ✅ Add/update code comments for complex logic
+
+2. **Documentation Files That Must Stay Current**:
+   - `README.md` - Main documentation, examples, benchmarks
+   - `COVERAGE_IMPROVEMENT_REPORT.md` - After test changes
+   - `SLOW_OPERATIONS_OPTIMIZATION.md` - After performance work
+   - `benchmarks/MULTI_PLATFORM.md` - After CI/CD benchmark runs
+   - `EXTENSIONS_README.md` - After extension changes
+   - `.github/copilot-instructions.md` - After project structure changes
+
+3. **Commit Message Must Reference Docs**:
+   ```
+   ✅ Good: "⚡ perf: Optimize X (2× faster) - Updated SLOW_OPERATIONS_OPTIMIZATION.md"
+   ❌ Bad:  "⚡ perf: Optimize X (2× faster)"
+   ```
+
+4. **CI/CD Rule**: If docs are outdated, workflow should warn (future enhancement)
+
+**THIS IS NON-NEGOTIABLE. Outdated documentation is worse than no documentation.**
 
 ---
 
@@ -145,6 +179,6 @@ BEVE (Binary Efficient Versatile Encoding) is a high-performance binary serializ
 - Keep allocations minimal (use profiling tools)
 - Document edge cases and limitations
 - Test extensions thoroughly with edge cases and error paths
-- Update coverage reports and documentation after significant changes
+- **UPDATE ALL RELEVANT DOCUMENTATION BEFORE COMMITTING** 🚨
 - Run `./scripts/bench.sh` to validate performance improvements
 - Check CI/CD artifacts for multi-platform benchmark results
