@@ -349,38 +349,38 @@ func (d *BEVEDecoder) decodeSize() (int, error) {
 	}
 
 	b0 := d.data[d.pos]
-	indicator := (b0 >> 6) & 0x03 // First 2 bits
+	indicator := b0 & 0x03 // Lower 2 bits (bit-shifted format)
 
 	switch indicator {
-	case 0x00: // 1 byte: 0b00'nnnnnn
+	case 0x00: // 1 byte: bits 2-7 contain value
 		d.pos++
-		return int(b0 & 0x3F), nil
+		return int(b0 >> 2), nil
 
-	case 0x01: // 2 bytes: 0b01'nnnnnn nnnnnnnn
+	case 0x01: // 2 bytes: bits 2-7 of b0 + full b1
 		if d.pos+1 >= len(d.data) {
 			return 0, fmt.Errorf("not enough data for 2-byte size")
 		}
-		high := int(b0&0x3F) << 8
+		high := int(b0>>2) << 8
 		low := int(d.data[d.pos+1])
 		d.pos += 2
 		return high | low, nil
 
-	case 0x02: // 4 bytes: 0b10'nnnnnn ...
+	case 0x02: // 4 bytes: bits 2-7 of b0 + b1-b3
 		if d.pos+3 >= len(d.data) {
 			return 0, fmt.Errorf("not enough data for 4-byte size")
 		}
-		val := int(b0&0x3F) << 24
+		val := int(b0>>2) << 24
 		val |= int(d.data[d.pos+1]) << 16
 		val |= int(d.data[d.pos+2]) << 8
 		val |= int(d.data[d.pos+3])
 		d.pos += 4
 		return val, nil
 
-	case 0x03: // 8 bytes: 0b11'nnnnnn ...
+	case 0x03: // 8 bytes: bits 2-7 of b0 + b1-b7
 		if d.pos+7 >= len(d.data) {
 			return 0, fmt.Errorf("not enough data for 8-byte size")
 		}
-		val := uint64(b0&0x3F) << 56
+		val := uint64(b0>>2) << 56
 		for i := 1; i < 8; i++ {
 			val |= uint64(d.data[d.pos+i]) << uint(56-i*8)
 		}
