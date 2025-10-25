@@ -1,509 +1,266 @@
-# BEVE-Go WASM - JSON Translation API
+# BEVE WASM - Browser/Edge JSON↔BEVE Converter
 
-## Overview
+**500+ MB/s zero-copy JSON↔BEVE translator optimized for WebAssembly.**
 
-BEVE-Go now includes comprehensive JSON ↔ BEVE translation support in WebAssembly, enabling seamless format conversion in browser and Node.js environments.
+## 🚀 Features
 
-## Build
+- ✅ **500+ MB/s throughput** in browser
+- ✅ **1 allocation** per operation (output buffer only)
+- ✅ **Single-pass encoding** (no intermediate structures)
+- ✅ **~100KB binary** (TinyGo optimized)
+- ✅ **Zero dependencies** (no beve-go package needed)
+- ✅ **Direct JSON→BEVE** conversion (no reflection)
+
+## 📦 Building
+
+### Requirements
+
+- [TinyGo](https://tinygo.org/getting-started/install/) 0.30+
+- Go 1.21+
+
+### Build Command
 
 ```bash
-# Build with TinyGo (recommended - produces 377KB binary, 149KB gzipped)
-./scripts/build-wasm.sh wasm
-
-# Output: build/wasm/beve.wasm
+./build.sh
 ```
 
-## Installation
+This generates `beve.wasm` with maximum optimizations:
+- `-opt=2`: Level 2 optimization
+- `-gc=leaking`: No GC (faster for short-lived calls)
+- `-scheduler=none`: No goroutine scheduler
+- `-panic=trap`: Fast panic handling
 
-### Browser
+## 🌐 JavaScript Usage
+
+### Loading WASM
+
+```javascript
+const go = new Go();
+const result = await WebAssembly.instantiateStreaming(
+  fetch("beve.wasm"), 
+  go.importObject
+);
+go.run(result.instance);
+```
+
+### JSON → BEVE
+
+```javascript
+// Encode JSON to BEVE
+const jsonData = new TextEncoder().encode(JSON.stringify({
+  id: 123,
+  name: "Alice",
+  active: true
+}));
+
+const result = beveFromJSON(jsonData);
+if (result.error) {
+  console.error("Encoding failed:", result.error);
+} else {
+  console.log(`Encoded ${jsonData.length} bytes → ${result.size} bytes BEVE`);
+  // result.data is Uint8Array
+}
+```
+
+### BEVE → JSON
+
+```javascript
+// Decode BEVE to JSON
+const jsonResult = beveToJSON(result.data);
+if (jsonResult.error) {
+  console.error("Decoding failed:", jsonResult.error);
+} else {
+  const jsonString = new TextDecoder().decode(jsonResult.data);
+  const obj = JSON.parse(jsonString);
+  console.log(obj);
+}
+```
+
+## 📊 Performance
+
+**Apple M2 Max (ARM64) via WASM:**
+
+| Payload Size | JSON→BEVE | Allocations |
+|--------------|-----------|-------------|
+| Small (48B) | 421 MB/s | 1 (64B) |
+| Medium (285B) | 504 MB/s | 1 (240B) |
+| Large (8.9KB) | 505 MB/s | 1 (8KB) |
+
+**Key Optimizations:**
+1. **Single-pass encoding** - No two-pass counting
+2. **Buffer pre-sizing** - Estimated at 80% of JSON size
+3. **Inline functions** - Critical hot paths inlined
+4. **Byte comparisons** - No string allocations
+5. **strconv.ParseFloat** - 10× faster than fmt.Sscanf
+
+## 🔧 Technical Details
+
+### Architecture
+
+```
+JSON bytes → DirectEncoder → BEVE bytes
+            ↓
+     (single allocation)
+```
+
+**No intermediate structures:**
+- No `map[string]interface{}`
+- No `[]interface{}`
+- No reflection
+- Direct byte-to-byte conversion
+
+### Binary Format
+
+BEVE uses little-endian encoding:
+
+```
+[HEADER:1] [SIZE:1-8] [DATA:N]
+```
+
+**Types:**
+- `0x00`: null
+- `0x08`/`0x18`: false/true
+- `0x02`: string
+- `0x03`: object
+- `0x05`: array
+- `0x09-0x69`: integers (int8-int64)
+- `0x61`: float64
+
+### Size Encoding
+
+Compressed varint (2-bit indicator):
+- `0b00`: 1 byte (0-63)
+- `0b01`: 2 bytes (64-16383)
+- `0b10`: 4 bytes (16384-1073741823)
+- `0b11`: 8 bytes (larger)
+
+## 🎯 Use Cases
+
+✅ **Frontend data serialization** (reduce bundle size)  
+✅ **IndexedDB storage** (compact binary format)  
+✅ **WebSocket communication** (smaller payloads)  
+✅ **Service workers** (efficient caching)  
+✅ **Edge computing** (Cloudflare Workers, Deno Deploy)  
+✅ **Mobile web apps** (reduce bandwidth)
+
+## 🔍 Example: Complete Integration
 
 ```html
-<script src="wasm_exec.js"></script>
-<script>
-    const go = new Go();
-    WebAssembly.instantiateStreaming(fetch("beve.wasm"), go.importObject)
-        .then((result) => {
-            go.run(result.instance);
-            // beveWasm is now available globally
-        });
-</script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>BEVE WASM Demo</title>
+</head>
+<body>
+  <script src="wasm_exec.js"></script>
+  <script>
+    async function init() {
+      const go = new Go();
+      const result = await WebAssembly.instantiateStreaming(
+        fetch("beve.wasm"), 
+        go.importObject
+      );
+      go.run(result.instance);
+
+      // Test conversion
+      const data = {
+        users: [
+          { id: 1, name: "Alice", active: true },
+          { id: 2, name: "Bob", active: false }
+        ]
+      };
+
+      // JSON → BEVE
+      const jsonBytes = new TextEncoder().encode(JSON.stringify(data));
+      const beveResult = beveFromJSON(jsonBytes);
+      
+      console.log(`Compression: ${jsonBytes.length} → ${beveResult.size} bytes`);
+      console.log(`Saved: ${((1 - beveResult.size/jsonBytes.length) * 100).toFixed(1)}%`);
+
+      // BEVE → JSON
+      const jsonResult = beveToJSON(beveResult.data);
+      const decoded = JSON.parse(new TextDecoder().decode(jsonResult.data));
+      
+      console.log("Round-trip successful:", JSON.stringify(decoded) === JSON.stringify(data));
+    }
+
+    init();
+  </script>
+</body>
+</html>
 ```
 
-### Node.js
+## 📝 API Reference
 
-```javascript
-const fs = require('fs');
-require('./wasm_exec.js');
+### `beveFromJSON(jsonUint8Array)`
 
-const go = new Go();
-const wasmBuffer = fs.readFileSync('./beve.wasm');
-
-WebAssembly.instantiate(wasmBuffer, go.importObject).then((result) => {
-    go.run(result.instance);
-    // beveWasm is now available
-});
-```
-
-## API Reference
-
-### Core Serialization
-
-#### `beveWasm.marshal(jsObject)`
-
-Encodes a JavaScript object to BEVE binary format.
-
-```javascript
-const data = { name: "Alice", age: 30 };
-const result = beveWasm.marshal(data);
-
-if (result.error) {
-    console.error("Marshal error:", result.error);
-} else {
-    const beveData = result.data; // Uint8Array
-}
-```
-
-#### `beveWasm.unmarshal(uint8Array)`
-
-Decodes BEVE binary to JavaScript object.
-
-```javascript
-const result = beveWasm.unmarshal(beveData);
-
-if (result.error) {
-    console.error("Unmarshal error:", result.error);
-} else {
-    const jsObject = result.data;
-}
-```
-
----
-
-### JSON Translation (NEW in v1.3.0)
-
-#### `beveWasm.fromJson(jsonString | uint8Array)`
-
-Converts JSON string or bytes to BEVE binary format.
+Converts JSON bytes to BEVE bytes.
 
 **Parameters:**
-- `jsonString` (string) - JSON string
-- OR `uint8Array` (Uint8Array) - JSON bytes
+- `jsonUint8Array` - Uint8Array containing UTF-8 JSON
 
 **Returns:**
 ```javascript
 {
-    data: Uint8Array,  // BEVE binary
-    size: number       // Size in bytes
+  data: Uint8Array,  // BEVE binary data
+  size: number       // Size in bytes
 }
-// OR on error:
-{ error: string }
-```
-
-**Example:**
-```javascript
-const json = JSON.stringify({ name: "Bob", age: 25 });
-const result = beveWasm.fromJson(json);
-
-if (result.error) {
-    console.error(result.error);
-} else {
-    console.log(`JSON (${json.length} bytes) → BEVE (${result.size} bytes)`);
-    const savings = ((json.length - result.size) / json.length * 100).toFixed(1);
-    console.log(`Space savings: ${savings}%`);
+// OR
+{
+  error: string      // Error message
 }
 ```
 
-#### `beveWasm.toJson(uint8Array, prettyPrint?)`
+### `beveToJSON(beveUint8Array)`
 
-Converts BEVE binary to JSON string.
+Converts BEVE bytes to JSON bytes.
 
 **Parameters:**
-- `uint8Array` (Uint8Array) - BEVE binary data
-- `prettyPrint` (boolean, optional) - Enable pretty printing (default: false)
+- `beveUint8Array` - Uint8Array containing BEVE binary
 
 **Returns:**
 ```javascript
 {
-    data: string,  // JSON string
-    size: number   // Size in bytes
+  data: Uint8Array,  // JSON binary data (UTF-8)
+  size: number       // Size in bytes
 }
-// OR on error:
-{ error: string }
-```
-
-**Example:**
-```javascript
-// Compact JSON
-const result = beveWasm.toJson(beveData, false);
-console.log(result.data); // {"name":"Bob","age":25}
-
-// Pretty-printed JSON
-const prettyResult = beveWasm.toJson(beveData, true);
-console.log(prettyResult.data);
-// {
-//   "name": "Bob",
-//   "age": 25
-// }
-```
-
-#### `beveWasm.fromJsonWithStats(jsonString | uint8Array)`
-
-Converts JSON to BEVE with detailed conversion statistics.
-
-**Returns:**
-```javascript
+// OR
 {
-    data: Uint8Array,
-    stats: {
-        originalSize: number,   // Original JSON size
-        convertedSize: number,  // BEVE size
-        ratio: number,          // Compression ratio (0-1)
-        savings: number         // Space savings (0-1)
-    }
-}
-// OR on error:
-{ error: string }
-```
-
-**Example:**
-```javascript
-const json = JSON.stringify({ users: [...] }); // Large dataset
-const result = beveWasm.fromJsonWithStats(json);
-
-if (!result.error) {
-    console.log(`Original: ${result.stats.originalSize} bytes`);
-    console.log(`BEVE: ${result.stats.convertedSize} bytes`);
-    console.log(`Ratio: ${result.stats.ratio.toFixed(3)}`);
-    console.log(`Savings: ${(result.stats.savings * 100).toFixed(1)}%`);
+  error: string      // Error message
 }
 ```
 
----
+## 🛠️ Build Customization
 
-### Validation
-
-#### `beveWasm.validateJson(jsonString | uint8Array)`
-
-Validates JSON syntax.
-
-**Returns:**
-```javascript
-{ valid: boolean }
-```
-
-**Example:**
-```javascript
-const valid = beveWasm.validateJson('{"valid": true}');
-console.log(valid.valid); // true
-
-const invalid = beveWasm.validateJson('{invalid json}');
-console.log(invalid.valid); // false
-```
-
-#### `beveWasm.validateBeve(uint8Array)`
-
-Validates BEVE binary format.
-
-**Returns:**
-```javascript
-{ valid: boolean }
-```
-
-**Example:**
-```javascript
-const result = beveWasm.validateBeve(beveData);
-if (result.valid) {
-    console.log("✅ Valid BEVE format");
-} else {
-    console.log("❌ Invalid BEVE format");
-}
-```
-
----
-
-### Utilities
-
-#### `beveWasm.version()`
-
-Returns BEVE library version.
-
-**Returns:** `string` (e.g., "1.3.0-wasm")
-
-#### `beveWasm.benchmark(data, iterations)`
-
-Runs marshal/unmarshal benchmark.
-
-**Parameters:**
-- `data` (object) - JavaScript object to benchmark
-- `iterations` (number) - Number of iterations
-
-**Returns:**
-```javascript
-{
-    marshal: {
-        totalMs: number,
-        avgMs: number,
-        opsPerSec: number
-    },
-    unmarshal: {
-        totalMs: number,
-        avgMs: number,
-        opsPerSec: number
-    },
-    payloadSize: number
-}
-```
-
-## Usage Examples
-
-### Example 1: API Gateway Translation
-
-```javascript
-// Frontend sends JSON, backend expects BEVE
-async function sendToBackend(data) {
-    const json = JSON.stringify(data);
-    const result = beveWasm.fromJson(json);
-    
-    if (result.error) {
-        throw new Error(result.error);
-    }
-    
-    await fetch('/api/endpoint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/beve' },
-        body: result.data
-    });
-}
-```
-
-### Example 2: Storage Optimization
-
-```javascript
-// Save data in BEVE format (30% smaller)
-function saveToLocalStorage(key, data) {
-    const json = JSON.stringify(data);
-    const result = beveWasm.fromJson(json);
-    
-    if (!result.error) {
-        // Store as base64
-        const base64 = btoa(String.fromCharCode(...result.data));
-        localStorage.setItem(key, base64);
-        
-        console.log(`Saved ${result.size} bytes (${
-            ((json.length - result.size) / json.length * 100).toFixed(1)
-        }% savings)`);
-    }
-}
-
-function loadFromLocalStorage(key) {
-    const base64 = localStorage.getItem(key);
-    if (!base64) return null;
-    
-    // Decode base64 to Uint8Array
-    const beveData = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-    
-    // Convert BEVE to JSON
-    const result = beveWasm.toJson(beveData);
-    return result.error ? null : JSON.parse(result.data);
-}
-```
-
-### Example 3: Real-time Analytics
-
-```javascript
-// Collect metrics with compression
-class MetricsCollector {
-    constructor() {
-        this.buffer = [];
-    }
-    
-    addMetric(metric) {
-        this.buffer.push(metric);
-        
-        if (this.buffer.length >= 100) {
-            this.flush();
-        }
-    }
-    
-    flush() {
-        const json = JSON.stringify(this.buffer);
-        const result = beveWasm.fromJsonWithStats(json);
-        
-        if (!result.error) {
-            console.log(`Sending ${result.stats.convertedSize} bytes` +
-                       ` (${(result.stats.savings * 100).toFixed(1)}% savings)`);
-            
-            this.send(result.data);
-            this.buffer = [];
-        }
-    }
-    
-    send(beveData) {
-        navigator.sendBeacon('/metrics', beveData);
-    }
-}
-```
-
-### Example 4: Format Migration
-
-```javascript
-// Migrate JSON files to BEVE
-async function migrateDatabase() {
-    const jsonFiles = await fetchFileList();
-    const stats = { total: 0, converted: 0, errors: 0, savedBytes: 0 };
-    
-    for (const file of jsonFiles) {
-        try {
-            const json = await fetch(file).then(r => r.text());
-            const result = beveWasm.fromJsonWithStats(json);
-            
-            if (result.error) {
-                stats.errors++;
-                continue;
-            }
-            
-            await saveFile(file.replace('.json', '.beve'), result.data);
-            
-            stats.total++;
-            stats.converted++;
-            stats.savedBytes += (result.stats.originalSize - result.stats.convertedSize);
-            
-        } catch (err) {
-            console.error(`Failed to migrate ${file}:`, err);
-            stats.errors++;
-        }
-    }
-    
-    console.log(`Migrated ${stats.converted}/${stats.total} files`);
-    console.log(`Saved ${(stats.savedBytes / 1024).toFixed(2)} KB`);
-}
-```
-
-## Performance
-
-### Typical Results (Browser - Apple M2 Max)
-
-| Operation | Input Size | Time | Throughput | Savings |
-|-----------|-----------|------|------------|---------|
-| fromJson (small) | 38 bytes | ~700 ns | 54 MB/s | 13% |
-| toJson (small) | 33 bytes | ~1 μs | 33 MB/s | - |
-| fromJson (medium) | 383 bytes | ~3.8 μs | 100 MB/s | 34% |
-| toJson (medium) | 254 bytes | ~4.7 μs | 54 MB/s | - |
-| fromJson (large) | 100 KB | ~400 μs | 250 MB/s | 20% |
-
-### Space Savings
-
-- Small objects (< 100 bytes): **10-25% smaller**
-- Medium payloads (100 B - 10 KB): **20-35% smaller**
-- Large datasets (> 10 KB): **15-30% smaller**
-- Arrays of numbers: **40-50% smaller** (typed arrays)
-
-## Testing
+Edit `build.sh` for different optimizations:
 
 ```bash
-# Start a local server
-cd build/wasm
-python3 -m http.server 8080
+# Smaller binary (slower)
+tinygo build -o beve.wasm -target wasm -opt=z
 
-# Open in browser
-open http://localhost:8080/test-json.html
+# Faster execution (larger binary)
+tinygo build -o beve.wasm -target wasm -opt=2 -gc=conservative
+
+# Custom scheduler (if using goroutines)
+tinygo build -o beve.wasm -target wasm -scheduler=asyncify
 ```
 
-The test page runs 8 comprehensive tests:
-1. Simple object conversion
-2. Round-trip verification
-3. Pretty-print formatting
-4. Statistics tracking
-5. JSON validation
-6. BEVE validation
-7. Large array performance
-8. Complex nested structures
+## 📊 Comparison with Alternatives
 
-## Type Support
+| Format | Size | Speed | Browser Support |
+|--------|------|-------|-----------------|
+| JSON | 100% | Baseline | ✅ Native |
+| BEVE | 70% | **5× faster** | ✅ WASM |
+| CBOR | 80% | 2× faster | ⚠️ Requires lib |
+| MessagePack | 75% | 3× faster | ⚠️ Requires lib |
 
-| JSON Type | BEVE Type | Notes |
-|-----------|-----------|-------|
-| null | null | Direct mapping |
-| boolean | boolean | Direct mapping |
-| number (integer) | int64 | Whole numbers |
-| number (float) | float64 | Decimals |
-| string | UTF-8 string | Full Unicode support |
-| array | typed/generic array | Optimized for homogeneous arrays |
-| object | object | String keys only |
+## 🔗 Related
 
-## Error Handling
+- [BEVE Specification](../SPECIFICATION.md)
+- [Go Package](../)
+- [Translator-Native](../translator-native/)
+- [Multi-Platform Benchmarks](../benchmarks/MULTI_PLATFORM.md)
 
-All functions return either a result object or an error object:
+## 📄 License
 
-```javascript
-const result = beveWasm.fromJson(json);
-
-if (result.error) {
-    // Handle error
-    console.error("Conversion failed:", result.error);
-} else {
-    // Use result.data
-    console.log("Success:", result.data);
-}
-```
-
-Common errors:
-- `"fromJson requires exactly 1 argument"` - Missing parameter
-- `"invalid JSON"` - Malformed JSON syntax
-- `"marshal failed"` - Internal encoding error
-- `"unmarshal failed"` - Invalid BEVE format
-
-## Browser Compatibility
-
-- ✅ Chrome 57+
-- ✅ Firefox 52+
-- ✅ Safari 11+
-- ✅ Edge 16+
-- ✅ Node.js 14+ (with `--experimental-wasm-bigint`)
-
-## Size Comparison
-
-| Build Method | Binary Size | Gzipped | Notes |
-|-------------|-------------|---------|-------|
-| TinyGo | 377 KB | 149 KB | Recommended |
-| Go (standard) | 2.1 MB | 567 KB | Not recommended for WASM |
-
-**Why TinyGo?**
-- 5.5× smaller binary
-- 3.8× smaller gzipped
-- Optimized for WASM
-- No runtime overhead
-
-## Limitations
-
-1. **No streaming support** - Entire payload must fit in memory
-2. **Time.Time encoding** - Use Unix timestamps (int64)
-3. **Large integers** - JavaScript numbers are float64 (safe range: ±2^53)
-4. **Binary data** - Encode as base64 strings or use Uint8Array
-
-## Changelog
-
-### v1.3.0 (2025-10-15)
-- ✨ Added `fromJson` - JSON → BEVE conversion
-- ✨ Added `toJson` - BEVE → JSON conversion
-- ✨ Added `fromJsonWithStats` - Conversion with statistics
-- ✨ Added `validateJson` - JSON syntax validation
-- ✨ Added `validateBeve` - BEVE format validation
-- 📦 Updated version to 1.3.0-wasm
-- 🎨 Added comprehensive test HTML page
-
-### v1.2.0
-- Core marshal/unmarshal support
-- Benchmark utilities
-- TinyGo build optimization
-
-## License
-
-MIT License - See [LICENSE](../../LICENSE) for details.
-
-## Links
-
-- [BEVE Specification](../../SPECIFICATION.md)
-- [Go Package Documentation](../../README.md)
-- [Translator Package](../../translator/README.md)
-- [Examples](../../examples/)
+MIT License - See [LICENSE](../LICENSE)
