@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### WASM Integration - npm Package Published (October 26, 2025) 🎉
+- **Published `beve-wasm@1.0.1`**: WebAssembly bindings for Node.js/browsers
+  - Go WASM (285 KB): TinyGo-compiled, ~50K ops/sec
+  - Rust WASM (94 KB): Official v0.3.0, ~140K ops/sec
+  - Auto-detection: Rust-first with Go fallback
+  - Full cross-compatibility validated (Rust ↔ Go)
+
+- **BEVE Specification Compliance Fixes**:
+  - Fixed `writeCompressedSize()` in `extension_utils.go` (4-byte case was missing b3)
+  - Fixed `readCompressedSize()` in `extension_utils.go` (removed incorrect binary.LittleEndian usage)
+  - Fixed `writeSize()` in `translator-native/direct_encoder.go` (4-byte and 8-byte cases)
+  - Fixed `decodeSize()` in `translator-native/beve_decoder.go` (8-byte case loop → explicit)
+  - All size encoding/decoding now matches BEVE v1.0 spec exactly
+
+- **Cross-Compatibility Testing**:
+  - Added `deepEqual()` helper for JSON key order independence
+  - Test suite: 4 test groups, 10 edge cases, all passing ✅
+  - Validated round-trip: Rust → Go → Rust → Go preserves data
+  - Binary formats differ (signed vs unsigned int) but mutually decodable
+
+- **npm Packages**:
+  - `beve-wasm@1.0.1` - Standalone WASM bindings
+  - `beve@1.1.0` - JavaScript/TypeScript package with optional WASM integration
+  - Package size: 170.4 KB compressed, 429.7 KB unpacked
+  - TypeScript definitions included for all exports
+
 ### Documentation - Comprehensive Modernization (October 2025) 📚
 - **Complete Documentation Overhaul**: 37 documents, ~24,570 lines, 500+ examples
   - **Phase 1-5** (Foundation): Getting Started, User Guides, Architecture, Performance
