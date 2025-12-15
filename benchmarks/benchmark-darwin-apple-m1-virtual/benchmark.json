@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-12-08T03:54:14Z",
+  "timestamp": "2025-12-15T04:02:40Z",
   "environment": {
     "cpu": "Apple M1 (Virtual)",
     "os": "Darwin",
@@ -11,15 +11,15 @@
       "scenario": "Small Struct",
       "codec": "BEVE",
       "operation": "Marshal",
-      "ns_per_op": 1832.0,
-      "bytes_per_op": 2305,
+      "ns_per_op": 830.0,
+      "bytes_per_op": 2304,
       "allocs_per_op": 1
     },
     {
       "scenario": "Small Struct",
       "codec": "BEVE ZeroCopy",
       "operation": "Marshal",
-      "ns_per_op": 1055.0,
+      "ns_per_op": 272.6,
       "bytes_per_op": 0,
       "allocs_per_op": 0
     },
@@ -27,248 +27,248 @@
       "scenario": "Small Struct",
       "codec": "JSON",
       "operation": "Marshal",
-      "ns_per_op": 1755.0,
-      "bytes_per_op": 576,
+      "ns_per_op": 1029.0,
+      "bytes_per_op": 704,
       "allocs_per_op": 1
     },
     {
       "scenario": "Small Struct",
       "codec": "Sonic",
       "operation": "Marshal",
-      "ns_per_op": 2191.0,
-      "bytes_per_op": 656,
+      "ns_per_op": 3633.0,
+      "bytes_per_op": 2071,
       "allocs_per_op": 2
     },
     {
       "scenario": "Small Struct",
       "codec": "MessagePack",
       "operation": "Marshal",
-      "ns_per_op": 3359.0,
-      "bytes_per_op": 4104,
-      "allocs_per_op": 8
+      "ns_per_op": 967.9,
+      "bytes_per_op": 2056,
+      "allocs_per_op": 7
     },
     {
       "scenario": "Small Struct",
       "codec": "CBOR",
       "operation": "Marshal",
-      "ns_per_op": 1286.0,
-      "bytes_per_op": 768,
+      "ns_per_op": 443.5,
+      "bytes_per_op": 448,
       "allocs_per_op": 1
     },
     {
       "scenario": "Small Struct",
       "codec": "BEVE",
       "operation": "Unmarshal",
-      "ns_per_op": 3756.0,
-      "bytes_per_op": 2360,
+      "ns_per_op": 570.8,
+      "bytes_per_op": 696,
       "allocs_per_op": 4
     },
     {
       "scenario": "Small Struct",
       "codec": "JSON",
       "operation": "Unmarshal",
-      "ns_per_op": 21256.0,
-      "bytes_per_op": 4072,
-      "allocs_per_op": 64
+      "ns_per_op": 17580.0,
+      "bytes_per_op": 4840,
+      "allocs_per_op": 88
     },
     {
       "scenario": "Small Struct",
       "codec": "Sonic",
       "operation": "Unmarshal",
-      "ns_per_op": 4902.0,
-      "bytes_per_op": 4559,
+      "ns_per_op": 3046.0,
+      "bytes_per_op": 5304,
       "allocs_per_op": 6
     },
     {
       "scenario": "Small Struct",
       "codec": "MessagePack",
       "operation": "Unmarshal",
-      "ns_per_op": 8421.0,
-      "bytes_per_op": 3840,
-      "allocs_per_op": 80
+      "ns_per_op": 3886.0,
+      "bytes_per_op": 1928,
+      "allocs_per_op": 42
     },
     {
       "scenario": "Small Struct",
       "codec": "CBOR",
       "operation": "Unmarshal",
-      "ns_per_op": 4496.0,
-      "bytes_per_op": 1480,
-      "allocs_per_op": 34
+      "ns_per_op": 3317.0,
+      "bytes_per_op": 2504,
+      "allocs_per_op": 55
     },
     {
       "scenario": "Medium Payload",
       "codec": "BEVE",
       "operation": "Marshal",
-      "ns_per_op": 17135.0,
-      "bytes_per_op": 21768,
+      "ns_per_op": 8811.0,
+      "bytes_per_op": 20483,
       "allocs_per_op": 1
     },
     {
       "scenario": "Medium Payload",
       "codec": "BEVE ZeroCopy",
       "operation": "Marshal",
-      "ns_per_op": 8049.0,
-      "bytes_per_op": 3,
+      "ns_per_op": 6131.0,
+      "bytes_per_op": 1,
       "allocs_per_op": 0
     },
     {
       "scenario": "Medium Payload",
       "codec": "JSON",
       "operation": "Marshal",
-      "ns_per_op": 47048.0,
-      "bytes_per_op": 20710,
+      "ns_per_op": 32152.0,
+      "bytes_per_op": 21994,
       "allocs_per_op": 8
     },
     {
       "scenario": "Medium Payload",
       "codec": "Sonic",
       "operation": "Marshal",
-      "ns_per_op": 62385.0,
-      "bytes_per_op": 24882,
+      "ns_per_op": 37210.0,
+      "bytes_per_op": 20671,
       "allocs_per_op": 3
     },
     {
       "scenario": "Medium Payload",
       "codec": "MessagePack",
       "operation": "Marshal",
-      "ns_per_op": 33905.0,
-      "bytes_per_op": 65778,
+      "ns_per_op": 26159.0,
+      "bytes_per_op": 65779,
       "allocs_per_op": 22
     },
     {
       "scenario": "Medium Payload",
       "codec": "BEVE",
       "operation": "Unmarshal",
-      "ns_per_op": 34401.0,
-      "bytes_per_op": 36318,
+      "ns_per_op": 16713.0,
+      "bytes_per_op": 28765,
       "allocs_per_op": 59
     },
     {
       "scenario": "Medium Payload",
       "codec": "JSON",
       "operation": "Unmarshal",
-      "ns_per_op": 239372.0,
-      "bytes_per_op": 53304,
-      "allocs_per_op": 711
+      "ns_per_op": 192865.0,
+      "bytes_per_op": 62664,
+      "allocs_per_op": 814
     },
     {
       "scenario": "Medium Payload",
       "codec": "Sonic",
       "operation": "Unmarshal",
-      "ns_per_op": 49832.0,
-      "bytes_per_op": 41605,
+      "ns_per_op": 36784.0,
+      "bytes_per_op": 41579,
       "allocs_per_op": 33
     },
     {
       "scenario": "Medium Payload",
       "codec": "CBOR",
       "operation": "Unmarshal",
-      "ns_per_op": 95742.0,
-      "bytes_per_op": 34872,
-      "allocs_per_op": 718
+      "ns_per_op": 63823.0,
+      "bytes_per_op": 39680,
+      "allocs_per_op": 814
     },
     {
       "scenario": "Medium Payload",
       "codec": "MessagePack",
       "operation": "Unmarshal",
-      "ns_per_op": 70393.0,
-      "bytes_per_op": 43022,
-      "allocs_per_op": 803
+      "ns_per_op": 39129.0,
+      "bytes_per_op": 33821,
+      "allocs_per_op": 622
     },
     {
       "scenario": "Medium Payload",
       "codec": "CBOR",
       "operation": "Marshal",
-      "ns_per_op": 23408.0,
-      "bytes_per_op": 19088,
+      "ns_per_op": 24033.0,
+      "bytes_per_op": 24592,
       "allocs_per_op": 1
     },
     {
       "scenario": "Large Payload",
       "codec": "BEVE",
       "operation": "Marshal",
-      "ns_per_op": 134444.0,
-      "bytes_per_op": 188483,
+      "ns_per_op": 104579.0,
+      "bytes_per_op": 188496,
       "allocs_per_op": 1
     },
     {
       "scenario": "Large Payload",
       "codec": "BEVE ZeroCopy",
       "operation": "Marshal",
-      "ns_per_op": 93479.0,
-      "bytes_per_op": 26,
+      "ns_per_op": 58161.0,
+      "bytes_per_op": 39,
       "allocs_per_op": 0
     },
     {
       "scenario": "Large Payload",
       "codec": "JSON",
       "operation": "Marshal",
-      "ns_per_op": 483725.0,
-      "bytes_per_op": 213305,
+      "ns_per_op": 370185.0,
+      "bytes_per_op": 213306,
       "allocs_per_op": 8
     },
     {
       "scenario": "Large Payload",
       "codec": "Sonic",
       "operation": "Marshal",
-      "ns_per_op": 577802.0,
-      "bytes_per_op": 206354,
+      "ns_per_op": 534028.0,
+      "bytes_per_op": 222382,
       "allocs_per_op": 3
     },
     {
       "scenario": "Large Payload",
       "codec": "MessagePack",
       "operation": "Marshal",
-      "ns_per_op": 336034.0,
-      "bytes_per_op": 526753,
+      "ns_per_op": 249507.0,
+      "bytes_per_op": 526751,
       "allocs_per_op": 115
     },
     {
       "scenario": "Large Payload",
       "codec": "BEVE",
       "operation": "Unmarshal",
-      "ns_per_op": 271825.0,
-      "bytes_per_op": 286420,
-      "allocs_per_op": 419
+      "ns_per_op": 176818.0,
+      "bytes_per_op": 280051,
+      "allocs_per_op": 418
     },
     {
       "scenario": "Large Payload",
       "codec": "JSON",
       "operation": "Unmarshal",
-      "ns_per_op": 2548131.0,
-      "bytes_per_op": 541618,
-      "allocs_per_op": 7199
+      "ns_per_op": 1790340.0,
+      "bytes_per_op": 493937,
+      "allocs_per_op": 6470
     },
     {
       "scenario": "Large Payload",
       "codec": "Sonic",
       "operation": "Unmarshal",
-      "ns_per_op": 415329.0,
-      "bytes_per_op": 381922,
-      "allocs_per_op": 213
+      "ns_per_op": 312026.0,
+      "bytes_per_op": 337034,
+      "allocs_per_op": 209
     },
     {
       "scenario": "Large Payload",
       "codec": "CBOR",
       "operation": "Unmarshal",
-      "ns_per_op": 737173.0,
-      "bytes_per_op": 324106,
-      "allocs_per_op": 6616
+      "ns_per_op": 595654.0,
+      "bytes_per_op": 303098,
+      "allocs_per_op": 6176
     },
     {
       "scenario": "Large Payload",
       "codec": "MessagePack",
       "operation": "Unmarshal",
-      "ns_per_op": 407729.0,
-      "bytes_per_op": 343205,
-      "allocs_per_op": 6233
+      "ns_per_op": 484216.0,
+      "bytes_per_op": 345810,
+      "allocs_per_op": 6283
     },
     {
       "scenario": "Large Payload",
       "codec": "CBOR",
       "operation": "Marshal",
-      "ns_per_op": 152693.0,
-      "bytes_per_op": 196761,
+      "ns_per_op": 156987.0,
+      "bytes_per_op": 196743,
       "allocs_per_op": 1
     }
   ]
