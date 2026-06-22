@@ -1,6 +1,6 @@
 # 🚀 BEVE-Go Multi-Platform Benchmark Results
 
-**Generated:** 2026-06-15 08:53:12 UTC
+**Generated:** 2026-06-22 08:53:27 UTC
 
 This report consolidates benchmark results from multiple platforms tested in CI/CD.
 
@@ -34,34 +34,34 @@ This report consolidates benchmark results from multiple platforms tested in CI/
 
 | Platform | BEVE | BEVE ZeroCopy | JSON | CBOR | MessagePack |
 |----------|------|---------------|------|------|-------------|
-| Apple M1 (Virtual) | 1.75μs | 186ns | 1.61μs | 2.72μs | 3.87μs |
-| AMD EPYC 7763 64-Core Processor | 2.06μs | 865ns | 3.89μs | 3.54μs | 6.55μs |
-| Neoverse-N2 | 613ns | 536ns | 2.12μs | 2.53μs | 2.38μs |
-| Unknown CPU | 1.10μs | 565ns | 5.35μs | 1.37μs | 4.72μs |
+| Apple M1 (Virtual) | 950ns | 243ns | 3.39μs | 402ns | 2.61μs |
+| AMD EPYC 7763 64-Core Processor | 996ns | 404ns | 3.40μs | 541ns | 1.20μs |
+| Neoverse-N2 | 1.03μs | 704ns | 4.37μs | 625ns | 2.57μs |
+| Unknown CPU | 2.12μs | 452ns | 4.27μs | 1.58μs | 3.70μs |
 
 ### Unmarshal Performance (Small Struct)
 
 | Platform | BEVE | JSON | CBOR | MessagePack |
 |----------|------|------|------|-------------|
-| Apple M1 (Virtual) | 1.04μs | 28.57μs | 9.17μs | 2.33μs |
-| AMD EPYC 7763 64-Core Processor | 1.54μs | 30.60μs | 2.76μs | 1.87μs |
-| Neoverse-N2 | 1.30μs | 15.18μs | 1.44μs | 5.39μs |
-| Unknown CPU | 2.25μs | 6.16μs | 10.19μs | 3.68μs |
+| Apple M1 (Virtual) | 853ns | 15.94μs | 2.94μs | 2.19μs |
+| AMD EPYC 7763 64-Core Processor | 916ns | 16.30μs | 9.78μs | 5.76μs |
+| Neoverse-N2 | 898ns | 8.46μs | 5.94μs | 2.99μs |
+| Unknown CPU | 2.74μs | 14.26μs | 7.62μs | 6.56μs |
 
 ## 🏆 Performance Champions
 
 | Platform | Fastest Marshal | Fastest Unmarshal | Memory Efficient |
 |----------|----------------|-------------------|------------------|
-| Apple M1 (Virtual) | 🥇 BEVE ZeroCopy (186ns) | 🥇 BEVE (1.04μs) | 💾 BEVE (1 allocs) |
-| AMD EPYC 7763 64-Core Processor | 🥇 BEVE ZeroCopy (865ns) | 🥇 BEVE (1.54μs) | 💾 BEVE (1 allocs) |
-| Neoverse-N2 | 🥇 BEVE ZeroCopy (536ns) | 🥇 BEVE (1.30μs) | 💾 BEVE (1 allocs) |
-| Unknown CPU | 🥇 BEVE ZeroCopy (565ns) | 🥇 BEVE (2.25μs) | 💾 BEVE (1 allocs) |
+| Apple M1 (Virtual) | 🥇 BEVE ZeroCopy (243ns) | 🥇 BEVE (853ns) | 💾 BEVE (1 allocs) |
+| AMD EPYC 7763 64-Core Processor | 🥇 BEVE ZeroCopy (404ns) | 🥇 BEVE (916ns) | 💾 BEVE (1 allocs) |
+| Neoverse-N2 | 🥈 CBOR (625ns) | 🥇 BEVE (898ns) | 💾 BEVE (1 allocs) |
+| Unknown CPU | 🥇 BEVE ZeroCopy (452ns) | 🥇 BEVE (2.74μs) | 💾 BEVE (1 allocs) |
 
 ## 📈 Summary Statistics
 
 **Total Platforms Tested:** 4
 
-**Average BEVE vs JSON Improvement:** 47.2% faster
+**Average BEVE vs JSON Improvement:** 67.4% faster
 
 ### Platform Details
 
@@ -93,39 +93,39 @@ _Performance visualization: lower is better._
 
 | Scenario | Codec | Operation | Time | Memory | Allocations |
 |----------|-------|-----------|------|--------|-------------|
-| Small Struct | 🥇 BEVE ZeroCopy | Marshal | 186ns | 0 | 0 |
-| Small Struct | 🥉 Sonic | Marshal | 952ns | 215 | 2 |
-| Small Struct | 🥉 JSON | Marshal | 1.61μs | 1.0K | 1 |
-| Small Struct | 🥇 BEVE | Marshal | 1.75μs | 2.3K | 1 |
-| Small Struct | 🥈 CBOR | Marshal | 2.72μs | 2.7K | 1 |
-| Small Struct | 🥈 MessagePack | Marshal | 3.87μs | 8.2K | 9 |
-| Small Struct | 🥇 BEVE | Unmarshal | 1.04μs | 1.2K | 4 |
-| Small Struct | 🥉 Sonic | Unmarshal | 2.28μs | 2.6K | 6 |
-| Small Struct | 🥈 MessagePack | Unmarshal | 2.33μs | 1.2K | 28 |
-| Small Struct | 🥈 CBOR | Unmarshal | 9.17μs | 4.3K | 90 |
-| Small Struct | 🥉 JSON | Unmarshal | 28.57μs | 7.3K | 94 |
-| Medium Payload | 🥇 BEVE ZeroCopy | Marshal | 8.71μs | 0 | 0 |
-| Medium Payload | 🥇 BEVE | Marshal | 16.70μs | 19.1K | 1 |
-| Medium Payload | 🥈 CBOR | Marshal | 29.49μs | 21.8K | 1 |
-| Medium Payload | 🥈 MessagePack | Marshal | 37.52μs | 65.8K | 22 |
-| Medium Payload | 🥉 JSON | Marshal | 46.24μs | 22.0K | 8 |
-| Medium Payload | 🥉 Sonic | Marshal | 58.03μs | 25.0K | 3 |
-| Medium Payload | 🥇 BEVE | Unmarshal | 28.65μs | 25.7K | 59 |
-| Medium Payload | 🥉 Sonic | Unmarshal | 47.03μs | 43.5K | 33 |
-| Medium Payload | 🥈 MessagePack | Unmarshal | 62.97μs | 29.8K | 542 |
-| Medium Payload | 🥈 CBOR | Unmarshal | 92.43μs | 35.3K | 726 |
-| Medium Payload | 🥉 JSON | Unmarshal | 291.37μs | 73.0K | 933 |
-| Large Payload | 🥇 BEVE ZeroCopy | Marshal | 77.59μs | 39 | 0 |
-| Large Payload | 🥇 BEVE | Marshal | 144.31μs | 196.7K | 1 |
-| Large Payload | 🥈 CBOR | Marshal | 262.54μs | 204.9K | 1 |
-| Large Payload | 🥈 MessagePack | Marshal | 431.27μs | 526.8K | 115 |
-| Large Payload | 🥉 JSON | Marshal | 523.18μs | 205.2K | 8 |
-| Large Payload | 🥉 Sonic | Marshal | 634.28μs | 214.3K | 3 |
-| Large Payload | 🥇 BEVE | Unmarshal | 304.87μs | 278.3K | 419 |
-| Large Payload | 🥉 Sonic | Unmarshal | 405.68μs | 327.6K | 207 |
-| Large Payload | 🥈 MessagePack | Unmarshal | 660.02μs | 354.4K | 6.5K |
-| Large Payload | 🥈 CBOR | Unmarshal | 752.46μs | 312.9K | 6.4K |
-| Large Payload | 🥉 JSON | Unmarshal | 2.54ms | 554.2K | 7.3K |
+| Small Struct | 🥇 BEVE ZeroCopy | Marshal | 243ns | 0 | 0 |
+| Small Struct | 🥈 CBOR | Marshal | 402ns | 384 | 1 |
+| Small Struct | 🥇 BEVE | Marshal | 950ns | 2.7K | 1 |
+| Small Struct | 🥉 Sonic | Marshal | 2.56μs | 1.2K | 2 |
+| Small Struct | 🥈 MessagePack | Marshal | 2.61μs | 8.2K | 9 |
+| Small Struct | 🥉 JSON | Marshal | 3.39μs | 2.7K | 1 |
+| Small Struct | 🥇 BEVE | Unmarshal | 853ns | 1.3K | 4 |
+| Small Struct | 🥈 MessagePack | Unmarshal | 2.19μs | 2.3K | 49 |
+| Small Struct | 🥉 Sonic | Unmarshal | 2.28μs | 3.2K | 6 |
+| Small Struct | 🥈 CBOR | Unmarshal | 2.94μs | 2.2K | 48 |
+| Small Struct | 🥉 JSON | Unmarshal | 15.94μs | 4.3K | 70 |
+| Medium Payload | 🥇 BEVE ZeroCopy | Marshal | 6.78μs | 0 | 0 |
+| Medium Payload | 🥇 BEVE | Marshal | 7.74μs | 18.4K | 1 |
+| Medium Payload | 🥈 CBOR | Marshal | 13.95μs | 19.1K | 1 |
+| Medium Payload | 🥈 MessagePack | Marshal | 23.95μs | 65.8K | 22 |
+| Medium Payload | 🥉 JSON | Marshal | 35.58μs | 24.8K | 8 |
+| Medium Payload | 🥉 Sonic | Marshal | 40.55μs | 20.7K | 3 |
+| Medium Payload | 🥇 BEVE | Unmarshal | 26.42μs | 28.8K | 59 |
+| Medium Payload | 🥉 Sonic | Unmarshal | 28.48μs | 32.1K | 33 |
+| Medium Payload | 🥈 MessagePack | Unmarshal | 41.57μs | 38.0K | 709 |
+| Medium Payload | 🥈 CBOR | Unmarshal | 63.75μs | 32.0K | 656 |
+| Medium Payload | 🥉 JSON | Unmarshal | 172.97μs | 51.5K | 714 |
+| Large Payload | 🥇 BEVE ZeroCopy | Marshal | 58.26μs | 26 | 0 |
+| Large Payload | 🥇 BEVE | Marshal | 81.07μs | 196.7K | 1 |
+| Large Payload | 🥈 CBOR | Marshal | 162.31μs | 196.8K | 1 |
+| Large Payload | 🥈 MessagePack | Marshal | 180.90μs | 526.8K | 115 |
+| Large Payload | 🥉 JSON | Marshal | 341.08μs | 221.5K | 8 |
+| Large Payload | 🥉 Sonic | Marshal | 471.74μs | 213.7K | 3 |
+| Large Payload | 🥇 BEVE | Unmarshal | 185.89μs | 259.2K | 418 |
+| Large Payload | 🥉 Sonic | Unmarshal | 333.54μs | 363.0K | 213 |
+| Large Payload | 🥈 MessagePack | Unmarshal | 402.67μs | 352.6K | 6.4K |
+| Large Payload | 🥈 CBOR | Unmarshal | 461.03μs | 290.7K | 5.9K |
+| Large Payload | 🥉 JSON | Unmarshal | 2.45ms | 554.2K | 7.2K |
 
 [📄 View full report](benchmark-darwin-apple-m1-virtual/benchmark.md)
 
@@ -137,39 +137,39 @@ _Performance visualization: lower is better._
 
 | Scenario | Codec | Operation | Time | Memory | Allocations |
 |----------|-------|-----------|------|--------|-------------|
-| Small Struct | 🥇 BEVE ZeroCopy | Marshal | 865ns | 0 | 0 |
-| Small Struct | 🥉 Sonic | Marshal | 1.64μs | 1.6K | 2 |
-| Small Struct | 🥇 BEVE | Marshal | 2.06μs | 2.7K | 1 |
-| Small Struct | 🥈 CBOR | Marshal | 3.54μs | 3.1K | 1 |
-| Small Struct | 🥉 JSON | Marshal | 3.89μs | 1.5K | 1 |
-| Small Struct | 🥈 MessagePack | Marshal | 6.55μs | 8.2K | 9 |
-| Small Struct | 🥇 BEVE | Unmarshal | 1.54μs | 1.5K | 4 |
-| Small Struct | 🥉 Sonic | Unmarshal | 1.78μs | 2.3K | 8 |
-| Small Struct | 🥈 MessagePack | Unmarshal | 1.87μs | 880 | 21 |
-| Small Struct | 🥈 CBOR | Unmarshal | 2.76μs | 1.2K | 28 |
-| Small Struct | 🥉 JSON | Unmarshal | 30.60μs | 7.9K | 113 |
-| Medium Payload | 🥇 BEVE ZeroCopy | Marshal | 8.88μs | 5 | 0 |
-| Medium Payload | 🥇 BEVE | Marshal | 9.80μs | 14.3K | 1 |
-| Medium Payload | 🥈 CBOR | Marshal | 20.55μs | 18.5K | 1 |
-| Medium Payload | 🥉 Sonic | Marshal | 20.77μs | 28.1K | 3 |
-| Medium Payload | 🥉 JSON | Marshal | 40.04μs | 19.3K | 8 |
-| Medium Payload | 🥈 MessagePack | Marshal | 41.11μs | 65.8K | 22 |
-| Medium Payload | 🥇 BEVE | Unmarshal | 28.62μs | 26.5K | 59 |
-| Medium Payload | 🥉 Sonic | Unmarshal | 40.36μs | 58.1K | 76 |
-| Medium Payload | 🥈 MessagePack | Unmarshal | 45.68μs | 26.9K | 482 |
-| Medium Payload | 🥈 CBOR | Unmarshal | 67.44μs | 27.6K | 570 |
-| Medium Payload | 🥉 JSON | Unmarshal | 252.48μs | 59.9K | 763 |
-| Large Payload | 🥇 BEVE ZeroCopy | Marshal | 79.60μs | 26 | 0 |
-| Large Payload | 🥇 BEVE | Marshal | 123.52μs | 204.9K | 1 |
-| Large Payload | 🥉 Sonic | Marshal | 163.44μs | 223.9K | 3 |
-| Large Payload | 🥈 CBOR | Marshal | 219.35μs | 205.0K | 1 |
-| Large Payload | 🥈 MessagePack | Marshal | 343.52μs | 526.8K | 115 |
-| Large Payload | 🥉 JSON | Marshal | 421.07μs | 196.9K | 8 |
-| Large Payload | 🥇 BEVE | Unmarshal | 248.10μs | 280.0K | 419 |
-| Large Payload | 🥉 Sonic | Unmarshal | 346.85μs | 500.1K | 564 |
-| Large Payload | 🥈 MessagePack | Unmarshal | 601.88μs | 372.4K | 6.8K |
-| Large Payload | 🥈 CBOR | Unmarshal | 742.72μs | 333.8K | 6.8K |
-| Large Payload | 🥉 JSON | Unmarshal | 2.52ms | 545.2K | 7.2K |
+| Small Struct | 🥇 BEVE ZeroCopy | Marshal | 404ns | 0 | 0 |
+| Small Struct | 🥈 CBOR | Marshal | 541ns | 352 | 1 |
+| Small Struct | 🥇 BEVE | Marshal | 996ns | 1.0K | 1 |
+| Small Struct | 🥈 MessagePack | Marshal | 1.20μs | 1.0K | 6 |
+| Small Struct | 🥉 Sonic | Marshal | 1.70μs | 2.4K | 2 |
+| Small Struct | 🥉 JSON | Marshal | 3.40μs | 1.5K | 1 |
+| Small Struct | 🥇 BEVE | Unmarshal | 916ns | 952 | 4 |
+| Small Struct | 🥉 Sonic | Unmarshal | 1.58μs | 2.0K | 8 |
+| Small Struct | 🥈 MessagePack | Unmarshal | 5.76μs | 3.9K | 82 |
+| Small Struct | 🥈 CBOR | Unmarshal | 9.78μs | 4.3K | 91 |
+| Small Struct | 🥉 JSON | Unmarshal | 16.30μs | 4.0K | 63 |
+| Medium Payload | 🥇 BEVE ZeroCopy | Marshal | 10.37μs | 3 | 0 |
+| Medium Payload | 🥇 BEVE | Marshal | 14.70μs | 21.8K | 1 |
+| Medium Payload | 🥉 Sonic | Marshal | 16.70μs | 22.2K | 3 |
+| Medium Payload | 🥈 CBOR | Marshal | 23.62μs | 21.8K | 1 |
+| Medium Payload | 🥈 MessagePack | Marshal | 38.20μs | 65.8K | 22 |
+| Medium Payload | 🥉 JSON | Marshal | 50.32μs | 24.8K | 8 |
+| Medium Payload | 🥇 BEVE | Unmarshal | 22.75μs | 23.1K | 59 |
+| Medium Payload | 🥉 Sonic | Unmarshal | 43.30μs | 63.9K | 72 |
+| Medium Payload | 🥈 MessagePack | Unmarshal | 61.64μs | 39.2K | 730 |
+| Medium Payload | 🥈 CBOR | Unmarshal | 72.93μs | 33.5K | 688 |
+| Medium Payload | 🥉 JSON | Unmarshal | 207.68μs | 44.5K | 588 |
+| Large Payload | 🥇 BEVE ZeroCopy | Marshal | 79.24μs | 26 | 0 |
+| Large Payload | 🥇 BEVE | Marshal | 128.98μs | 204.9K | 1 |
+| Large Payload | 🥉 Sonic | Marshal | 162.96μs | 215.7K | 3 |
+| Large Payload | 🥈 CBOR | Marshal | 215.15μs | 188.6K | 1 |
+| Large Payload | 🥈 MessagePack | Marshal | 348.11μs | 526.8K | 115 |
+| Large Payload | 🥉 JSON | Marshal | 423.79μs | 196.9K | 8 |
+| Large Payload | 🥇 BEVE | Unmarshal | 257.42μs | 269.7K | 418 |
+| Large Payload | 🥉 Sonic | Unmarshal | 410.65μs | 580.1K | 602 |
+| Large Payload | 🥈 MessagePack | Unmarshal | 583.53μs | 356.1K | 6.5K |
+| Large Payload | 🥈 CBOR | Unmarshal | 683.21μs | 290.3K | 5.9K |
+| Large Payload | 🥉 JSON | Unmarshal | 2.49ms | 541.4K | 7.1K |
 
 [📄 View full report](benchmark-linux-amd-epyc-7763-64-core-processor/benchmark.md)
 
@@ -181,39 +181,39 @@ _Performance visualization: lower is better._
 
 | Scenario | Codec | Operation | Time | Memory | Allocations |
 |----------|-------|-----------|------|--------|-------------|
-| Small Struct | 🥇 BEVE ZeroCopy | Marshal | 536ns | 0 | 0 |
-| Small Struct | 🥇 BEVE | Marshal | 613ns | 896 | 1 |
-| Small Struct | 🥉 Sonic | Marshal | 925ns | 517 | 2 |
-| Small Struct | 🥉 JSON | Marshal | 2.12μs | 1.2K | 1 |
-| Small Struct | 🥈 MessagePack | Marshal | 2.38μs | 4.1K | 8 |
-| Small Struct | 🥈 CBOR | Marshal | 2.53μs | 3.1K | 1 |
-| Small Struct | 🥇 BEVE | Unmarshal | 1.30μs | 2.1K | 4 |
-| Small Struct | 🥉 Sonic | Unmarshal | 1.36μs | 1.2K | 6 |
-| Small Struct | 🥈 CBOR | Unmarshal | 1.44μs | 424 | 12 |
-| Small Struct | 🥈 MessagePack | Unmarshal | 5.39μs | 4.6K | 96 |
-| Small Struct | 🥉 JSON | Unmarshal | 15.18μs | 4.3K | 71 |
-| Medium Payload | 🥇 BEVE ZeroCopy | Marshal | 6.74μs | 0 | 0 |
-| Medium Payload | 🥇 BEVE | Marshal | 10.79μs | 20.5K | 1 |
-| Medium Payload | 🥈 CBOR | Marshal | 19.46μs | 20.5K | 1 |
-| Medium Payload | 🥉 Sonic | Marshal | 30.57μs | 22.1K | 3 |
-| Medium Payload | 🥈 MessagePack | Marshal | 32.54μs | 65.8K | 22 |
-| Medium Payload | 🥉 JSON | Marshal | 34.37μs | 18.7K | 8 |
-| Medium Payload | 🥉 Sonic | Unmarshal | 24.77μs | 30.6K | 33 |
-| Medium Payload | 🥇 BEVE | Unmarshal | 25.43μs | 35.6K | 59 |
-| Medium Payload | 🥈 MessagePack | Unmarshal | 56.16μs | 36.5K | 676 |
-| Medium Payload | 🥈 CBOR | Unmarshal | 67.82μs | 33.3K | 681 |
-| Medium Payload | 🥉 JSON | Unmarshal | 217.07μs | 59.3K | 811 |
-| Large Payload | 🥇 BEVE ZeroCopy | Marshal | 68.48μs | 65 | 0 |
-| Large Payload | 🥇 BEVE | Marshal | 119.64μs | 188.7K | 1 |
-| Large Payload | 🥈 CBOR | Marshal | 189.59μs | 196.8K | 1 |
-| Large Payload | 🥈 MessagePack | Marshal | 289.62μs | 526.8K | 115 |
-| Large Payload | 🥉 Sonic | Marshal | 325.95μs | 218.2K | 3 |
-| Large Payload | 🥉 JSON | Marshal | 417.13μs | 221.6K | 8 |
-| Large Payload | 🥇 BEVE | Unmarshal | 233.22μs | 278.4K | 419 |
-| Large Payload | 🥉 Sonic | Unmarshal | 302.56μs | 408.0K | 213 |
-| Large Payload | 🥈 MessagePack | Unmarshal | 510.79μs | 337.5K | 6.1K |
-| Large Payload | 🥈 CBOR | Unmarshal | 652.88μs | 311.6K | 6.3K |
-| Large Payload | 🥉 JSON | Unmarshal | 1.89ms | 501.9K | 6.6K |
+| Small Struct | 🥈 CBOR | Marshal | 625ns | 416 | 1 |
+| Small Struct | 🥇 BEVE ZeroCopy | Marshal | 704ns | 0 | 0 |
+| Small Struct | 🥇 BEVE | Marshal | 1.03μs | 1.8K | 1 |
+| Small Struct | 🥉 Sonic | Marshal | 2.15μs | 1.5K | 2 |
+| Small Struct | 🥈 MessagePack | Marshal | 2.57μs | 4.1K | 8 |
+| Small Struct | 🥉 JSON | Marshal | 4.37μs | 2.7K | 1 |
+| Small Struct | 🥇 BEVE | Unmarshal | 898ns | 728 | 4 |
+| Small Struct | 🥉 Sonic | Unmarshal | 2.86μs | 4.5K | 6 |
+| Small Struct | 🥈 MessagePack | Unmarshal | 2.99μs | 2.1K | 46 |
+| Small Struct | 🥈 CBOR | Unmarshal | 5.94μs | 3.5K | 75 |
+| Small Struct | 🥉 JSON | Unmarshal | 8.46μs | 2.2K | 41 |
+| Medium Payload | 🥇 BEVE ZeroCopy | Marshal | 7.90μs | 3 | 0 |
+| Medium Payload | 🥇 BEVE | Marshal | 9.83μs | 18.4K | 1 |
+| Medium Payload | 🥈 CBOR | Marshal | 17.89μs | 18.4K | 1 |
+| Medium Payload | 🥉 Sonic | Marshal | 29.74μs | 22.1K | 3 |
+| Medium Payload | 🥈 MessagePack | Marshal | 32.60μs | 65.8K | 22 |
+| Medium Payload | 🥉 JSON | Marshal | 38.78μs | 22.0K | 8 |
+| Medium Payload | 🥇 BEVE | Unmarshal | 22.46μs | 27.9K | 59 |
+| Medium Payload | 🥉 Sonic | Unmarshal | 34.57μs | 52.4K | 33 |
+| Medium Payload | 🥈 MessagePack | Unmarshal | 55.99μs | 39.2K | 732 |
+| Medium Payload | 🥈 CBOR | Unmarshal | 62.06μs | 29.6K | 608 |
+| Medium Payload | 🥉 JSON | Unmarshal | 209.73μs | 58.6K | 780 |
+| Large Payload | 🥇 BEVE ZeroCopy | Marshal | 69.45μs | 65 | 0 |
+| Large Payload | 🥇 BEVE | Marshal | 104.91μs | 180.4K | 1 |
+| Large Payload | 🥈 CBOR | Marshal | 185.01μs | 188.9K | 1 |
+| Large Payload | 🥈 MessagePack | Marshal | 286.92μs | 526.8K | 115 |
+| Large Payload | 🥉 Sonic | Marshal | 316.29μs | 225.1K | 3 |
+| Large Payload | 🥉 JSON | Marshal | 393.47μs | 213.4K | 8 |
+| Large Payload | 🥇 BEVE | Unmarshal | 227.29μs | 268.1K | 419 |
+| Large Payload | 🥉 Sonic | Unmarshal | 291.42μs | 401.9K | 211 |
+| Large Payload | 🥈 MessagePack | Unmarshal | 523.47μs | 354.7K | 6.5K |
+| Large Payload | 🥈 CBOR | Unmarshal | 642.61μs | 308.3K | 6.3K |
+| Large Payload | 🥉 JSON | Unmarshal | 1.95ms | 521.1K | 6.9K |
 
 [📄 View full report](benchmark-linux-neoverse-n2/benchmark.md)
 
@@ -225,39 +225,39 @@ _Performance visualization: lower is better._
 
 | Scenario | Codec | Operation | Time | Memory | Allocations |
 |----------|-------|-----------|------|--------|-------------|
-| Small Struct | 🥇 BEVE ZeroCopy | Marshal | 565ns | 0 | 0 |
-| Small Struct | 🥉 Sonic | Marshal | 1.07μs | 1.3K | 2 |
-| Small Struct | 🥇 BEVE | Marshal | 1.10μs | 1.3K | 1 |
-| Small Struct | 🥈 CBOR | Marshal | 1.37μs | 1.3K | 1 |
-| Small Struct | 🥈 MessagePack | Marshal | 4.72μs | 8.2K | 9 |
-| Small Struct | 🥉 JSON | Marshal | 5.35μs | 2.7K | 1 |
-| Small Struct | 🥇 BEVE | Unmarshal | 2.25μs | 3.4K | 4 |
-| Small Struct | 🥈 MessagePack | Unmarshal | 3.68μs | 1.6K | 36 |
-| Small Struct | 🥉 Sonic | Unmarshal | 3.74μs | 4.4K | 9 |
-| Small Struct | 🥉 JSON | Unmarshal | 6.16μs | 1.2K | 25 |
-| Small Struct | 🥈 CBOR | Unmarshal | 10.19μs | 4.7K | 100 |
-| Medium Payload | 🥇 BEVE ZeroCopy | Marshal | 7.96μs | 3 | 0 |
-| Medium Payload | 🥇 BEVE | Marshal | 12.68μs | 18.4K | 1 |
-| Medium Payload | 🥉 Sonic | Marshal | 19.86μs | 25.0K | 3 |
-| Medium Payload | 🥈 CBOR | Marshal | 28.63μs | 27.3K | 1 |
-| Medium Payload | 🥈 MessagePack | Marshal | 33.38μs | 65.8K | 22 |
-| Medium Payload | 🥉 JSON | Marshal | 40.37μs | 18.7K | 8 |
-| Medium Payload | 🥇 BEVE | Unmarshal | 28.49μs | 29.9K | 59 |
-| Medium Payload | 🥉 Sonic | Unmarshal | 46.57μs | 57.4K | 70 |
-| Medium Payload | 🥈 MessagePack | Unmarshal | 73.22μs | 39.2K | 728 |
-| Medium Payload | 🥈 CBOR | Unmarshal | 88.39μs | 33.9K | 699 |
-| Medium Payload | 🥉 JSON | Unmarshal | 228.07μs | 46.0K | 596 |
-| Large Payload | 🥇 BEVE ZeroCopy | Marshal | 81.93μs | 65 | 0 |
-| Large Payload | 🥇 BEVE | Marshal | 108.53μs | 180.3K | 1 |
-| Large Payload | 🥉 Sonic | Marshal | 154.04μs | 198.2K | 3 |
-| Large Payload | 🥈 CBOR | Marshal | 216.93μs | 196.7K | 1 |
-| Large Payload | 🥈 MessagePack | Marshal | 279.25μs | 526.7K | 115 |
-| Large Payload | 🥉 JSON | Marshal | 475.74μs | 213.3K | 8 |
-| Large Payload | 🥇 BEVE | Unmarshal | 273.33μs | 267.2K | 417 |
-| Large Payload | 🥉 Sonic | Unmarshal | 453.84μs | 580.7K | 595 |
-| Large Payload | 🥈 MessagePack | Unmarshal | 686.26μs | 361.5K | 6.6K |
-| Large Payload | 🥈 CBOR | Unmarshal | 852.60μs | 310.9K | 6.3K |
-| Large Payload | 🥉 JSON | Unmarshal | 2.77ms | 564.4K | 7.3K |
+| Small Struct | 🥇 BEVE ZeroCopy | Marshal | 452ns | 0 | 0 |
+| Small Struct | 🥈 CBOR | Marshal | 1.58μs | 1.3K | 1 |
+| Small Struct | 🥇 BEVE | Marshal | 2.12μs | 2.7K | 1 |
+| Small Struct | 🥉 Sonic | Marshal | 2.18μs | 3.1K | 2 |
+| Small Struct | 🥈 MessagePack | Marshal | 3.70μs | 4.1K | 8 |
+| Small Struct | 🥉 JSON | Marshal | 4.27μs | 2.0K | 1 |
+| Small Struct | 🥇 BEVE | Unmarshal | 2.74μs | 3.0K | 4 |
+| Small Struct | 🥉 Sonic | Unmarshal | 5.33μs | 7.7K | 10 |
+| Small Struct | 🥈 MessagePack | Unmarshal | 6.56μs | 4.4K | 92 |
+| Small Struct | 🥈 CBOR | Unmarshal | 7.62μs | 3.6K | 76 |
+| Small Struct | 🥉 JSON | Unmarshal | 14.26μs | 3.7K | 53 |
+| Medium Payload | 🥇 BEVE ZeroCopy | Marshal | 7.65μs | 5 | 0 |
+| Medium Payload | 🥇 BEVE | Marshal | 13.94μs | 20.5K | 1 |
+| Medium Payload | 🥉 Sonic | Marshal | 19.67μs | 25.0K | 3 |
+| Medium Payload | 🥈 CBOR | Marshal | 22.33μs | 18.4K | 1 |
+| Medium Payload | 🥈 MessagePack | Marshal | 33.60μs | 65.8K | 22 |
+| Medium Payload | 🥉 JSON | Marshal | 43.08μs | 19.3K | 8 |
+| Medium Payload | 🥇 BEVE | Unmarshal | 26.96μs | 27.4K | 59 |
+| Medium Payload | 🥉 Sonic | Unmarshal | 46.79μs | 57.5K | 71 |
+| Medium Payload | 🥈 MessagePack | Unmarshal | 67.30μs | 35.2K | 652 |
+| Medium Payload | 🥈 CBOR | Unmarshal | 70.13μs | 23.9K | 496 |
+| Medium Payload | 🥉 JSON | Unmarshal | 261.97μs | 56.0K | 738 |
+| Large Payload | 🥇 BEVE ZeroCopy | Marshal | 79.54μs | 65 | 0 |
+| Large Payload | 🥇 BEVE | Marshal | 108.98μs | 180.3K | 1 |
+| Large Payload | 🥉 Sonic | Marshal | 166.19μs | 222.7K | 3 |
+| Large Payload | 🥈 CBOR | Marshal | 207.86μs | 188.5K | 1 |
+| Large Payload | 🥈 MessagePack | Marshal | 291.14μs | 526.7K | 115 |
+| Large Payload | 🥉 JSON | Marshal | 511.52μs | 229.7K | 8 |
+| Large Payload | 🥇 BEVE | Unmarshal | 270.58μs | 265.9K | 419 |
+| Large Payload | 🥉 Sonic | Unmarshal | 415.54μs | 526.1K | 575 |
+| Large Payload | 🥈 MessagePack | Unmarshal | 682.99μs | 359.6K | 6.6K |
+| Large Payload | 🥈 CBOR | Unmarshal | 846.40μs | 317.0K | 6.5K |
+| Large Payload | 🥉 JSON | Unmarshal | 2.52ms | 524.5K | 6.8K |
 
 [📄 View full report](benchmark-windows-unknown-cpu/benchmark.md)
 
